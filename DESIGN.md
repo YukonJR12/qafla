@@ -1,5 +1,5 @@
 ---
-version: "0.2"
+version: "0.3"
 name: Qafla Pickup
 description: A bilingual Kuwaiti food-truck park with red-orange poster lettering and electric-lime pickup tickets.
 ---
@@ -19,6 +19,22 @@ Photograph food at counter height in appetizing, natural light. Keep one recogni
 | A customer chooses dinner on a phone | The truck and its next pickup time | The dishes, prices, and cart |
 | A vendor looks up during a rush | The order due next and what to cook | Its quantities, payment state, and next action |
 | Dana checks the park | Which truck and time are busiest | The exact count, capacity, and orders behind it |
+
+## Logo
+
+<img src="public/brand/qafla-logo.png" alt="Qafla's burger-topped food truck above the QAFLA wordmark" width="224">
+
+The park logo pairs a right-facing Red Orange truck with a rooftop burger and Yellow Punk lettuce. The QAFLA wordmark sits below the wheels. Use the complete [transparent PNG](public/brand/qafla-logo.png) as one image. The app serves it at `/brand/qafla-logo.png`.
+
+| Placement | How to use the logo |
+| --- | --- |
+| Welcome screen | Center the logo on Snowy White. Use a 224 px square on phones and 288 px from 640 px up. The Arabic park name, قافلة, can sit underneath as live text. |
+| Explore | Place the logo in the park masthead when at least 96 px of width is available. Keep the featured poster for the individual truck and its pickup time. |
+| Checkout, vendor and manager screens | Use the localized park name as text in compact headers. Give pickup times, order states and counts the visual priority. |
+
+Keep the PNG square and scale both dimensions together. Its transparent margins provide the clear space. Keep adjacent controls, text and borders outside that square. On a dark, orange or photographic surface, give the complete logo a solid Snowy White backing so its ink strokes and wordmark stay legible. Preserve the original lettering, colors and right-facing orientation in both English and Arabic.
+
+When the logo is the only content of a home link, give the link a localized accessible name such as “Qafla Pickup home” or “الصفحة الرئيسية لقافلة”. If adjacent text or a heading already names the app, use an empty image alt attribute so the name is announced once.
 
 ## Colors
 
