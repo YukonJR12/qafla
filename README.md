@@ -31,3 +31,16 @@ Reply to the same email thread, ahead of your presentation, with:
 - Never put a secret key in your repo, your screenshots or your submission. If one leaks, revoke it and make a new one.
 - Use **test mode only** for payments. No real money, ever.
 - Keep your app live until your presentation is over. The panel will run the Tampering Test on it themselves.
+
+## Local development
+
+Tested with **Node.js 24.15.0** and **pnpm 11.24.0** (Next.js needs Node 20.9 or newer). The app is Next.js 16 (App Router), strict TypeScript, Tailwind CSS 4 and ESLint 9.
+
+```bash
+pnpm install        # install dependencies from pnpm-lock.yaml
+pnpm dev            # start the dev server at http://localhost:3000
+pnpm lint           # ESLint
+pnpm typecheck      # generate Next.js route types, then tsc --noEmit
+pnpm build          # production build
+pnpm start          # serve the production build (after pnpm build)
+```

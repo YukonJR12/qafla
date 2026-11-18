@@ -28,3 +28,8 @@ desktop.ini
 .vscode/
 .idea/
 *.log
+
+# Next.js / TypeScript generated
+*.tsbuildinfo
+next-env.d.ts
+.pnpm-debug.log*
