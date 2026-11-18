@@ -46,5 +46,15 @@ create table public.unrelated_notes (id integer primary key, body text);
 grant select, insert, update, delete on public.unrelated_notes to authenticated;
 grant select on public.unrelated_notes to anon;
 
+-- The same idea for functions: something unrelated that already lives in a
+-- `private` schema, callable by everyone (the Postgres default) and granted
+-- to anon by name.
+create schema private;
+create function private.unrelated_helper()
+returns text
+language sql
+as $$ select 'still callable' $$;
+grant execute on function private.unrelated_helper() to anon;
+
 grant usage on schema auth to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;

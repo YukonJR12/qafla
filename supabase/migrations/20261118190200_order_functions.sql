@@ -382,10 +382,13 @@ $$;
 -- Who may call what
 -- ---------------------------------------------------------------------------
 
-revoke all on all functions in schema private from public;
-grant execute on function
-  private.my_role(), private.is_manager(), private.my_truck_id()
-  to anon, authenticated;
+-- The clock and the isolation check are only ever called from inside the
+-- functions above, which run with the owner's rights. No API role needs them.
+revoke all on function
+  private.clock_now(),
+  private.kuwait_now(),
+  private.require_read_committed()
+  from public, anon, authenticated;
 
 revoke all on function
   public.place_order(text, time, jsonb),

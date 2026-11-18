@@ -45,7 +45,19 @@ as $$
 $$;
 
 grant usage on schema private to anon, authenticated;
-revoke all on all functions in schema private from public;
+
+-- Postgres lets everyone run a new function by default. Take that back for
+-- Qafla's own private functions, by name, so any other function that lives
+-- in `private` keeps the permissions it already had.
+revoke all on function
+  private.handle_new_user(),
+  private.my_role(),
+  private.is_manager(),
+  private.my_truck_id()
+  from public, anon, authenticated;
+
+-- The policies below call these three, so the API roles must be able to.
+-- handle_new_user is a trigger; nobody needs to call it directly.
 grant execute on function
   private.my_role(), private.is_manager(), private.my_truck_id()
   to anon, authenticated;

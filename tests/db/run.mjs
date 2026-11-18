@@ -157,7 +157,7 @@ try {
     return "permission denied (42501) on trucks.vendor_id";
   });
 
-  await check("the migrations revoke rights on Qafla tables only, not on an unrelated table", async () => {
+  await check("the migrations revoke rights on Qafla's objects only, not on an unrelated table or function", async () => {
     const can = async (role, table, privilege) =>
       (await admin.query("select has_table_privilege($1, $2, $3) as ok", [role, table, privilege])).rows[0].ok;
 
@@ -180,7 +180,47 @@ try {
     }
     assert.equal(await can("anon", "public.orders", "select"), false);
     assert.equal(await can("authenticated", "public.orders", "update"), false);
-    return "unrelated_notes keeps select/insert/update/delete; all 6 Qafla tables lost insert, delete and truncate";
+
+    // Functions in the private schema: the unrelated one keeps what it had.
+    const canRun = async (role, fn) =>
+      (await admin.query("select has_function_privilege($1, $2, 'execute') as ok", [role, fn])).rows[0].ok;
+    const publicCanRun = async (fn) =>
+      (
+        await admin.query(
+          `select exists (
+             select 1 from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+             where p.oid = $1::regprocedure and a.grantee = 0 and a.privilege_type = 'EXECUTE'
+           ) as ok`,
+          [fn],
+        )
+      ).rows[0].ok;
+
+    assert.equal(await publicCanRun("private.unrelated_helper()"), true, "PUBLIC keeps execute on the unrelated function");
+    for (const role of ["anon", "authenticated"]) {
+      assert.equal(await canRun(role, "private.unrelated_helper()"), true, `${role} unrelated_helper`);
+    }
+    const called = await asUser(c1, aisha, (c) => c.query("select private.unrelated_helper() as said"));
+    assert.equal(called.rows[0].said, "still callable");
+    assert.equal((await asUser(c1, null, (c) => c.query("select private.unrelated_helper() as said"))).rows[0].said, "still callable");
+
+    // Qafla's own private functions: only the three the policies need.
+    const policyHelpers = ["private.my_role()", "private.is_manager()", "private.my_truck_id()"];
+    const internal = [
+      "private.handle_new_user()",
+      "private.clock_now()",
+      "private.kuwait_now()",
+      "private.require_read_committed()",
+    ];
+    for (const fn of [...policyHelpers, ...internal]) {
+      assert.equal(await publicCanRun(fn), false, `PUBLIC must not run ${fn}`);
+    }
+    for (const role of ["anon", "authenticated"]) {
+      for (const fn of policyHelpers) assert.equal(await canRun(role, fn), true, `${role} ${fn}`);
+      for (const fn of internal) assert.equal(await canRun(role, fn), false, `${role} ${fn}`);
+    }
+    await rejects(asUser(c1, aisha, (c) => c.query("select private.clock_now()")), "42501");
+
+    return "unrelated_notes keeps select/insert/update/delete and private.unrelated_helper() stays callable by PUBLIC, anon and authenticated; the 6 Qafla tables lost insert, delete and truncate; Qafla's 4 internal private functions are closed to the API roles";
   });
 
   // -------------------------------------------------------------------------
