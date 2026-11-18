@@ -1,0 +1,7 @@
+truck_id,name,cuisine,default_slot_capacity,blurb
+T01,Karak Corner,Tea and snacks,10,"Karak, toasties and quick bites."
+T02,Dune Burgers,Burgers,6,Smash burgers cooked to order.
+T03,Taco Saha,Tacos,6,Street tacos with Gulf twists.
+T04,Noodle Wagon,Noodles,5,"Wok noodles, fresh off the flame."
+T05,Saj Station,Saj wraps,8,Wraps made on the saj in front of you.
+T06,Lugaimat & Co,Desserts,8,"Lugaimat, kunafa and cold drinks."

@@ -1,0 +1,30 @@
+# Secrets: never commit keys (see README rules)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies and builds
+node_modules/
+.next/
+dist/
+build/
+out/
+.vercel/
+__pycache__/
+*.pyc
+
+# Local agent and tool state
+.claude/settings.local.json
+.afk/
+.impeccable/
+.hallmark/cache/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log

@@ -1,0 +1,31 @@
+item_id,truck_id,name,category,price_kwd,description,sold_out
+M101,T01,Karak tea,Drinks,0.200,Strong tea with cardamom and evaporated milk.,false
+M102,T01,Saffron karak,Drinks,0.350,,false
+M103,T01,Cheese and zaatar toastie,Food,0.750,,false
+M104,T01,Chips oman sandwich,Food,0.500,"Soft roll, cream cheese and crushed chips.",false
+M105,T01,Date cake slice,Sweets,0.600,,true
+M201,T02,Classic smash,Burgers,1.950,"Two smashed beef patties, cheese and house sauce.",false
+M202,T02,Spicy chicken burger,Burgers,2.100,,false
+M203,T02,Truffle smash,Burgers,2.750,,false
+M204,T02,Loaded fries,Sides,1.250,Fries with cheese sauce and crispy onions.,false
+M205,T02,Mushroom swiss,Burgers,2.400,,false
+M301,T03,Chicken tikka taco,Tacos,1.500,,false
+M302,T03,Beef birria tacos (3),Tacos,2.900,"Slow-cooked beef in corn tortillas, with broth to dip.",false
+M303,T03,Halloumi taco,Tacos,1.400,,false
+M304,T03,Elote cup,Sides,0.900,,false
+M305,T03,Shrimp taco,Tacos,1.750,,true
+M401,T04,Chicken pad thai,Noodles,2.250,,false
+M402,T04,Beef udon,Noodles,2.600,Thick udon noodles with sliced beef and spring onion.,false
+M403,T04,Veggie lo mein,Noodles,1.900,,false
+M404,T04,Chilli oil dumplings (6),Sides,1.600,,false
+M405,T04,Mango iced tea,Drinks,0.650,,false
+M501,T05,Chicken shawarma saj,Wraps,1.100,,false
+M502,T05,Halloumi and zaatar saj,Wraps,0.950,"Grilled halloumi, zaatar and tomato in thin saj bread.",false
+M503,T05,Kofta saj,Wraps,1.300,,false
+M504,T05,Nutella and banana saj,Sweet wraps,1.000,,false
+M505,T05,Fresh lemon mint,Drinks,0.700,,false
+M601,T06,Lugaimat (12),Desserts,1.200,Crisp dough balls with date syrup and sesame.,false
+M602,T06,Kunafa cup,Desserts,1.750,,false
+M603,T06,Pistachio milk cake,Desserts,1.850,,false
+M604,T06,Vimto slush,Drinks,0.600,,false
+M605,T06,Saffron ice cream,Desserts,1.500,,true
