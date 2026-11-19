@@ -45,6 +45,28 @@ pnpm build          # production build
 pnpm start          # serve the production build (after pnpm build)
 ```
 
+## Customer ordering
+
+One customer journey works end to end against Supabase:
+
+`/` welcome → `/explore` → `/trucks/T02` menu → `/cart` → `/checkout` (pickup time, pay at pickup) → `/orders/<id>` ticket.
+
+To run it, copy `.env.example` to `.env.local` and fill in the project URL and publishable key. Only those two public values are used by the app.
+
+| Where | What lives there |
+| --- | --- |
+| `app/` | One folder per screen. Explore and the truck menu are rendered on the server from live data. Cart, checkout, sign-in and the ticket run in the browser. |
+| `components/` | Shared pieces: header, language switch, quantity stepper, menu list, saved-cart notice, icons and buttons. |
+| `lib/money.ts` | The one formatter for prices: `3.200 KWD` in English, `3.200 د.ك.` in Arabic. |
+| `lib/time.ts` | Kuwait time and pickup-slot formatting (`7:15 PM`, `7:15 م`). |
+| `lib/i18n.ts` | Every English and Arabic string, plus Arabic display labels for the seed trucks and dishes. |
+| `lib/cart.tsx` | The cart, kept in the browser's `localStorage` so it survives refresh, language switch and sign-in. It stores item IDs and quantities, never prices. |
+| `lib/data.ts`, `lib/supabase.ts` | Reads from Supabase and the two clients (signed-out for public data, signed-in for the customer). |
+
+How an order is placed: checkout calls the database function `place_order` with the truck ID, the pickup time and a list of item IDs and quantities. The database prices the order, checks the truck, the time and the slot, and saves it. The ticket page then reads the saved order back by its ID, so refreshing it never places another order.
+
+Screenshots of the flow, in English and Arabic, are in `docs/screenshots/customer-ordering/`.
+
 ## Database
 
 The data rules live in Postgres, in `supabase/`, so they hold no matter what a browser sends.

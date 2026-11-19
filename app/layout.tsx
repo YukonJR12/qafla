@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Alexandria, Archivo_Black, DM_Sans } from "next/font/google";
+import { CartProvider } from "@/lib/cart";
+import { LocaleProvider } from "@/lib/locale";
+import { getLocale } from "@/lib/locale-server";
 import "./globals.css";
 
 // Brand fonts from DESIGN.md. next/font downloads them at build time and
@@ -15,9 +18,10 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
+// Alexandria is a variable font, so every weight is available. The Latin
+// subset is included so digits and "KWD" match the Arabic letters.
 const alexandria = Alexandria({
-  weight: ["400", "900"],
-  subsets: ["arabic"],
+  subsets: ["arabic", "latin"],
   variable: "--font-alexandria",
 });
 
@@ -26,15 +30,24 @@ export const metadata: Metadata = {
   description: "Order ahead from Qafla's food trucks and collect your food hot.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The language comes from a cookie, so the whole document can be rendered
+  // in the right language and direction on the server.
+  const locale = await getLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${archivoBlack.variable} ${dmSans.variable} ${alexandria.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <LocaleProvider locale={locale}>
+          <CartProvider>{children}</CartProvider>
+        </LocaleProvider>
+      </body>
     </html>
   );
 }
