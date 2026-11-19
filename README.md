@@ -44,3 +44,50 @@ pnpm typecheck      # generate Next.js route types, then tsc --noEmit
 pnpm build          # production build
 pnpm start          # serve the production build (after pnpm build)
 ```
+
+## Database
+
+The data rules live in Postgres, in `supabase/`, so they hold no matter what a browser sends.
+
+| Path | What it is |
+| --- | --- |
+| `supabase/migrations/…_schema.sql` | Tables and row constraints: profiles, trucks, menu items, closures, orders, order items. |
+| `supabase/migrations/…_access_rules.sql` | Grants and row-level security: who can read and write which rows. |
+| `supabase/migrations/…_order_functions.sql` | `place_order`, `set_order_status`, `close_truck_for_tonight` and `slot_usage`. Orders can only be created or changed through these. |
+| `supabase/seed.sql` | The six trucks and 30 dishes. Generated from `seed/*.csv`; do not edit by hand. |
+| `scripts/build-seed.mjs` | Rebuilds `supabase/seed.sql` from the CSVs. |
+| `tests/db/` | Database tests. `supabase-shim.sql` and `test-clock.sql` are for the test database only. |
+
+### Test the database locally
+
+No Supabase project, Docker or keys are needed. The tests start a throwaway PostgreSQL 17 server in a temp folder, apply the migrations and seed, run, and delete it.
+
+```bash
+pnpm test:db          # check seed.sql matches the CSVs, then run the database tests
+pnpm db:seed:build    # rewrite supabase/seed.sql after changing a CSV
+```
+
+### Apply to a Supabase project
+
+Run the three files in `supabase/migrations/` in filename order, then `supabase/seed.sql`. Either paste each into the Supabase SQL editor, or use the Supabase CLI:
+
+```bash
+supabase link --project-ref <your-project-ref>
+supabase db push --include-seed
+```
+
+This step has not been run against a hosted project yet; so far the migrations are verified on the local test database only. Never run anything from `tests/db/` on a Supabase project.
+
+### Create the park manager and assign vendors
+
+Nobody can become the manager, or take a truck, through the app. After the person has signed up, run this in the SQL editor:
+
+```sql
+-- Make an existing account the park manager.
+update public.profiles set role = 'manager'
+where id = (select id from auth.users where email = 'dana@example.com');
+
+-- Give a vendor account its truck (one truck per vendor).
+update public.trucks set vendor_id = (select id from auth.users where email = 'vendor@example.com')
+where id = 'T02';
+```
