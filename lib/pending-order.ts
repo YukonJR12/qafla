@@ -1,10 +1,13 @@
 // A checkout attempt whose result this browser has not seen yet.
 //
 // Just before "Place order" is sent, the attempt is written here: who sent
-// it, its request ID, and exactly what was ordered. It is removed as soon
-// as the server gives a clear answer (a ticket, or a refusal). If the
-// answer never arrives, it stays, and checkout asks the server what
-// happened to it before showing anything else.
+// it, its request ID, and exactly what was ordered. It is removed only when
+// the server has settled it: a ticket, a refusal of that very request, or
+// the customer abandoning it (which the server records). If the answer
+// never arrives, it stays, and checkout deals with it before anything else.
+//
+// "No order found" does NOT settle it. The request may still be on its
+// way, so the attempt is kept until one of the three things above happens.
 //
 // Each customer has their own storage key, and the record also names its
 // customer. Someone else signing in on the same browser never sees it.
@@ -64,10 +67,10 @@ export function clearPending(customerId: string, store: KeyValueStore | null = b
 }
 
 /**
- * Asks the server whether this attempt was saved. Only reads; it can never
- * place an order. Resolves to the order's ID, or null when the server
- * answers that no order exists for this attempt. Throws when the server
- * could not be reached, because then the outcome is still unknown.
+ * Asks the server whether this attempt has been saved. Only reads; it can
+ * never place an order. Resolves to the order's ID, or null when no order
+ * exists for it YET (the request may still arrive). Throws when the server
+ * could not be reached.
  */
 export async function findOrderForAttempt(db: SupabaseClient, pending: PendingOrder): Promise<string | null> {
   const { data, error } = await db
@@ -78,6 +81,19 @@ export async function findOrderForAttempt(db: SupabaseClient, pending: PendingOr
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data?.id ?? null;
+}
+
+/**
+ * The customer gives up on this attempt, and the server decides the race
+ * with the original request. Resolves to the order's ID if the order was
+ * saved after all, or null once the server has recorded the attempt as
+ * abandoned: from then on a late copy of the request is refused, so the
+ * cart can safely be unlocked. Throws when no clear answer came back.
+ */
+export async function abandonAttempt(db: SupabaseClient, pending: PendingOrder): Promise<string | null> {
+  const { data, error } = await db.rpc("abandon_order_attempt", { p_request_id: pending.requestId });
+  if (error) throw new Error(error.message);
+  return (data as { id?: string | null } | null)?.id ?? null;
 }
 
 /** The server's own refusals. After one of these, nothing was saved. */
@@ -95,6 +111,7 @@ const REFUSALS = new Set([
   "not_a_customer",
   "request_id_required",
   "request_id_reused",
+  "request_abandoned",
 ]);
 
 /**

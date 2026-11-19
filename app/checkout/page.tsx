@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { CartSkeleton, EmptyCart, LoadError } from "@/components/cart-states";
 import {
@@ -14,6 +14,7 @@ import {
   StoreIcon,
   primaryButton,
   primaryButtonSplit,
+  secondaryButton,
 } from "@/components/ui";
 import { requestIdForCart, storedCart, useCart } from "@/lib/cart";
 import { orderItems } from "@/lib/cart-lines";
@@ -21,6 +22,7 @@ import { fetchClosed, fetchSlots, isFull, nextBookable, upcomingSlots, type Slot
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import {
+  abandonAttempt,
   clearPending,
   findOrderForAttempt,
   outcomeOf,
@@ -41,15 +43,18 @@ type Availability =
   | { truckId: string; attempt: number; failed: false; slots: Slot[]; closed: boolean };
 
 /**
- * What became of this customer's unconfirmed attempt, if they have one.
- *  - none:    there is no unconfirmed attempt
- *  - unknown: the server could not be asked, so the order may or may not exist
- *  - refused: the server answered that no order was saved for it
+ * Where this customer's unconfirmed attempt stands, if they have one.
+ *  - none:      there is no unconfirmed attempt
+ *  - unknown:   not settled yet. `last` says what the latest question got:
+ *               "empty" (no order yet; it may still arrive) or "failed"
+ *               (no answer at all). Neither proves the attempt is over.
+ *  - abandoned: the customer gave up and the server recorded it, so the
+ *               old request can never place an order
  * (When the order WAS saved, the page goes straight to its ticket instead.)
  */
 type Reconciled =
-  | { userId: string; check: number; result: "none" | "refused" }
-  | { userId: string; check: number; result: "unknown"; pending: PendingOrder };
+  | { userId: string; check: number; result: "none" | "abandoned" }
+  | { userId: string; check: number; result: "unknown"; pending: PendingOrder; last: "none" | "empty" | "failed" };
 
 // Checkout: review the cart, choose a pickup time, pay at pickup, place the order.
 export default function CheckoutPage() {
@@ -73,34 +78,59 @@ export default function CheckoutPage() {
   /** Goes up by one each time the customer taps "Check my order". */
   const [check, setCheck] = useState(0);
   const [reconciled, setReconciled] = useState<Reconciled | null>(null);
+  const [leaving, setLeaving] = useState(false);
+
+  // The order turned out to exist. Open its ticket; never place it again.
+  const openTicket = useCallback(
+    (customerId: string, pending: PendingOrder, orderId: string) => {
+      clearPending(customerId);
+      if (storedCart()?.requestId === pending.requestId) clear();
+      setPlaced(true);
+      router.replace(`/orders/${orderId}`);
+    },
+    [clear, router],
+  );
 
   // Before anything else: did this customer send an order whose answer never
-  // arrived? If so, ask the server what happened to it. Only then is it safe
-  // to say "that time is full" or "the truck closed", because the place that
-  // filled the slot may be this customer's own order.
+  // arrived? If so, ask the server about it. Until it is settled, the page
+  // must not say "that time is full" or "the truck closed", because the
+  // place that filled the slot may be this customer's own order.
   useEffect(() => {
     if (!userId) return;
     let live = true;
     lookUpPending(userId).then((found) => {
       if (!live) return;
-      if (found.result === "saved") {
-        // The order exists. Open its ticket; never place it again.
-        clearPending(userId);
-        if (storedCart()?.requestId === found.pending.requestId) clear();
-        setPlaced(true);
-        router.replace(`/orders/${found.orderId}`);
-        return;
-      }
-      if (found.result === "refused") {
-        clearPending(userId);
-        if (check > 0) setAttempt((n) => n + 1); // re-read the pickup times
-      }
-      setReconciled({ userId, check, ...found });
+      if (found.result === "saved") openTicket(userId, found.pending, found.orderId);
+      else setReconciled({ userId, check, ...found });
     });
     return () => {
       live = false;
     };
-  }, [userId, check, clear, router]);
+  }, [userId, check, openTicket]);
+
+  // "Go back to checkout": the customer gives up on the unconfirmed attempt.
+  // The database settles it against the original request. Only its answer
+  // unlocks the cart: either the ticket, or a recorded "abandoned".
+  async function leaveAttempt(pending: PendingOrder) {
+    if (!userId || leaving) return;
+    setLeaving(true);
+    const settled = await abandonAttempt(supabaseBrowser(), pending).then(
+      (orderId) => ({ orderId }),
+      () => null,
+    );
+    setLeaving(false);
+    if (!settled) {
+      // No clear answer to this either. Still unknown; nothing is unlocked.
+      setReconciled({ userId, check, result: "unknown", pending, last: "failed" });
+    } else if (settled.orderId) {
+      openTicket(userId, pending, settled.orderId);
+    } else {
+      clearPending(userId);
+      forgetRequest(); // the old ID is dead; the next order gets a new one
+      setReconciled({ userId, check, result: "abandoned" });
+      setAttempt((n) => n + 1); // re-read the pickup times
+    }
+  }
 
   // Read the truck's live slot counts and whether it is closed tonight.
   useEffect(() => {
@@ -162,16 +192,33 @@ export default function CheckoutPage() {
               formatSlot(pending.slot, locale),
             )}
           </p>
-          {mine.check > 0 && !busy && <p className="mt-2 text-sm font-bold">{t.checkFailed}</p>}
+          {!busy && !leaving && mine.last !== "none" && (
+            <p className="mt-2 text-sm font-bold">{mine.last === "empty" ? t.checkEmpty : t.checkFailed}</p>
+          )}
+          {/* Read-only: asks whether the order exists. It never places or cancels anything. */}
           <button
             type="button"
             onClick={() => setCheck((n) => n + 1)}
-            disabled={busy}
+            disabled={busy || leaving}
             aria-busy={busy}
             className={`${primaryButton} mt-3`}
           >
             <span aria-live="polite">{busy ? t.checkingOrder : t.checkMyOrder}</span>
           </button>
+          {/* The way out if the request never arrived. The server settles it. */}
+          <button
+            type="button"
+            onClick={() => leaveAttempt(pending)}
+            disabled={busy || leaving}
+            aria-busy={leaving}
+            aria-describedby="back-to-checkout-hint"
+            className={`${secondaryButton} mt-2`}
+          >
+            <span aria-live="polite">{leaving ? t.goingBack : t.backToCheckout}</span>
+          </button>
+          <p id="back-to-checkout-hint" className="mt-2 text-sm">
+            {t.backToCheckoutHint}
+          </p>
         </section>
       </Shell>
     );
@@ -284,11 +331,11 @@ export default function CheckoutPage() {
       // No clear answer (for example the connection dropped). The order may
       // have been saved, so the attempt and its request ID are kept, and the
       // customer checks on it instead of ordering again.
-      setReconciled({ userId, check, result: "unknown", pending });
+      setReconciled({ userId, check, result: "unknown", pending, last: "none" });
       return;
     }
 
-    // A clear refusal: nothing was saved, so there is nothing left to check.
+    // The server refused THIS request: nothing was saved, nothing left to check.
     clearPending(userId);
     const code = error?.message ?? "";
     if (code === "slot_full" || code === "slot_too_soon" || code === "invalid_slot") {
@@ -311,8 +358,8 @@ export default function CheckoutPage() {
 
   return (
     <Shell>
-      {/* The server confirmed the unconfirmed attempt was NOT saved. Normal recovery follows. */}
-      {mine?.result === "refused" && (
+      {/* The server recorded the attempt as abandoned. Normal recovery follows. */}
+      {mine?.result === "abandoned" && (
         <p role="status" className="mb-4 rounded-panel bg-subtle p-4 text-sm font-semibold">
           {t.notPlaced}
         </p>
@@ -573,17 +620,18 @@ export default function CheckoutPage() {
 async function lookUpPending(
   customerId: string,
 ): Promise<
-  | { result: "none" | "refused" }
-  | { result: "unknown"; pending: PendingOrder }
+  | { result: "none" }
+  | { result: "unknown"; pending: PendingOrder; last: "empty" | "failed" }
   | { result: "saved"; pending: PendingOrder; orderId: string }
 > {
   const pending = readPending(customerId);
   if (!pending) return { result: "none" };
   try {
     const orderId = await findOrderForAttempt(supabaseBrowser(), pending);
-    return orderId ? { result: "saved", pending, orderId } : { result: "refused" };
+    // No order YET is not "no order": the request may still be on its way.
+    return orderId ? { result: "saved", pending, orderId } : { result: "unknown", pending, last: "empty" };
   } catch {
-    return { result: "unknown", pending };
+    return { result: "unknown", pending, last: "failed" };
   }
 }
 

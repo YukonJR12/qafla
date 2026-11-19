@@ -117,13 +117,18 @@ const en = {
   slotGoneBody: "Choose a new pickup time below.",
 
   // An order was sent but its answer never arrived
-  checkOrderTitle: "We couldn’t confirm your order",
+  checkOrderTitle: "We haven’t confirmed your order yet",
   checkOrderBody: (truck: string, time: string) =>
     `Your order to ${truck} for ${time} was sent, but the answer didn’t reach this phone. Check it before you order again.`,
   checkMyOrder: "Check my order",
   checkingOrder: "Checking your order…",
+  checkEmpty: "We don’t see your order yet. It may still be on its way.",
   checkFailed: "Still no answer. Check your connection and try again.",
-  notPlaced: "Your earlier order didn’t go through, so nothing was placed. Your cart is saved.",
+  backToCheckout: "Go back to checkout",
+  backToCheckoutHint:
+    "Going back cancels this attempt, so it can’t be placed later. If it was already placed, you’ll get its ticket instead.",
+  goingBack: "Going back…",
+  notPlaced: "That attempt was cancelled and nothing was placed. Your cart is saved, so you can choose a time and order again.",
 
   // Sign in
   signInTitle: "Sign in to place your order",
@@ -281,13 +286,17 @@ const ar: Dict = {
   slotPassedTitle: (time) => `وقت ${time} صار قريب جداً للطلب. سلتك محفوظة.`,
   slotGoneBody: "اختر وقت استلام جديد من الأوقات تحت.",
 
-  checkOrderTitle: "ما قدرنا نتأكد من طلبك",
+  checkOrderTitle: "للحين ما تأكدنا من طلبك",
   checkOrderBody: (truck, time) =>
     `أرسلنا طلبك إلى ${truck} لوقت ${time}، لكن الرد ما وصل لجهازك. تحقق منه قبل ما تطلب مرة ثانية.`,
   checkMyOrder: "التحقق من طلبي",
   checkingOrder: "جارٍ التحقق من طلبك…",
+  checkEmpty: "للحين ما نشوف طلبك. يمكن بعده في الطريق.",
   checkFailed: "ما وصل رد للحين. تأكد من الاتصال وحاول مرة ثانية.",
-  notPlaced: "طلبك السابق ما تم، وما انحجز أي شي. سلتك محفوظة.",
+  backToCheckout: "الرجوع لإتمام الطلب",
+  backToCheckoutHint: "الرجوع يلغي هذه المحاولة عشان ما يتم الطلب بعدين. وإذا كان الطلب تم، بنفتح لك تذكرته.",
+  goingBack: "جارٍ الرجوع…",
+  notPlaced: "ألغينا تلك المحاولة وما تم أي طلب. سلتك محفوظة، اختر وقت واطلب من جديد.",
 
   signInTitle: "سجّل الدخول لتأكيد طلبك",
   signUpTitle: "أنشئ حسابك",

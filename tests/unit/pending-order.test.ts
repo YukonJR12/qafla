@@ -70,7 +70,7 @@ test("damaged storage reads as no attempt", () => {
 
 test("a ticket is 'saved' and the server's own refusals are 'refused'", () => {
   assert.equal(outcomeOf({ data: { id: "o1" }, error: null }), "saved");
-  for (const code of ["slot_full", "truck_closed", "slot_too_soon", "item_sold_out", "request_id_reused"]) {
+  for (const code of ["slot_full", "truck_closed", "slot_too_soon", "item_sold_out", "request_id_reused", "request_abandoned"]) {
     assert.equal(outcomeOf({ data: null, error: { message: code } }), "refused", code);
   }
 });

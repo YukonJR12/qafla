@@ -214,6 +214,7 @@ try {
       "private.kuwait_now()",
       "private.require_read_committed()",
       "private.order_for_request(uuid, uuid, text, time, jsonb)",
+      "private.lock_request(uuid, uuid)",
     ];
     for (const fn of [...policyHelpers, ...internal]) {
       assert.equal(await publicCanRun(fn), false, `PUBLIC must not run ${fn}`);
@@ -224,7 +225,14 @@ try {
     }
     await rejects(asUser(c1, aisha, (c) => c.query("select private.clock_now()")), "42501");
 
-    return "unrelated_notes keeps select/insert/update/delete and private.unrelated_helper() stays callable by PUBLIC, anon and authenticated; the 6 Qafla tables lost insert, delete and truncate; Qafla's 5 internal private functions are closed to the API roles";
+    // The list of abandoned attempts is for the database's own use.
+    for (const role of ["anon", "authenticated"]) {
+      for (const privilege of ["select", "insert", "update", "delete"]) {
+        assert.equal(await can(role, "private.abandoned_requests", privilege), false, `${role} ${privilege} abandoned_requests`);
+      }
+    }
+
+    return "unrelated_notes keeps select/insert/update/delete and private.unrelated_helper() stays callable by PUBLIC, anon and authenticated; the 6 Qafla tables lost insert, delete and truncate; Qafla's 6 internal private functions and its abandoned-attempts table are closed to the API roles";
   });
 
   // -------------------------------------------------------------------------
@@ -809,13 +817,13 @@ try {
     return "another time, quantity, dish or truck: request_id_reused; no ID: request_id_required; only the other customer's own order was added";
   });
 
-  await check("the same ID sent for two trucks at once: the table's unique rule lets only one save", async () => {
+  await check("the same ID sent for two trucks at once: only one saves", async () => {
     const id = randomUUID();
     await beginAs(c1, aisha);
     const first = await place(c1, "T01", "21:45", karakCart, id); // not committed yet
     await beginAs(c2, aisha);
-    // A different truck means a different lock, so this copy does not queue
-    // behind the first. It reaches the insert and waits on the unique index.
+    // Same customer, same request ID: this copy waits for the first one's
+    // request lock. When it gets in, the ID already belongs to another order.
     const second = place(c2, "T03", "21:45", tacoCart, id).then(
       (row) => ({ ok: row }),
       (error) => ({ error }),
@@ -854,6 +862,163 @@ try {
 
     assert.deepEqual(await totals(), before);
     return `${mine[0].ticket_ref} found for its own customer on a full slot and closed truck; another customer and an unsaved attempt both find nothing; no rows added`;
+  });
+
+  // -------------------------------------------------------------------------
+  section("Giving up on an attempt whose answer never arrived");
+
+  // "Was my attempt saved?" is the read-only question checkout asks. An empty
+  // answer does NOT mean the attempt failed: these tests hold the original
+  // request in flight to show that, then let the database decide the race
+  // between "place it" and "abandon it".
+  const c3 = await db.connect();
+  const findAttempt = (client, user, requestId) =>
+    asUser(client, user, async (c) => {
+      const { rows } = await c.query(
+        "select id from public.orders where customer_id = $1 and client_request_id = $2",
+        [user, requestId],
+      );
+      return rows;
+    });
+  const abandonSql = `select ${ORDER_COLUMNS} from public.abandon_order_attempt($1::uuid)`;
+  const abandon = async (client, requestId) => (await client.query(abandonSql, [requestId])).rows[0];
+  const abandonedCount = async (customer, requestId) =>
+    (
+      await admin.query(
+        "select count(*)::int as n from private.abandoned_requests where customer_id = $1 and request_id = $2",
+        [customer, requestId],
+      )
+    ).rows[0].n;
+  const settled = (promise) =>
+    promise.then(
+      (row) => ({ ok: row }),
+      (error) => ({ error }),
+    );
+
+  // Taco Saha (T03) is still open. Two lines: one taco and two elote cups.
+  const tacoPair = [
+    { item_id: "M301", quantity: 1 },
+    { item_id: "M304", quantity: 2 },
+  ];
+
+  await check("placing wins: the original request is still in flight, the lookup is empty, and giving up returns its ticket", async () => {
+    const id = randomUUID();
+    // The original request has saved its order but has not finished yet.
+    await beginAs(c1, aisha);
+    const original = await place(c1, "T03", "18:30", tacoPair, id);
+    // The read-only lookup sees nothing, although the order is on its way.
+    assert.deepEqual(await findAttempt(c3, aisha, id), []);
+    // The customer gives up. The database makes this wait for the request.
+    await beginAs(c2, aisha);
+    const givingUp = settled(abandon(c2, id));
+    await waitUntilBlocked(admin, c2);
+    assert.equal(await abandonedCount(aisha, id), 0);
+    await c1.query("commit"); // the original request finishes
+    const outcome = await givingUp;
+    await c2.query("commit");
+
+    assert.equal(outcome.ok?.id, original.id);
+    assert.equal(outcome.ok?.ticket_ref, original.ticket_ref);
+    assert.equal(await abandonedCount(aisha, id), 0);
+    assert.deepEqual(await attempt(aisha, id, "T03", "18:30"), { orders: 1, lines: 2, places: 1 });
+    // Tapping Place order again with the same ID still returns that ticket.
+    const again = await asUser(c1, aisha, (c) => place(c, "T03", "18:30", tacoPair, id));
+    assert.equal(again.id, original.id);
+    return `lookup was empty while the request was in flight; giving up waited, then returned ${original.ticket_ref}; 1 order, 2 lines, 1 place, nothing recorded as abandoned`;
+  });
+
+  await check("giving up wins: the original request is held in flight, then refused, and the customer orders at another time", async () => {
+    const id = randomUUID();
+    // The customer gives up first. The decision is made but not finished yet.
+    await beginAs(c2, aisha);
+    const gaveUp = await abandon(c2, id);
+    assert.equal(gaveUp.id, null);
+    // The original request arrives now and is held behind that decision.
+    await beginAs(c1, aisha);
+    const late = settled(place(c1, "T03", "18:45", tacoPair, id));
+    await waitUntilBlocked(admin, c1);
+    assert.deepEqual(await findAttempt(c3, aisha, id), []); // still empty: proves nothing by itself
+    await c2.query("commit"); // giving up is now final
+    const outcome = await late;
+    await c1.query("rollback");
+
+    assert.equal(outcome.error?.message, "request_abandoned");
+    assert.equal(await abandonedCount(aisha, id), 1);
+    assert.deepEqual(await attempt(aisha, id, "T03", "18:45"), { orders: 0, lines: 0, places: 0 });
+    // Any later copy of the old request is refused too.
+    await rejects(asUser(c1, aisha, (c) => place(c, "T03", "18:45", tacoPair, id)), "request_abandoned");
+    // The cart is unlocked: a new attempt at another time works.
+    const freshId = randomUUID();
+    const fresh = await asUser(c1, aisha, (c) => place(c, "T03", "19:00", tacoPair, freshId));
+    assert.deepEqual(await attempt(aisha, freshId, "T03", "19:00"), { orders: 1, lines: 2, places: 1 });
+    assert.equal(await slotCount("T03", "18:45"), 0);
+    return `the held request was refused with request_abandoned and left 0 orders, 0 lines, 0 places at 6:45 PM; the new attempt ${fresh.ticket_ref} took 1 place at 7:00 PM`;
+  });
+
+  await check("a request that never reached the server: giving up works, twice is the same as once, and a late copy is refused", async () => {
+    const id = randomUUID();
+    const before = await totals();
+    assert.deepEqual(await findAttempt(c3, aisha, id), []);
+    const first = await asUser(c1, aisha, (c) => abandon(c, id));
+    const second = await asUser(c1, aisha, (c) => abandon(c, id)); // the answer to the first was lost too
+    assert.equal(first.id, null);
+    assert.equal(second.id, null);
+    assert.equal(await abandonedCount(aisha, id), 1);
+    assert.deepEqual(await totals(), before);
+
+    // The request turns up after all (it was only delayed): refused.
+    await rejects(asUser(c2, aisha, (c) => place(c, "T03", "19:15", tacoPair, id)), "request_abandoned");
+    // Another customer who happens to use the same ID is not affected.
+    const badrs = await asUser(c2, badr, (c) => place(c, "T03", "19:15", tacoPair, id));
+    assert.equal(badrs.status, "placed");
+    // The customer's way out: a new attempt at a time of their choice.
+    const freshId = randomUUID();
+    const fresh = await asUser(c1, aisha, (c) => place(c, "T03", "19:30", tacoPair, freshId));
+    assert.deepEqual(await attempt(aisha, freshId, "T03", "19:30"), { orders: 1, lines: 2, places: 1 });
+    assert.deepEqual(await attempt(aisha, id, "T03", "19:15"), { orders: 0, lines: 0, places: 1 }); // the 1 place is Badr's
+    return `giving up returned no order both times and was recorded once; the late copy got request_abandoned; ${fresh.ticket_ref} placed with a new ID`;
+  });
+
+  await check("placing and giving up fired at the same instant: exactly one wins, five times out of five", async () => {
+    const slots = ["21:30", "21:45", "22:00", "22:15", "22:30"];
+    const wins = { placed: 0, abandoned: 0 };
+    for (const [round, s] of slots.entries()) {
+      const id = randomUUID();
+      const placing = () => settled(asUser(c1, aisha, (c) => place(c, "T03", s, tacoPair, id)));
+      const givingUp = () => settled(asUser(c2, aisha, (c) => abandon(c, id)));
+      const [placed, gaveUp] =
+        round % 2 ? (await Promise.all([givingUp(), placing()])).reverse() : await Promise.all([placing(), givingUp()]);
+      const left = await attempt(aisha, id, "T03", s);
+      const recorded = await abandonedCount(aisha, id);
+      if (placed.ok) {
+        // Placing won: giving up must have answered with the same ticket.
+        assert.equal(gaveUp.ok?.id, placed.ok.id);
+        assert.equal(recorded, 0);
+        assert.deepEqual(left, { orders: 1, lines: 2, places: 1 });
+        wins.placed += 1;
+      } else {
+        // Giving up won: the request must have been refused and saved nothing.
+        assert.equal(placed.error?.message, "request_abandoned");
+        assert.equal(gaveUp.ok?.id, null);
+        assert.equal(recorded, 1);
+        assert.deepEqual(left, { orders: 0, lines: 0, places: 0 });
+        wins.abandoned += 1;
+      }
+    }
+    return `5 rounds: placing won ${wins.placed}, giving up won ${wins.abandoned}; never both, never neither`;
+  });
+
+  await check("only the signed-in customer can give up their own attempts", async () => {
+    const id = randomUUID();
+    await rejects(asUser(c1, null, (c) => abandon(c, id)), "42501"); // signed out
+    await rejects(asUser(c1, duneVendor, (c) => abandon(c, id)), "not_a_customer");
+    await rejects(asUser(c1, aisha, (c) => abandon(c, null)), "request_id_required");
+    assert.equal(await abandonedCount(aisha, id), 0);
+    // Badr giving up an ID does nothing to Aisha's attempt with the same ID.
+    await asUser(c2, badr, (c) => abandon(c, id));
+    const aishas = await asUser(c1, aisha, (c) => place(c, "T03", "22:45", tacoPair, id));
+    assert.equal(aishas.status, "placed");
+    return "signed-out visitors and vendors are refused; one customer's decision does not touch another customer's attempt";
   });
 
   console.log(`\n${passedCount()} checks passed.`);
