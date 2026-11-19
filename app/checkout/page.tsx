@@ -20,6 +20,14 @@ import { orderItems } from "@/lib/cart-lines";
 import { fetchClosed, fetchSlots, isFull, nextBookable, upcomingSlots, type Slot } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
+import {
+  clearPending,
+  findOrderForAttempt,
+  outcomeOf,
+  readPending,
+  savePending,
+  type PendingOrder,
+} from "@/lib/pending-order";
 import { supabaseBrowser } from "@/lib/supabase";
 import { formatSlot, slotSeconds } from "@/lib/time";
 import { useCartLines } from "@/lib/use-cart-lines";
@@ -31,6 +39,17 @@ type Problem = "itemUnavailable" | "notCustomer" | "genericError";
 type Availability =
   | { truckId: string; attempt: number; failed: true }
   | { truckId: string; attempt: number; failed: false; slots: Slot[]; closed: boolean };
+
+/**
+ * What became of this customer's unconfirmed attempt, if they have one.
+ *  - none:    there is no unconfirmed attempt
+ *  - unknown: the server could not be asked, so the order may or may not exist
+ *  - refused: the server answered that no order was saved for it
+ * (When the order WAS saved, the page goes straight to its ticket instead.)
+ */
+type Reconciled =
+  | { userId: string; check: number; result: "none" | "refused" }
+  | { userId: string; check: number; result: "unknown"; pending: PendingOrder };
 
 // Checkout: review the cart, choose a pickup time, pay at pickup, place the order.
 export default function CheckoutPage() {
@@ -49,6 +68,39 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
   const placeButton = useRef<HTMLButtonElement>(null);
+
+  const userId = session?.user.id ?? null;
+  /** Goes up by one each time the customer taps "Check my order". */
+  const [check, setCheck] = useState(0);
+  const [reconciled, setReconciled] = useState<Reconciled | null>(null);
+
+  // Before anything else: did this customer send an order whose answer never
+  // arrived? If so, ask the server what happened to it. Only then is it safe
+  // to say "that time is full" or "the truck closed", because the place that
+  // filled the slot may be this customer's own order.
+  useEffect(() => {
+    if (!userId) return;
+    let live = true;
+    lookUpPending(userId).then((found) => {
+      if (!live) return;
+      if (found.result === "saved") {
+        // The order exists. Open its ticket; never place it again.
+        clearPending(userId);
+        if (storedCart()?.requestId === found.pending.requestId) clear();
+        setPlaced(true);
+        router.replace(`/orders/${found.orderId}`);
+        return;
+      }
+      if (found.result === "refused") {
+        clearPending(userId);
+        if (check > 0) setAttempt((n) => n + 1); // re-read the pickup times
+      }
+      setReconciled({ userId, check, ...found });
+    });
+    return () => {
+      live = false;
+    };
+  }, [userId, check, clear, router]);
 
   // Read the truck's live slot counts and whether it is closed tonight.
   useEffect(() => {
@@ -83,6 +135,44 @@ export default function CheckoutPage() {
         <p className="min-h-64 text-muted" aria-live="polite">
           {t.placing}
         </p>
+      </Shell>
+    );
+  }
+
+  const mine = userId && reconciled?.userId === userId ? reconciled : null;
+  if (sessionLoading || (userId && !mine)) {
+    return (
+      <Shell>
+        <CartSkeleton />
+      </Shell>
+    );
+  }
+  if (mine?.result === "unknown") {
+    // The outcome is not known yet. Nothing below may be shown: no "slot
+    // full", no "truck closed", no other time, and no Place order button.
+    const busy = mine.check !== check;
+    const { pending } = mine;
+    return (
+      <Shell>
+        <section role="alert" className="rounded-panel bg-warning-surface p-4 text-warning">
+          <h2 className="text-base leading-snug font-extrabold">{t.checkOrderTitle}</h2>
+          <p className="mt-1 text-sm">
+            {t.checkOrderBody(
+              truckName({ id: pending.truckId, name: pending.truckName }, locale),
+              formatSlot(pending.slot, locale),
+            )}
+          </p>
+          {mine.check > 0 && !busy && <p className="mt-2 text-sm font-bold">{t.checkFailed}</p>}
+          <button
+            type="button"
+            onClick={() => setCheck((n) => n + 1)}
+            disabled={busy}
+            aria-busy={busy}
+            className={`${primaryButton} mt-3`}
+          >
+            <span aria-live="polite">{busy ? t.checkingOrder : t.checkMyOrder}</span>
+          </button>
+        </section>
       </Shell>
     );
   }
@@ -141,18 +231,32 @@ export default function CheckoutPage() {
   }
 
   async function placeOrder() {
-    if (!cart || !selected || !orderable || placing) return;
+    if (!cart || !selected || !orderable || placing || !userId) return;
     setPlacing(true);
     setProblem(null);
+    setReconciled({ userId, check, result: "none" });
 
     // One ID per attempt. Tapping again after a lost answer sends the same
     // ID, so the database returns the order it already saved.
-    const requestId = requestIdForCart();
+    const requestId = requestIdForCart(userId);
+    if (!requestId) return;
+
+    // Write the attempt down BEFORE sending it. If the answer is lost, or
+    // the page is closed or refreshed, checkout can still ask about it.
+    const pending: PendingOrder = {
+      customerId: userId,
+      requestId,
+      truckId: truck.id,
+      truckName: truck.name,
+      slot: selected,
+      items: cart.items,
+    };
+    savePending(pending);
 
     // Only IDs and quantities are sent, for EVERY saved dish. The database
     // looks up the prices, checks the truck, the time and the slot, and
     // saves the order in one step.
-    const { data, error } = await supabaseBrowser()
+    const answer = await supabaseBrowser()
       .rpc("place_order", {
         p_truck_id: truck.id,
         p_slot_start: selected,
@@ -163,8 +267,11 @@ export default function CheckoutPage() {
         (result) => result,
         () => ({ data: null, error: { message: "network" } }),
       );
+    const { data, error } = answer;
+    const outcome = outcomeOf(answer);
 
-    if (!error && data) {
+    if (outcome === "saved" && data) {
+      clearPending(userId);
       setPlaced(true);
       clear();
       // replace(), not push(): Back must not return to a form that could order again.
@@ -173,6 +280,16 @@ export default function CheckoutPage() {
     }
 
     setPlacing(false);
+    if (outcome === "unknown") {
+      // No clear answer (for example the connection dropped). The order may
+      // have been saved, so the attempt and its request ID are kept, and the
+      // customer checks on it instead of ordering again.
+      setReconciled({ userId, check, result: "unknown", pending });
+      return;
+    }
+
+    // A clear refusal: nothing was saved, so there is nothing left to check.
+    clearPending(userId);
     const code = error?.message ?? "";
     if (code === "slot_full" || code === "slot_too_soon" || code === "invalid_slot") {
       // The cart and the chosen time stay as they are. Re-reading the slots
@@ -186,15 +303,21 @@ export default function CheckoutPage() {
     } else if (code === "not_a_customer") {
       setProblem("notCustomer");
     } else {
-      // No clear answer (for example the connection dropped). The request ID
-      // is kept, so trying again cannot make a second order.
-      if (code === "request_id_reused") forgetRequest();
+      // The ID was refused or is already tied to a different order: start a new attempt.
+      forgetRequest();
       setProblem("genericError");
     }
   }
 
   return (
     <Shell>
+      {/* The server confirmed the unconfirmed attempt was NOT saved. Normal recovery follows. */}
+      {mine?.result === "refused" && (
+        <p role="status" className="mb-4 rounded-panel bg-subtle p-4 text-sm font-semibold">
+          {t.notPlaced}
+        </p>
+      )}
+
       {/* Recovery: the truck closed. Nothing was placed and the cart is kept. */}
       {closed && (
         <section role="alert" className="mb-4 rounded-panel bg-error-surface p-4 text-error">
@@ -268,7 +391,6 @@ export default function CheckoutPage() {
       {problem && !closed && (
         <div role="alert" className="mb-4 rounded-panel bg-error-surface p-4 text-sm font-semibold text-error">
           <p>{t[problem]}</p>
-          {problem === "genericError" && <p className="mt-1 font-normal">{t.retryNote}</p>}
         </div>
       )}
 
@@ -445,6 +567,24 @@ export default function CheckoutPage() {
       </div>
     </Shell>
   );
+}
+
+/** Asks the server about this customer's unconfirmed attempt. Reads only. */
+async function lookUpPending(
+  customerId: string,
+): Promise<
+  | { result: "none" | "refused" }
+  | { result: "unknown"; pending: PendingOrder }
+  | { result: "saved"; pending: PendingOrder; orderId: string }
+> {
+  const pending = readPending(customerId);
+  if (!pending) return { result: "none" };
+  try {
+    const orderId = await findOrderForAttempt(supabaseBrowser(), pending);
+    return orderId ? { result: "saved", pending, orderId } : { result: "refused" };
+  } catch {
+    return { result: "unknown", pending };
+  }
 }
 
 /** The truck's live slot counts and whether it is closed tonight. */

@@ -65,6 +65,8 @@ To run it, copy `.env.example` to `.env.local` and fill in the project URL and p
 
 How an order is placed: checkout calls the database function `place_order` with the truck ID, the pickup time and a list of item IDs and quantities. The database prices the order, checks the truck, the time and the slot, and saves it. The ticket page then reads the saved order back by its ID, so refreshing it never places another order.
 
+What happens when the answer is lost: every "Place order" carries a request ID, and the database keeps one order per customer per ID. Just before sending, the browser writes the attempt down for that signed-in customer (`lib/pending-order.ts`). If no clear answer comes back, checkout asks the database "was this attempt saved?" before it shows anything else. Saved: it opens the existing ticket. Not saved: it says so and carries on with the normal cart and pickup-time recovery. Still no answer: it keeps the same request ID and offers "Check my order". The question only reads, so asking can never place an order, and another customer on the same browser never sees the attempt. Unit tests for this run with `pnpm test:unit`.
+
 Screenshots of the flow, in English and Arabic, are in `docs/screenshots/customer-ordering/`.
 
 ## Database

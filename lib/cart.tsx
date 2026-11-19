@@ -24,6 +24,8 @@ export type Cart = {
    * the database recognise a retry and return the order it already saved.
    */
   requestId?: string | null;
+  /** The signed-in customer that ID was made for. Nobody else may reuse it. */
+  requestBy?: string | null;
 };
 
 export const MAX_QUANTITY = 10;
@@ -76,16 +78,16 @@ export function storedCart(): Cart | null {
 }
 
 /**
- * The request ID for the cart exactly as it is now. The first call makes
- * one and saves it with the cart; later calls return the same one until
- * the dishes or the time change.
+ * The request ID for the cart exactly as it is now, for this customer. The
+ * first call makes one and saves it with the cart; later calls return the
+ * same one until the dishes or the time change, or someone else signs in.
  */
-export function requestIdForCart(): string | null {
+export function requestIdForCart(customerId: string): string | null {
   const cart = parse(read());
   if (!cart) return null;
-  if (cart.requestId) return cart.requestId;
+  if (cart.requestId && cart.requestBy === customerId) return cart.requestId;
   const requestId = crypto.randomUUID();
-  write({ ...cart, requestId });
+  write({ ...cart, requestId, requestBy: customerId });
   return requestId;
 }
 
@@ -131,21 +133,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const next = Math.max(0, Math.min(MAX_QUANTITY, quantity));
     if (next === 0) delete items[itemId];
     else items[itemId] = next;
-    write({ ...base, items, requestId: null });
+    write({ ...base, items, requestId: null, requestBy: null });
   }, []);
 
   const replaceWith = useCallback<CartApi["replaceWith"]>((truck, itemId) => {
-    write({ truckId: truck.id, truckName: truck.name, items: { [itemId]: 1 }, slot: null, requestId: null });
+    write({ truckId: truck.id, truckName: truck.name, items: { [itemId]: 1 }, slot: null, requestId: null, requestBy: null });
   }, []);
 
   const setSlot = useCallback<CartApi["setSlot"]>((slot) => {
     const current = parse(read());
-    if (current && current.slot !== slot) write({ ...current, slot, requestId: null });
+    if (current && current.slot !== slot) write({ ...current, slot, requestId: null, requestBy: null });
   }, []);
 
   const forgetRequest = useCallback(() => {
     const current = parse(read());
-    if (current?.requestId) write({ ...current, requestId: null });
+    if (current?.requestId) write({ ...current, requestId: null, requestBy: null });
   }, []);
 
   const clear = useCallback(() => write(null), []);

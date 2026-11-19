@@ -115,7 +115,15 @@ const en = {
   reviewCart: "Review cart",
   slotPassedTitle: (time: string) => `${time} is now too close to order for. Your cart is saved.`,
   slotGoneBody: "Choose a new pickup time below.",
-  retryNote: "If you already tapped Place order, trying again will not order twice.",
+
+  // An order was sent but its answer never arrived
+  checkOrderTitle: "We couldn’t confirm your order",
+  checkOrderBody: (truck: string, time: string) =>
+    `Your order to ${truck} for ${time} was sent, but the answer didn’t reach this phone. Check it before you order again.`,
+  checkMyOrder: "Check my order",
+  checkingOrder: "Checking your order…",
+  checkFailed: "Still no answer. Check your connection and try again.",
+  notPlaced: "Your earlier order didn’t go through, so nothing was placed. Your cart is saved.",
 
   // Sign in
   signInTitle: "Sign in to place your order",
@@ -272,7 +280,14 @@ const ar: Dict = {
   reviewCart: "راجع السلة",
   slotPassedTitle: (time) => `وقت ${time} صار قريب جداً للطلب. سلتك محفوظة.`,
   slotGoneBody: "اختر وقت استلام جديد من الأوقات تحت.",
-  retryNote: "إذا ضغطت تأكيد الطلب قبل، المحاولة مرة ثانية ما تكرر الطلب.",
+
+  checkOrderTitle: "ما قدرنا نتأكد من طلبك",
+  checkOrderBody: (truck, time) =>
+    `أرسلنا طلبك إلى ${truck} لوقت ${time}، لكن الرد ما وصل لجهازك. تحقق منه قبل ما تطلب مرة ثانية.`,
+  checkMyOrder: "التحقق من طلبي",
+  checkingOrder: "جارٍ التحقق من طلبك…",
+  checkFailed: "ما وصل رد للحين. تأكد من الاتصال وحاول مرة ثانية.",
+  notPlaced: "طلبك السابق ما تم، وما انحجز أي شي. سلتك محفوظة.",
 
   signInTitle: "سجّل الدخول لتأكيد طلبك",
   signUpTitle: "أنشئ حسابك",

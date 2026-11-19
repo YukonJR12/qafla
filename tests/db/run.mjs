@@ -830,6 +830,32 @@ try {
     return `${first.ticket_ref} saved; the second truck's copy was refused with request_id_reused and saved nothing`;
   });
 
+  await check("checkout's read-only lookup finds the customer's own saved attempt, and nobody else's", async () => {
+    // This is the question checkout asks after a refresh: "was my attempt
+    // saved?" It only reads, so asking can never place an order.
+    const lookup = (client, user, customer, requestId) =>
+      asUser(client, user, async (c) => {
+        const { rows } = await c.query(
+          "select id, ticket_ref from public.orders where customer_id = $1 and client_request_id = $2",
+          [customer, requestId],
+        );
+        return rows;
+      });
+    const before = await totals();
+
+    // Aisha's lost attempt on Noodle Wagon: the slot is full and the truck is closed.
+    const mine = await lookup(c1, aisha, aisha, lostId);
+    assert.equal(mine.length, 1);
+    // Badr asks about Aisha's attempt, as her and as himself: nothing.
+    assert.deepEqual(await lookup(c2, badr, aisha, lostId), []);
+    assert.deepEqual(await lookup(c2, badr, badr, lostId), []);
+    // An attempt that was never saved: nothing, so checkout knows it was not placed.
+    assert.deepEqual(await lookup(c1, aisha, aisha, randomUUID()), []);
+
+    assert.deepEqual(await totals(), before);
+    return `${mine[0].ticket_ref} found for its own customer on a full slot and closed truck; another customer and an unsaved attempt both find nothing; no rows added`;
+  });
+
   console.log(`\n${passedCount()} checks passed.`);
 } catch (error) {
   failed = true;
