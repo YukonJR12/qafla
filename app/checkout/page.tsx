@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-header";
+import { CartSkeleton, EmptyCart, LoadError } from "@/components/cart-states";
 import {
   ArrowForward,
   CheckIcon,
@@ -14,7 +15,8 @@ import {
   primaryButton,
   primaryButtonSplit,
 } from "@/components/ui";
-import { storedCart, useCart } from "@/lib/cart";
+import { requestIdForCart, storedCart, useCart } from "@/lib/cart";
+import { orderItems } from "@/lib/cart-lines";
 import { fetchClosed, fetchSlots, isFull, nextBookable, upcomingSlots, type Slot } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
@@ -23,105 +25,144 @@ import { formatSlot, slotSeconds } from "@/lib/time";
 import { useCartLines } from "@/lib/use-cart-lines";
 import { useSession } from "@/lib/use-session";
 
-type Problem = "tooSoon" | "itemUnavailable" | "notCustomer" | "genericError";
+type Problem = "itemUnavailable" | "notCustomer" | "genericError";
+
+/** Pickup times as last read from the database, or a failed read. */
+type Availability =
+  | { truckId: string; attempt: number; failed: true }
+  | { truckId: string; attempt: number; failed: false; slots: Slot[]; closed: boolean };
 
 // Checkout: review the cart, choose a pickup time, pay at pickup, place the order.
 export default function CheckoutPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
-  const { cart, count, setSlot, clear } = useCart();
-  const { lines, total, loading: linesLoading } = useCartLines();
+  const { cart, count, setSlot, forgetRequest, clear } = useCart();
+  const cartLines = useCartLines();
   const { loading: sessionLoading, session } = useSession();
 
   const truckId = cart?.truckId;
-  const [slots, setSlots] = useState<Slot[] | null>(null);
-  const [closed, setClosed] = useState(false);
-  /** The slot that filled while the customer was confirming, e.g. "19:15:00". */
-  const [filled, setFilled] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [availability, setAvailability] = useState<Availability | null>(null);
+  /** The unavailable time the customer just replaced, kept to confirm the change. */
+  const [replaced, setReplaced] = useState<{ slot: string; full: boolean } | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
   const placeButton = useRef<HTMLButtonElement>(null);
 
-  /** Re-reads availability after the server refused an order. */
-  async function refresh(id: string) {
-    const fresh = await loadAvailability(id).catch(() => null);
-    if (!fresh) return;
-    setSlots(fresh.slots);
-    setClosed(fresh.closed);
-  }
-
+  // Read the truck's live slot counts and whether it is closed tonight.
   useEffect(() => {
     if (!truckId) return;
     let live = true;
     loadAvailability(truckId)
       .then((fresh) => {
         if (!live) return;
-        const nextSlots = fresh.slots;
-        setSlots(nextSlots);
-        setClosed(fresh.closed);
-        // Start on the earliest time that can still be booked, unless the
-        // customer already chose one that is still good.
-        const current = storedCart()?.slot ?? null;
-        const stillGood = upcomingSlots(nextSlots).some((s) => s.slot_start === current && !isFull(s));
-        if (!stillGood) setSlot(nextBookable(nextSlots)?.slot_start ?? null);
+        setAvailability({ truckId, attempt, failed: false, ...fresh });
+        // Default to the earliest time ONLY when no time has been chosen yet.
+        // A time the customer chose is never swapped for another one here,
+        // even if it is no longer available: that case is explained on
+        // screen and the customer picks again.
+        if (attempt === 0 && storedCart()?.slot == null) {
+          setSlot(nextBookable(fresh.slots)?.slot_start ?? null);
+        }
       })
       .catch(() => {
-        if (live) setProblem("genericError");
+        if (live) setAvailability({ truckId, attempt, failed: true });
       });
     return () => {
       live = false;
     };
-  }, [truckId, setSlot]);
+  }, [truckId, attempt, setSlot]);
 
-  if (placed || linesLoading || (cart && slots === null && !problem)) {
+  const current = availability && availability.truckId === truckId && availability.attempt === attempt ? availability : null;
+  const reload = () => setAttempt((n) => n + 1);
+
+  if (placed) {
     return (
       <Shell>
         <p className="min-h-64 text-muted" aria-live="polite">
-          {placed ? t.placing : t.loading}
+          {t.placing}
         </p>
       </Shell>
     );
   }
-
-  if (!cart || lines.length === 0) {
+  if (cartLines.status === "empty" || !cart) {
+    return <Shell>{cartLines.status === "loading" ? <CartSkeleton /> : <EmptyCart />}</Shell>;
+  }
+  if (cartLines.status === "loading" || !current) {
     return (
       <Shell>
-        <div className="pt-10 text-center">
-          <h2 className="text-2xl font-extrabold">{t.cartEmptyTitle}</h2>
-          <p className="mt-2 text-muted">{t.cartEmptyBody}</p>
-          <Link href="/explore" className={`${primaryButton} mt-6`}>
-            {t.exploreTrucks}
-          </Link>
-        </div>
+        <CartSkeleton />
+      </Shell>
+    );
+  }
+  if (cartLines.status === "error") {
+    return (
+      <Shell>
+        <LoadError title={t.cartLoadErrorTitle} body={t.cartLoadErrorBody} onRetry={cartLines.retry} />
+      </Shell>
+    );
+  }
+  if (current.failed) {
+    return (
+      <Shell>
+        <LoadError title={t.timesLoadErrorTitle} body={t.timesLoadErrorBody} onRetry={reload} />
       </Shell>
     );
   }
 
+  const { lines, total, orderable } = cartLines;
+  const { slots, closed } = current;
   const truck = { id: cart.truckId, name: cart.truckName };
   const name = truckName(truck, locale);
-  const upcoming = upcomingSlots(slots ?? []);
-  const selected = upcoming.find((s) => s.slot_start === cart.slot && !isFull(s))?.slot_start ?? null;
-  const earliest = nextBookable(slots ?? [])?.slot_start ?? null;
-  // After a slot fills, the next time that can still be booked.
-  const suggestion = filled
-    ? (upcoming.find((s) => !isFull(s) && slotSeconds(s.slot_start) > slotSeconds(filled))?.slot_start ??
-      upcoming.find((s) => !isFull(s) && s.slot_start !== filled)?.slot_start ??
+  const upcoming = upcomingSlots(slots);
+  const saved = cart.slot;
+  const savedSlot = saved ? upcoming.find((s) => s.slot_start === saved) : undefined;
+
+  // The time that will be ordered: the saved one, if it can still be booked.
+  const selected = savedSlot && !isFull(savedSlot) ? savedSlot.slot_start : null;
+  // The saved time became unavailable: it filled, or it is now too close.
+  const lost = saved && !selected ? { slot: saved, full: Boolean(savedSlot) } : null;
+  // What the notice is about: the lost time, or the one just replaced.
+  const notice = lost ?? replaced;
+  const noticeSlot = notice?.slot ?? null;
+
+  const earliest = nextBookable(slots)?.slot_start ?? null;
+  // The next time that can still be booked after the lost one.
+  const suggestion = lost
+    ? (upcoming.find((s) => !isFull(s) && slotSeconds(s.slot_start) > slotSeconds(lost.slot))?.slot_start ??
+      upcoming.find((s) => !isFull(s))?.slot_start ??
       null)
     : null;
 
+  function choose(slot: string) {
+    if (lost) setReplaced(lost);
+    setSlot(slot);
+  }
+
   async function placeOrder() {
-    if (!selected || placing) return;
+    if (!cart || !selected || !orderable || placing) return;
     setPlacing(true);
     setProblem(null);
 
-    // Only IDs and quantities are sent. The database looks up the prices,
-    // checks the truck, the time and the slot, and saves the order in one step.
-    const { data, error } = await supabaseBrowser().rpc("place_order", {
-      p_truck_id: truck.id,
-      p_slot_start: selected,
-      p_items: lines.map((line) => ({ item_id: line.item.id, quantity: line.quantity })),
-    });
+    // One ID per attempt. Tapping again after a lost answer sends the same
+    // ID, so the database returns the order it already saved.
+    const requestId = requestIdForCart();
+
+    // Only IDs and quantities are sent, for EVERY saved dish. The database
+    // looks up the prices, checks the truck, the time and the slot, and
+    // saves the order in one step.
+    const { data, error } = await supabaseBrowser()
+      .rpc("place_order", {
+        p_truck_id: truck.id,
+        p_slot_start: selected,
+        p_items: orderItems(cart.items),
+        p_request_id: requestId,
+      })
+      .then(
+        (result) => result,
+        () => ({ data: null, error: { message: "network" } }),
+      );
 
     if (!error && data) {
       setPlaced(true);
@@ -133,23 +174,21 @@ export default function CheckoutPage() {
 
     setPlacing(false);
     const code = error?.message ?? "";
-    if (code === "slot_full") {
-      // Keep the cart. Clear the time so nothing is submitted until the
-      // customer has seen and accepted a new one.
-      setFilled(selected);
-      setSlot(null);
-      await refresh(truck.id);
+    if (code === "slot_full" || code === "slot_too_soon" || code === "invalid_slot") {
+      // The cart and the chosen time stay as they are. Re-reading the slots
+      // shows that time as unavailable, and the customer picks a new one.
+      reload();
     } else if (code === "truck_closed") {
-      setClosed(true);
-    } else if (code === "slot_too_soon" || code === "invalid_slot") {
-      setProblem("tooSoon");
-      setSlot(null);
-      await refresh(truck.id);
+      reload();
     } else if (code === "item_sold_out" || code === "item_not_on_menu") {
       setProblem("itemUnavailable");
+      cartLines.retry();
     } else if (code === "not_a_customer") {
       setProblem("notCustomer");
     } else {
+      // No clear answer (for example the connection dropped). The request ID
+      // is kept, so trying again cannot make a second order.
+      if (code === "request_id_reused") forgetRequest();
       setProblem("genericError");
     }
   }
@@ -172,16 +211,18 @@ export default function CheckoutPage() {
         </section>
       )}
 
-      {/* Recovery: the chosen slot filled. Offer the next one; the customer reviews it before ordering. */}
-      {!closed && filled && (
+      {/* Recovery: the chosen time is no longer available. Explain, and wait for a new choice. */}
+      {!closed && noticeSlot && (
         <section role="alert" className="mb-4 rounded-panel bg-warning-surface p-4 text-warning">
           <div className="flex items-start gap-2.5">
             <ClockOffIcon className="mt-0.5 size-5" />
             <div>
               <h2 className="text-base leading-snug font-extrabold">
-                {t.slotFilledTitle(formatSlot(filled, locale))}
+                {notice && !notice.full
+                  ? t.slotPassedTitle(formatSlot(noticeSlot, locale))
+                  : t.slotFilledTitle(formatSlot(noticeSlot, locale))}
               </h2>
-              <p className="mt-1 text-sm">{t.slotFilledBody(name)}</p>
+              <p className="mt-1 text-sm">{notice && !notice.full ? t.slotGoneBody : t.slotFilledBody(name)}</p>
             </div>
           </div>
           {selected ? (
@@ -190,8 +231,11 @@ export default function CheckoutPage() {
               {t.reviewTime(formatSlot(selected, locale))}
             </p>
           ) : suggestion ? (
-            <button type="button" className={`${primaryButton} mt-3`} onClick={() => {
-                setSlot(suggestion);
+            <button
+              type="button"
+              className={`${primaryButton} mt-3`}
+              onClick={() => {
+                choose(suggestion);
                 // This button disappears once a time is chosen, so hand keyboard
                 // focus to the Place order button instead of losing it.
                 setTimeout(() => placeButton.current?.focus(), 0);
@@ -205,15 +249,27 @@ export default function CheckoutPage() {
         </section>
       )}
 
+      {/* A saved dish is missing from the menu or sold out: fix the cart first. */}
+      {!orderable && (
+        <section role="alert" className="mb-4 rounded-panel bg-warning-surface p-4 text-warning">
+          <h2 className="text-base leading-snug font-extrabold">{t.cartNeedsReview}</h2>
+          <ul className="mt-1 list-disc ps-5 text-sm">
+            {cartLines.missingIds.length > 0 && <li>{t.missingItems(cartLines.missingIds.length)}</li>}
+            {cartLines.soldOut.map((line) => (
+              <li key={line.item.id}>{t.soldOutItem(itemName(line.item, locale))}</li>
+            ))}
+          </ul>
+          <Link href="/cart" className={`${primaryButton} mt-3`}>
+            {t.reviewCart}
+          </Link>
+        </section>
+      )}
+
       {problem && !closed && (
-        <p role="alert" className="mb-4 rounded-panel bg-error-surface p-4 text-sm font-semibold text-error">
-          {t[problem]}
-          {problem === "itemUnavailable" && (
-            <Link href={`/trucks/${truck.id}`} className="mt-2 block font-bold underline underline-offset-4">
-              {t.addMore}
-            </Link>
-          )}
-        </p>
+        <div role="alert" className="mb-4 rounded-panel bg-error-surface p-4 text-sm font-semibold text-error">
+          <p>{t[problem]}</p>
+          {problem === "genericError" && <p className="mt-1 font-normal">{t.retryNote}</p>}
+        </div>
       )}
 
       {/* The ticket: truck, time and total readable at a glance. */}
@@ -226,7 +282,11 @@ export default function CheckoutPage() {
           <div className="shrink-0 text-end">
             <p className="text-sm font-semibold text-muted">{t.pickupTime}</p>
             <p aria-live="polite" className="text-xl leading-tight font-extrabold">
-              {selected ? <Isolate>{formatSlot(selected, locale)}</Isolate> : <span className="text-base text-muted">{t.notChosen}</span>}
+              {selected ? (
+                <Isolate>{formatSlot(selected, locale)}</Isolate>
+              ) : (
+                <span className="text-base text-muted">{t.notChosen}</span>
+              )}
             </p>
           </div>
         </div>
@@ -265,12 +325,12 @@ export default function CheckoutPage() {
                 const isSelected = slot.slot_start === selected;
                 const left = slot.capacity - slot.booked;
                 const note = full
-                  ? slot.slot_start === filled
+                  ? slot.slot_start === lost?.slot
                     ? t.justFilled
                     : t.full
                   : slot.slot_start === suggestion && !selected
                     ? t.nextAvailable
-                    : slot.slot_start === earliest && !filled
+                    : slot.slot_start === earliest && !noticeSlot
                       ? t.earliest
                       : t.placesLeft(left);
                 return (
@@ -290,7 +350,7 @@ export default function CheckoutPage() {
                       value={slot.slot_start}
                       checked={isSelected}
                       disabled={full}
-                      onChange={() => setSlot(slot.slot_start)}
+                      onChange={() => choose(slot.slot_start)}
                       className="sr-only"
                     />
                     <Isolate className={`text-lg leading-tight font-bold ${full ? "line-through" : ""}`}>
@@ -344,6 +404,10 @@ export default function CheckoutPage() {
           {closed ? (
             <button type="button" disabled className={primaryButton}>
               {t.cannotPlace}
+            </button>
+          ) : !orderable ? (
+            <button type="button" disabled className={primaryButton}>
+              {t.fixCartFirst}
             </button>
           ) : sessionLoading ? (
             <button type="button" disabled className={primaryButton}>

@@ -6,6 +6,7 @@
 // is always the real Kuwait date; only the time of day is pinned.
 
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { loadMenuItems, loadTrucks } from "../../scripts/lib/seed-csv.mjs";
 import {
   asUser,
@@ -46,9 +47,11 @@ async function signUp(email, metadata = {}) {
 const ORDER_COLUMNS =
   "id, ticket_ref, status, total_kwd::text as total_kwd, service_date::text as service_date, slot_start::text as slot_start";
 
-const placeSql = `select ${ORDER_COLUMNS} from public.place_order($1, $2::time, $3::jsonb)`;
-const place = async (client, truck, slot, items) =>
-  (await client.query(placeSql, [truck, slot, JSON.stringify(items)])).rows[0];
+// Every checkout attempt carries a request ID. Tests that are not about
+// retries use a fresh one each time, as a new attempt would.
+const placeSql = `select ${ORDER_COLUMNS} from public.place_order($1, $2::time, $3::jsonb, $4::uuid)`;
+const place = async (client, truck, slot, items, requestId = randomUUID()) =>
+  (await client.query(placeSql, [truck, slot, JSON.stringify(items), requestId])).rows[0];
 
 const moveSql = `select ${ORDER_COLUMNS} from public.set_order_status($1, $2::public.order_status, $3)`;
 const move = async (client, orderId, status, reason = null) =>
@@ -210,6 +213,7 @@ try {
       "private.clock_now()",
       "private.kuwait_now()",
       "private.require_read_committed()",
+      "private.order_for_request(uuid, uuid, text, time, jsonb)",
     ];
     for (const fn of [...policyHelpers, ...internal]) {
       assert.equal(await publicCanRun(fn), false, `PUBLIC must not run ${fn}`);
@@ -220,7 +224,7 @@ try {
     }
     await rejects(asUser(c1, aisha, (c) => c.query("select private.clock_now()")), "42501");
 
-    return "unrelated_notes keeps select/insert/update/delete and private.unrelated_helper() stays callable by PUBLIC, anon and authenticated; the 6 Qafla tables lost insert, delete and truncate; Qafla's 4 internal private functions are closed to the API roles";
+    return "unrelated_notes keeps select/insert/update/delete and private.unrelated_helper() stays callable by PUBLIC, anon and authenticated; the 6 Qafla tables lost insert, delete and truncate; Qafla's 5 internal private functions are closed to the API roles";
   });
 
   // -------------------------------------------------------------------------
@@ -697,6 +701,133 @@ try {
     assert.equal(rows[0].status, "placed");
     await rejects(asUser(c1, badr, (c) => place(c, "T06", "20:15", sweetCart)), "truck_closed");
     return "order saved as 'placed'; closure then succeeded; the next order gets truck_closed";
+  });
+
+  // -------------------------------------------------------------------------
+  section("Retrying the same checkout attempt never makes a second order");
+
+  // What one attempt left behind: its orders, their lines, and the places
+  // taken in the slot.
+  const attempt = async (customer, requestId, truck, s) => {
+    const { rows } = await admin.query(
+      `select
+         (select count(*) from public.orders where customer_id = $1 and client_request_id = $2)::int as orders,
+         (select count(*) from public.order_items i join public.orders o on o.id = i.order_id
+           where o.customer_id = $1 and o.client_request_id = $2)::int as lines,
+         (select count(*) from public.orders
+           where truck_id = $3 and service_date = $4 and slot_start = $5 and ${QUALIFYING})::int as places`,
+      [customer, requestId, truck, today, s],
+    );
+    return rows[0];
+  };
+
+  const noodleCart = [
+    { item_id: "M401", quantity: 1 },
+    { item_id: "M404", quantity: 2 },
+  ];
+  const lostId = randomUUID();
+
+  await check("a retry after a lost response returns the original ticket, even once the slot is full and the truck is closed", async () => {
+    // Noodle Wagon (T04) takes 5 orders per slot.
+    // The first response is "lost": the order is saved, the result is thrown away.
+    const original = await asUser(c1, aisha, (c) => place(c, "T04", "20:00", noodleCart, lostId));
+    assert.deepEqual(await attempt(aisha, lostId, "T04", "20:00"), { orders: 1, lines: 2, places: 1 });
+
+    // Other customers take the 4 remaining places.
+    for (let i = 0; i < 4; i += 1) {
+      await asUser(c2, others[i], (c) => place(c, "T04", "20:00", noodleCart));
+    }
+    await rejects(asUser(c2, badr, (c) => place(c, "T04", "20:00", noodleCart)), "slot_full");
+
+    // The customer taps again with the same request ID: same ticket, nothing new.
+    const retryFull = await asUser(c1, aisha, (c) => place(c, "T04", "20:00", noodleCart, lostId));
+    assert.equal(retryFull.id, original.id);
+    assert.equal(retryFull.ticket_ref, original.ticket_ref);
+
+    // Dana closes the truck. The retry still returns the same ticket.
+    await asUser(c2, dana, (c) => c.query(closeSql, ["T04"]));
+    const retryClosed = await asUser(c1, aisha, (c) => place(c, "T04", "20:00", [...noodleCart].reverse(), lostId));
+    assert.equal(retryClosed.id, original.id);
+    assert.equal(retryClosed.total_kwd, original.total_kwd);
+
+    // A genuinely new attempt is still refused.
+    await rejects(asUser(c1, aisha, (c) => place(c, "T04", "20:15", noodleCart)), "truck_closed");
+
+    assert.deepEqual(await attempt(aisha, lostId, "T04", "20:00"), { orders: 1, lines: 2, places: 5 });
+    return `${original.ticket_ref} returned for both retries (slot 5/5, then truck closed); this attempt left 1 order, 2 lines, 1 place`;
+  });
+
+  const karakCart = [{ item_id: "M101", quantity: 2 }];
+  const doubleId = randomUUID();
+
+  await check("two submissions of the same attempt at once: the second waits, then gets the first one's ticket", async () => {
+    await beginAs(c1, aisha);
+    const first = await place(c1, "T01", "20:00", karakCart, doubleId); // not committed yet
+    await beginAs(c2, aisha);
+    const second = place(c2, "T01", "20:00", karakCart, doubleId).then(
+      (row) => ({ ok: row }),
+      (error) => ({ error }),
+    );
+    await waitUntilBlocked(admin, c2); // queued behind the first copy's truck lock
+    await c1.query("commit");
+    const outcome = await second;
+    await c2.query("commit");
+    assert.equal(outcome.ok?.id, first.id);
+    assert.deepEqual(await attempt(aisha, doubleId, "T01", "20:00"), { orders: 1, lines: 1, places: 1 });
+    return `both copies answered with ${first.ticket_ref}; 1 order, 1 line, 1 place`;
+  });
+
+  await check("fired at the same instant, the same attempt makes one order, five times out of five", async () => {
+    const slots = ["20:15", "20:30", "20:45", "21:00", "21:15"];
+    for (const [round, s] of slots.entries()) {
+      const id = randomUUID();
+      const [a, b] = await Promise.all(
+        (round % 2 ? [c2, c1] : [c1, c2]).map((client) =>
+          asUser(client, aisha, (c) => place(c, "T01", s, karakCart, id)),
+        ),
+      );
+      assert.equal(a.id, b.id);
+      assert.deepEqual(await attempt(aisha, id, "T01", s), { orders: 1, lines: 1, places: 1 });
+    }
+    return "5 rounds: both copies returned the same ticket; each round left 1 order, 1 line, 1 place";
+  });
+
+  await check("a request ID cannot be reused for a different order, and cannot be left out", async () => {
+    const before = await totals();
+    const reuse = (truck, s, items) =>
+      rejects(asUser(c1, aisha, (c) => place(c, truck, s, items, doubleId)), "request_id_reused");
+    await reuse("T01", "21:30", karakCart); // another time
+    await reuse("T01", "20:00", [{ item_id: "M101", quantity: 3 }]); // another quantity
+    await reuse("T01", "20:00", [...karakCart, { item_id: "M102", quantity: 1 }]); // an extra dish
+    await reuse("T03", "21:30", tacoCart); // another truck
+    // Another customer may happen to send the same ID: it is theirs, not a reuse.
+    const badrs = await asUser(c2, badr, (c) => place(c, "T01", "20:00", karakCart, doubleId));
+    assert.equal(badrs.status, "placed");
+    await rejects(asUser(c1, aisha, (c) => place(c, "T01", "21:30", karakCart, null)), "request_id_required");
+    const after = await totals();
+    assert.deepEqual(after, { orders: before.orders + 1, items: before.items + 1 });
+    return "another time, quantity, dish or truck: request_id_reused; no ID: request_id_required; only the other customer's own order was added";
+  });
+
+  await check("the same ID sent for two trucks at once: the table's unique rule lets only one save", async () => {
+    const id = randomUUID();
+    await beginAs(c1, aisha);
+    const first = await place(c1, "T01", "21:45", karakCart, id); // not committed yet
+    await beginAs(c2, aisha);
+    // A different truck means a different lock, so this copy does not queue
+    // behind the first. It reaches the insert and waits on the unique index.
+    const second = place(c2, "T03", "21:45", tacoCart, id).then(
+      (row) => ({ ok: row }),
+      (error) => ({ error }),
+    );
+    await waitUntilBlocked(admin, c2);
+    await c1.query("commit");
+    const outcome = await second;
+    await c2.query("rollback");
+    assert.equal(outcome.error?.message, "request_id_reused");
+    assert.deepEqual(await attempt(aisha, id, "T01", "21:45"), { orders: 1, lines: 1, places: 1 });
+    assert.equal(await slotCount("T03", "21:45"), 0);
+    return `${first.ticket_ref} saved; the second truck's copy was refused with request_id_reused and saved nothing`;
   });
 
   console.log(`\n${passedCount()} checks passed.`);

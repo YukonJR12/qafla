@@ -17,6 +17,13 @@ export type Cart = {
   items: Record<string, number>;
   /** The pickup slot chosen at checkout, e.g. "19:15:00". */
   slot: string | null;
+  /**
+   * The ID of the checkout attempt for exactly these dishes and this time.
+   * It is created when the customer taps "Place order" and thrown away the
+   * moment the dishes or the time change. Sending the same ID again lets
+   * the database recognise a retry and return the order it already saved.
+   */
+  requestId?: string | null;
 };
 
 export const MAX_QUANTITY = 10;
@@ -68,6 +75,20 @@ export function storedCart(): Cart | null {
   return parse(read());
 }
 
+/**
+ * The request ID for the cart exactly as it is now. The first call makes
+ * one and saves it with the cart; later calls return the same one until
+ * the dishes or the time change.
+ */
+export function requestIdForCart(): string | null {
+  const cart = parse(read());
+  if (!cart) return null;
+  if (cart.requestId) return cart.requestId;
+  const requestId = crypto.randomUUID();
+  write({ ...cart, requestId });
+  return requestId;
+}
+
 type CartApi = {
   /** null until the browser has loaded, and whenever the cart is empty. */
   cart: Cart | null;
@@ -79,6 +100,8 @@ type CartApi = {
   /** Throws away the current cart and starts one for another truck. */
   replaceWith: (truck: { id: string; name: string }, itemId: string) => void;
   setSlot: (slot: string | null) => void;
+  /** Forget the current attempt's ID so the next "Place order" starts a new attempt. */
+  forgetRequest: () => void;
   clear: () => void;
 };
 
@@ -95,6 +118,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
   const cart = useMemo(() => parse(raw), [raw]);
 
+  // Every change to the dishes or the time drops requestId: it is a
+  // different order now, so it must not reuse the old attempt's ID.
+
   const setQuantity = useCallback<CartApi["setQuantity"]>((truck, itemId, quantity) => {
     const current = parse(read());
     const base: Cart =
@@ -105,16 +131,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const next = Math.max(0, Math.min(MAX_QUANTITY, quantity));
     if (next === 0) delete items[itemId];
     else items[itemId] = next;
-    write({ ...base, items });
+    write({ ...base, items, requestId: null });
   }, []);
 
   const replaceWith = useCallback<CartApi["replaceWith"]>((truck, itemId) => {
-    write({ truckId: truck.id, truckName: truck.name, items: { [itemId]: 1 }, slot: null });
+    write({ truckId: truck.id, truckName: truck.name, items: { [itemId]: 1 }, slot: null, requestId: null });
   }, []);
 
   const setSlot = useCallback<CartApi["setSlot"]>((slot) => {
     const current = parse(read());
-    if (current) write({ ...current, slot });
+    if (current && current.slot !== slot) write({ ...current, slot, requestId: null });
+  }, []);
+
+  const forgetRequest = useCallback(() => {
+    const current = parse(read());
+    if (current?.requestId) write({ ...current, requestId: null });
   }, []);
 
   const clear = useCallback(() => write(null), []);
@@ -127,9 +158,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setQuantity,
       replaceWith,
       setSlot,
+      forgetRequest,
       clear,
     }),
-    [cart, ready, setQuantity, replaceWith, setSlot, clear],
+    [cart, ready, setQuantity, replaceWith, setSlot, forgetRequest, clear],
   );
 
   return <CartContext.Provider value={api}>{children}</CartContext.Provider>;

@@ -14,10 +14,10 @@ import { BagIcon } from "./ui";
  */
 export function SavedCartNotice({ hideForTruck, className = "" }: { hideForTruck?: string; className?: string }) {
   const { cart, count } = useCart();
-  const { lines, total, loading } = useCartLines();
+  const { lines, total, status } = useCartLines();
   const { locale, t } = useLocale();
 
-  if (!cart || loading || lines.length === 0 || cart.truckId === hideForTruck) return null;
+  if (!cart || status !== "ready" || lines.length === 0 || cart.truckId === hideForTruck) return null;
 
   const name = truckName({ id: cart.truckId, name: cart.truckName }, locale);
   return (

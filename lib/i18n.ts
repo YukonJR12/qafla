@@ -97,6 +97,26 @@ const en = {
   signedInAs: (email: string) => `Signed in as ${email}`,
   signOut: "Sign out",
 
+  // Cart and checkout states
+  retry: "Try again",
+  cartLoadErrorTitle: "We couldn’t load your cart",
+  cartLoadErrorBody: "Your cart is still saved on this phone. Check your connection and try again.",
+  timesLoadErrorTitle: "We couldn’t load pickup times",
+  timesLoadErrorBody: "Your cart is saved. Check your connection and try again.",
+  missingItems: (n: number) =>
+    n === 1
+      ? "1 dish in your cart is no longer on this truck’s menu."
+      : `${n} dishes in your cart are no longer on this truck’s menu.`,
+  removeMissing: (n: number): string => (n === 1 ? "Remove it from my cart" : "Remove them from my cart"),
+  soldOutItem: (item: string) => `${item} has sold out.`,
+  removeItem: (item: string) => `Remove ${item}`,
+  fixCartFirst: "Update your cart to continue",
+  cartNeedsReview: "Your cart needs a change before you can order.",
+  reviewCart: "Review cart",
+  slotPassedTitle: (time: string) => `${time} is now too close to order for. Your cart is saved.`,
+  slotGoneBody: "Choose a new pickup time below.",
+  retryNote: "If you already tapped Place order, trying again will not order twice.",
+
   // Sign in
   signInTitle: "Sign in to place your order",
   signUpTitle: "Create your account",
@@ -232,6 +252,27 @@ const ar: Dict = {
   genericError: "ما قدرنا نأكد طلبك. تأكد من الاتصال وحاول مرة ثانية.",
   signedInAs: (email) => `مسجّل الدخول باسم ${email}`,
   signOut: "تسجيل الخروج",
+
+  retry: "حاول مرة ثانية",
+  cartLoadErrorTitle: "ما قدرنا نحمّل سلتك",
+  cartLoadErrorBody: "سلتك محفوظة على جهازك. تأكد من الاتصال وحاول مرة ثانية.",
+  timesLoadErrorTitle: "ما قدرنا نحمّل أوقات الاستلام",
+  timesLoadErrorBody: "سلتك محفوظة. تأكد من الاتصال وحاول مرة ثانية.",
+  missingItems: (n) =>
+    n === 1
+      ? "صنف واحد في سلتك ما عاد موجود في قائمة هذه العربة."
+      : n === 2
+        ? "صنفين في سلتك ما عادوا موجودين في قائمة هذه العربة."
+        : `${n} أصناف في سلتك ما عادت موجودة في قائمة هذه العربة.`,
+  removeMissing: (n) => (n === 1 ? "احذفه من سلتي" : "احذفها من سلتي"),
+  soldOutItem: (item) => `${item} خلصت كميته.`,
+  removeItem: (item) => `احذف ${item}`,
+  fixCartFirst: "عدّل سلتك للمتابعة",
+  cartNeedsReview: "سلتك تحتاج تعديل قبل ما تطلب.",
+  reviewCart: "راجع السلة",
+  slotPassedTitle: (time) => `وقت ${time} صار قريب جداً للطلب. سلتك محفوظة.`,
+  slotGoneBody: "اختر وقت استلام جديد من الأوقات تحت.",
+  retryNote: "إذا ضغطت تأكيد الطلب قبل، المحاولة مرة ثانية ما تكرر الطلب.",
 
   signInTitle: "سجّل الدخول لتأكيد طلبك",
   signUpTitle: "أنشئ حسابك",

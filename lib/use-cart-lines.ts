@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "./cart";
+import { resolveCart, type CartLine } from "./cart-lines";
 import { fetchMenu, type MenuItem } from "./data";
 import { sumKwd } from "./money";
 import { supabaseBrowser } from "./supabase";
 
-export type CartLine = { item: MenuItem; quantity: number };
+export type { CartLine };
+
+/**
+ * - loading: the browser's cart or the truck's menu has not arrived yet
+ * - error:   the menu could not be read; the saved cart is untouched
+ * - empty:   there is no cart
+ * - ready:   the cart was matched against the menu (see `missingIds`, `soldOut`)
+ */
+export type CartStatus = "loading" | "error" | "empty" | "ready";
+
+type MenuRead = { truckId: string; attempt: number; menu: MenuItem[] | null };
 
 /**
  * Turns the stored cart (IDs and quantities) into lines with names and
@@ -16,37 +27,47 @@ export type CartLine = { item: MenuItem; quantity: number };
 export function useCartLines() {
   const { cart, ready } = useCart();
   const truckId = cart?.truckId;
-  const [loaded, setLoaded] = useState<{ truckId: string; menu: MenuItem[] } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  // menu === null inside a finished read means "the read failed".
+  const [read, setRead] = useState<MenuRead | null>(null);
 
   useEffect(() => {
     if (!truckId) return;
     let live = true;
     fetchMenu(supabaseBrowser(), truckId)
       .then((menu) => {
-        if (live) setLoaded({ truckId, menu });
+        if (live) setRead({ truckId, attempt, menu });
       })
       .catch(() => {
-        if (live) setLoaded({ truckId, menu: [] });
+        if (live) setRead({ truckId, attempt, menu: null });
       });
     return () => {
       live = false;
     };
-  }, [truckId]);
+  }, [truckId, attempt]);
+
+  /** Read the menu again after a failure. The cart is not touched. */
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   return useMemo(() => {
-    const menu = loaded && loaded.truckId === truckId ? loaded.menu : null;
-    const lines: CartLine[] = [];
-    if (cart && menu) {
-      for (const item of menu) {
-        const quantity = cart.items[item.id];
-        if (quantity) lines.push({ item, quantity });
-      }
-    }
+    const current = read && read.truckId === truckId && read.attempt === attempt ? read : null;
+    const status: CartStatus = !ready
+      ? "loading"
+      : !cart
+        ? "empty"
+        : !current
+          ? "loading"
+          : current.menu === null
+            ? "error"
+            : "ready";
+
+    const resolved = resolveCart(cart?.items ?? {}, current?.menu ?? []);
     return {
-      lines,
-      total: sumKwd(lines.map((l) => ({ price: l.item.price_kwd, quantity: l.quantity }))),
-      /** true until the browser's cart and that truck's menu have both arrived */
-      loading: !ready || (cart !== null && menu === null),
+      status,
+      ...resolved,
+      orderable: status === "ready" && resolved.orderable,
+      total: sumKwd(resolved.lines.map((l) => ({ price: l.item.price_kwd, quantity: l.quantity }))),
+      retry,
     };
-  }, [cart, loaded, ready, truckId]);
+  }, [cart, read, ready, truckId, attempt, retry]);
 }
