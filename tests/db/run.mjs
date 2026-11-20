@@ -1095,6 +1095,130 @@ try {
   });
 
   // -------------------------------------------------------------------------
+  section("Slot capacity: one number per truck, set by its vendor, and no order is ever lost");
+
+  // Taco Saha (T03) starts at 6 per pickup time. Five customers book a
+  // pickup time that no earlier test has used.
+  await setClock("18:00");
+  const emptySlots = (
+    await admin.query(
+      `select to_char(s, 'HH24:MI') as slot
+       from (select time '19:00' + n * interval '15 minutes' as s from generate_series(0, 15) as n) as slots
+       where not exists (select 1 from public.orders o where o.truck_id = 'T03' and o.service_date = $1 and o.slot_start = s)
+       order by s`,
+      [today],
+    )
+  ).rows.map((r) => r.slot);
+  assert.ok(emptySlots.length >= 2);
+  const [capSlot, raceSlot] = emptySlots;
+  const capOrders = [];
+  const setCapacity = (client, user, truck, n) =>
+    asUser(client, user, async (c) => (await c.query("update public.trucks set slot_capacity = $2 where id = $1 returning slot_capacity", [truck, n])).rows);
+  const capacityOf = async (truck) => (await admin.query("select slot_capacity from public.trucks where id = $1", [truck])).rows[0].slot_capacity;
+  const usageAt = async (user, truck, s) =>
+    (await asUser(c1, user, (c) => c.query("select booked, capacity from public.slot_usage($1) where slot_start = $2", [truck, s]))).rows[0];
+  const capStatuses = async () =>
+    (await admin.query("select ticket_ref, status::text as status from public.orders where id = any($1) order by placed_at, ticket_ref", [capOrders.map((o) => o.id)])).rows;
+
+  await check("capacity is stored once per truck, and only the truck's own vendor can change it, within 1 to 20", async () => {
+    const { rows } = await admin.query(
+      "select column_name from information_schema.columns where table_schema = 'public' and column_name ilike '%capacity%' order by 1",
+    );
+    assert.deepEqual(rows.map((r) => r.column_name), ["slot_capacity"]); // on trucks; nothing per pickup time
+    assert.equal(await capacityOf("T03"), 6);
+    // Everyone else: the update matches no row they are allowed to change.
+    for (const outsider of [badr, dana, duneVendor]) assert.deepEqual(await setCapacity(c1, outsider, "T03", 3), []);
+    assert.equal(await capacityOf("T03"), 6);
+    // The vendor: refused outside 1 to 20 by the column's check.
+    await rejects(setCapacity(c1, tacoVendor, "T03", 0), "23514");
+    await rejects(setCapacity(c1, tacoVendor, "T03", 21), "23514");
+    assert.equal(await capacityOf("T03"), 6);
+    return "trucks.slot_capacity only; a customer, the manager and another truck's vendor change nothing; 0 and 21 are refused";
+  });
+
+  await check("fixture: five qualifying bookings in one pickup time with capacity six", async () => {
+    assert.equal(await slotCount("T03", capSlot), 0);
+    for (let i = 0; i < 5; i += 1) capOrders.push({ ...(await asUser(c1, others[i], (c) => place(c, "T03", capSlot, tacoCart))), customer: others[i] });
+    // Not all at 'placed': the kitchen has started on some.
+    await asUser(c1, tacoVendor, (c) => move(c, capOrders[0].id, "accepted"));
+    await asUser(c1, tacoVendor, (c) => move(c, capOrders[1].id, "accepted"));
+    await asUser(c1, tacoVendor, (c) => move(c, capOrders[1].id, "preparing"));
+    assert.deepEqual(await usageAt(badr, "T03", capSlot), { booked: 5, capacity: 6 });
+    return `${capSlot}: ` + (await capStatuses()).map((o) => `${o.ticket_ref} ${o.status}`).join(", ") + "; slot_usage 5/6";
+  });
+
+  await check("the vendor lowers capacity to five: the slot is full at 5 of 5 and all five tickets are kept", async () => {
+    const before = await capStatuses();
+    const totalsBefore = await totals();
+    assert.deepEqual(await setCapacity(c1, tacoVendor, "T03", 5), [{ slot_capacity: 5 }]);
+
+    // Checkout reads slot_usage: 5 of 5, and the database refuses a sixth order.
+    assert.deepEqual(await usageAt(badr, "T03", capSlot), { booked: 5, capacity: 5 });
+    await rejects(asUser(c2, badr, (c) => place(c, "T03", capSlot, tacoCart)), "slot_full");
+    // It is one setting for the truck: every pickup time now reads capacity 5.
+    const all = (await asUser(c1, badr, (c) => c.query("select distinct capacity from public.slot_usage('T03')"))).rows;
+    assert.deepEqual(all, [{ capacity: 5 }]);
+    // Dana reads 5 of 5 and the five tickets behind it.
+    assert.deepEqual(await usageAt(dana, "T03", capSlot), { booked: 5, capacity: 5 });
+    const danaSees = (
+      await asUser(c1, dana, (c) =>
+        c.query(`select count(*)::int as n from public.orders where truck_id = 'T03' and service_date = $1 and slot_start = $2 and ${QUALIFYING}`, [today, capSlot]),
+      )
+    ).rows[0].n;
+    assert.equal(danaSees, 5);
+    // The kitchen still has all five, each in the status it had.
+    const kitchen = (
+      await asUser(c1, tacoVendor, (c) => c.query("select count(*)::int as n from public.orders where id = any($1)", [capOrders.map((o) => o.id)]))
+    ).rows[0].n;
+    assert.equal(kitchen, 5);
+    assert.deepEqual(await capStatuses(), before);
+    assert.deepEqual(await totals(), totalsBefore);
+    return "slot_usage 5/5 for customer and manager; sixth order gets slot_full; 5 tickets unchanged; capacity 5 on all 24 times";
+  });
+
+  await check("capacity below existing bookings is allowed: every order stays, and the slot takes no new one until it drops below the limit", async () => {
+    const before = await capStatuses();
+    assert.deepEqual(await setCapacity(c1, tacoVendor, "T03", 4), [{ slot_capacity: 4 }]);
+    assert.deepEqual(await capStatuses(), before); // nothing cancelled, nothing moved
+    assert.deepEqual(await usageAt(badr, "T03", capSlot), { booked: 5, capacity: 4 });
+    await rejects(asUser(c2, badr, (c) => place(c, "T03", capSlot, tacoCart)), "slot_full");
+    // The kitchen can still work the tickets it already has.
+    assert.equal((await asUser(c1, tacoVendor, (c) => move(c, capOrders[1].id, "ready"))).status, "ready");
+    // One customer cancels: 4 of 4 is still full.
+    await asUser(c1, capOrders[4].customer, (c) => move(c, capOrders[4].id, "cancelled"));
+    assert.deepEqual(await usageAt(badr, "T03", capSlot), { booked: 4, capacity: 4 });
+    await rejects(asUser(c2, badr, (c) => place(c, "T03", capSlot, tacoCart)), "slot_full");
+    // A second cancels: 3 of 4, and the slot takes an order again.
+    await asUser(c1, capOrders[3].customer, (c) => move(c, capOrders[3].id, "cancelled"));
+    assert.deepEqual(await usageAt(badr, "T03", capSlot), { booked: 3, capacity: 4 });
+    const fresh = await asUser(c2, badr, (c) => place(c, "T03", capSlot, tacoCart));
+    assert.equal(fresh.status, "placed");
+    assert.deepEqual(await usageAt(badr, "T03", capSlot), { booked: 4, capacity: 4 });
+    return "5 of 4: all five kept, new orders refused; still refused at 4 of 4; accepted again at 3 of 4";
+  });
+
+  await check("an order already being placed when capacity is lowered is saved first, and stays", async () => {
+    await beginAs(c1, others[5]);
+    const inFlight = await place(c1, "T03", raceSlot, tacoCart); // holds the truck's row; not committed yet
+    await beginAs(c2, tacoVendor);
+    const lowering = c2.query("update public.trucks set slot_capacity = 1 where id = 'T03' returning slot_capacity").then(
+      (result) => ({ ok: result.rows[0] }),
+      (error) => ({ error }),
+    );
+    await waitUntilBlocked(admin, c2);
+    await c1.query("commit");
+    const outcome = await lowering;
+    await c2.query("commit");
+    assert.deepEqual(outcome.ok, { slot_capacity: 1 });
+    const { rows } = await admin.query("select status::text as status from public.orders where id = $1", [inFlight.id]);
+    assert.equal(rows[0].status, "placed");
+    assert.deepEqual(await usageAt(badr, "T03", raceSlot), { booked: 1, capacity: 1 });
+    // Put the truck back to its seeded capacity for the checks that follow.
+    assert.deepEqual(await setCapacity(c1, tacoVendor, "T03", 6), [{ slot_capacity: 6 }]);
+    return "the capacity change waited for the order, then saved; the order is 'placed' at 1 of 1; capacity restored to 6";
+  });
+
+  // -------------------------------------------------------------------------
   section("Dana's dashboard: every count is explained by tickets she can read");
 
   await check("for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count", async () => {

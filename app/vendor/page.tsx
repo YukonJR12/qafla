@@ -129,6 +129,11 @@ export default function VendorBoardPage() {
                 />
                 {live === "live" ? t.live : live === "reconnecting" ? t.reconnecting : t.loading}
               </span>
+              {/* One number for the whole truck. Changing it is its own screen. */}
+              <Link href="/vendor/capacity" className="inline-flex min-h-11 items-center gap-1.5 font-semibold">
+                <span>{t.capacityNow(truck.slot_capacity)}</span>
+                <span className="font-bold underline underline-offset-4">{t.change}</span>
+              </Link>
               <button
                 type="button"
                 onClick={() => supabaseBrowser().auth.signOut()}

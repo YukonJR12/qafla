@@ -88,6 +88,26 @@ When the vendor taps "Mark ready", the customer's open ticket shows "Your order 
 
 Vendor accounts are not created in the app yet. See "Create the park manager and assign vendors" below. Screenshots are in `docs/screenshots/kitchen-handoff/`.
 
+## Vendor capacity settings
+
+`/vendor/capacity` is where a vendor sets how many orders their truck takes for each 15-minute pickup time, from 1 to 20. The kitchen board links to it ("Up to 6 orders per pickup time · Change").
+
+Capacity is **one number per truck**, not one per pickup time. The brief says "each truck sets the most orders it can take per slot", and the database stores it once, in `trucks.slot_capacity`. So changing it changes every pickup time, and the control says so: "One setting for all of Dune Burgers".
+
+| Where | What lives there |
+| --- | --- |
+| `app/vendor/capacity/page.tsx` | The setting: a minus / number / plus control, what the change would do tonight, the save button, and tonight's pickup times measured against the number on the control. |
+| `lib/capacity.ts` | The rules with no browser or database in them: the 1 to 20 range, whether a time is open, full or over the limit, and what a change would do. Unit-tested. |
+
+Who can change it: the screen updates the truck's row directly, and the database decides. Row-level security lets only the truck's assigned vendor update it (`trucks_update_own`), and a check on the column refuses anything outside 1 to 20. No new database rule was needed. The new number is shown as saved only after the database answers with it.
+
+What happens to existing orders: nothing. Changing capacity never touches an order. The brief's rule is that a slot is full when its orders reach the capacity, so:
+
+- Five orders and a capacity lowered from 6 to 5: the time is full at "5 of 5". Checkout offers it as full, the manager sees 5 of 5, and the kitchen keeps all five tickets.
+- A capacity lowered below what a time already holds (five orders, capacity 4) is allowed. All five orders stay. The time reads "5 of 4 · 1 over · no new orders" and takes no new order until it has fewer than 4. Before saving, the screen warns which times this affects.
+
+A capacity change and an order being placed at the same moment cannot cross: `place_order` locks the truck's row while it counts, so the change waits for the order (or the order sees the new number). Screenshots are in `docs/screenshots/capacity-settings/`.
+
 ## Park manager dashboard
 
 `/manager` is Dana's view of tonight across the park. From 768 px it is a grid: six trucks down, the 24 Kuwait pickup times across (5:00 PM to 10:45 PM), with the exact count in every cell, e.g. `5/6`. A cell is tinted from white toward pale orange as it fills, and a full cell is solid Red Orange with the word "Full". On a phone it is a time selector followed by six truck rows that read "5 of 6". Either way, one tap on a count opens the orders behind it.

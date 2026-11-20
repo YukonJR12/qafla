@@ -264,3 +264,26 @@ export async function closeTruckForTonight(db: SupabaseClient, truckId: string):
   if (!closure?.closed_at) throw new Error("closure_not_confirmed");
   return closure;
 }
+
+// ---------------------------------------------------------------------------
+// The vendor's capacity setting
+// ---------------------------------------------------------------------------
+
+/**
+ * Saves how many orders this truck takes per pickup time (1 to 20). It is
+ * one number for the whole truck (`trucks.slot_capacity`), so it applies to
+ * every pickup time.
+ *
+ * The database decides who may do this: row-level security lets only the
+ * truck's assigned vendor update its row, and a check on the column refuses
+ * anything outside 1 to 20. When the row is not this account's to change,
+ * the database updates nothing and says so by returning no row.
+ *
+ * No order is touched. Orders already placed stay exactly as they are.
+ */
+export async function setTruckCapacity(db: SupabaseClient, truckId: string, capacity: number): Promise<number> {
+  const { data, error } = await db.from("trucks").update({ slot_capacity: capacity }).eq("id", truckId).select("slot_capacity");
+  if (error) throw new Error(error.message);
+  if (data.length !== 1) throw new Error("not_your_truck");
+  return data[0].slot_capacity as number;
+}
