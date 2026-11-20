@@ -118,13 +118,14 @@ export function route(who: Who, path: string, search = ""): { view: View; redire
   return { view: "page", redirect: null };
 }
 
-export type NavItem = { key: "explore" | "orders" | "account" | "kitchen" | "capacity" | "overview" | "slot"; href: string };
+export type NavItem = { key: "explore" | "orders" | "account" | "kitchen" | "menu" | "capacity" | "overview" | "slot"; href: string };
 
 /** The destinations each role's navigation offers, in order. */
 export function navFor(role: Role): NavItem[] {
   if (role === "vendor") {
     return [
       { key: "kitchen", href: "/vendor" },
+      { key: "menu", href: "/vendor/menu" },
       { key: "capacity", href: "/vendor/capacity" },
       { key: "account", href: "/account" },
     ];
@@ -147,7 +148,10 @@ export function navFor(role: Role): NavItem[] {
 export function activeNav(role: Role, path: string, search = ""): NavItem["key"] | null {
   const clean = pathOnly(path);
   if (clean === "/account") return "account";
-  if (role === "vendor") return clean === "/vendor/capacity" ? "capacity" : clean === "/vendor" ? "kitchen" : null;
+  if (role === "vendor") {
+    if (clean === "/vendor/menu" || clean.startsWith("/vendor/menu/")) return "menu";
+    return clean === "/vendor/capacity" ? "capacity" : clean === "/vendor" ? "kitchen" : null;
+  }
   if (role === "manager") {
     if (clean !== "/manager") return null;
     const query = new URLSearchParams(search);

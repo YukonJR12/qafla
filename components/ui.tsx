@@ -136,6 +136,26 @@ export function FlameIcon({ className = "" }: IconProps) {
   );
 }
 
+/** A list: the vendor's menu. */
+export function ListIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M9 7h11M9 12h11M9 17h11" />
+      <path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01" />
+    </svg>
+  );
+}
+
+/** A camera: choose or take a photo. */
+export function CameraIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
+  );
+}
+
 /** Sliders: a setting, such as capacity. */
 export function SlidersIcon({ className = "" }: IconProps) {
   return (

@@ -6,13 +6,14 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { useLocale } from "@/lib/locale";
 import { activeNav, homeFor, navFor, type NavItem, type Role } from "@/lib/routes";
-import { BagIcon, ClockIcon, FlameIcon, GridIcon, SlidersIcon, StoreIcon, TicketIcon, UserIcon } from "./ui";
+import { BagIcon, ClockIcon, FlameIcon, GridIcon, ListIcon, SlidersIcon, StoreIcon, TicketIcon, UserIcon } from "./ui";
 
 const ICONS: Record<NavItem["key"], (props: { className?: string }) => React.ReactNode> = {
   explore: StoreIcon,
   orders: TicketIcon,
   account: UserIcon,
   kitchen: FlameIcon,
+  menu: ListIcon,
   capacity: SlidersIcon,
   overview: GridIcon,
   slot: ClockIcon,
@@ -25,8 +26,8 @@ export function hidesBottomBar(path: string): boolean {
 
 /**
  * The phone's bottom bar: three destinations for the signed-in role.
- * Customers get Explore, Orders and Account; vendors Kitchen, Capacity and
- * Account; the manager Overview, Slot details and Account.
+ * Customers get Explore, Orders and Account; vendors Kitchen, Menu, Capacity
+ * and Account; the manager Overview, Slot details and Account.
  *
  * It sits on an opaque surface above the phone's safe area. The current
  * destination is marked with an ink bar, bold text and aria-current, so it
