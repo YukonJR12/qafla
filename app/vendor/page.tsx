@@ -11,6 +11,7 @@ import { fetchClosed, fetchKitchenOrders, fetchMyTruck, type Truck } from "@/lib
 import { truckName } from "@/lib/i18n";
 import { groupBySlot, needsCooking, type KitchenOrder } from "@/lib/kitchen";
 import { useLocale } from "@/lib/locale";
+import { paymentView } from "@/lib/payments";
 import { supabaseBrowser } from "@/lib/supabase";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
@@ -253,6 +254,13 @@ export default function VendorBoardPage() {
                       <Isolate className="font-bold">{formatSlot(order.slot_start, locale)}</Isolate>
                       <Isolate className="text-muted">{order.ticket_ref}</Isolate>
                       <StatusChip status={order.status} />
+                      {/* A finished order that was paid online: say whether money is owed back. */}
+                      {paymentView(order) === "refund_due" && (
+                        <span className="rounded-control bg-warning-surface px-2 py-0.5 text-sm font-bold text-warning">{t.paymentLabel.refund_due}</span>
+                      )}
+                      {paymentView(order) === "paid" && (
+                        <span className="rounded-control bg-ink px-2 py-0.5 text-sm font-bold text-snowy-white">{t.paymentLabel.paid}</span>
+                      )}
                       {order.rejection_reason && <span className="basis-full text-sm text-muted">{order.rejection_reason}</span>}
                     </li>
                   ))}
