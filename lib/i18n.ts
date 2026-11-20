@@ -292,6 +292,40 @@ const en = {
   closedConfirmed: (truck: string, time: string) => `${truck} is closed for tonight (closed at ${time}).`,
   closedSince: (time: string) => `Closed for tonight at ${time}. Tickets already placed stay on the kitchen board.`,
   closedByVendor: "The truck has switched itself off and is not taking orders.",
+
+  // Vendor capacity settings
+  capacitySettings: "Capacity settings",
+  backToBoard: "Back to kitchen board",
+  capacityNow: (n: number) => (n === 1 ? "Up to 1 order per pickup time" : `Up to ${n} orders per pickup time`),
+  change: "Change",
+  capacityScope: (truck: string) => `One setting for all of ${truck}`,
+  capacityTitle: "Orders per 15‑minute pickup time",
+  capacityBody: (truck: string) =>
+    `The most orders ${truck} takes for each pickup time. It applies to every pickup time, not to one. Choose 1 to 20.`,
+  capacitySavedSetting: (n: number) => `Saved setting: ${n} per pickup time`,
+  capacityFewer: "Fewer orders per pickup time",
+  capacityMore: "More orders per pickup time",
+  capacityValue: (n: number) => (n === 1 ? "1 order per pickup time" : `${n} orders per pickup time`),
+  capacitySave: (truck: string) => `Update ${truck} capacity`,
+  capacityUnchanged: "Change the number to update it.",
+  capacitySaved: (truck: string, n: number) =>
+    `Saved. ${truck} now takes up to ${n === 1 ? "1 order" : `${n} orders`} for every pickup time.`,
+  capacityFailed: (n: number) => `That didn’t save. The setting is still ${n}.`,
+  capacityNotYours: "Only this truck’s vendor can change its capacity.",
+  impactFull: (n: number, times: string) => `At ${n}, ${times} will be full.`,
+  impactReopens: (n: number, times: string) => `At ${n}, ${times} will take orders again.`,
+  impactOver: (n: number, times: string) =>
+    `${times} already ${times.includes(",") ? "have" : "has"} more than ${n === 1 ? "1 order" : `${n} orders`}. Every order already placed stays on your board. ${times.includes(",") ? "Those times take no new orders until they have" : "That time takes no new orders until it has"} fewer than ${n}.`,
+  tonightTimes: "Tonight’s pickup times",
+  tonightAt: (n: number) => `Tonight at ${n} per pickup time`,
+  notSavedYet: "Not saved yet",
+  overLimit: (extra: number) => `${extra} over · no new orders`,
+  otherTimesEmpty: (n: number) => `${n} other pickup times have no orders yet.`,
+  noOrdersForTonight: "No orders for tonight yet. All 24 pickup times are empty.",
+  countingRules: "How places are counted",
+  ruleCollected: "A collected order still counts toward its pickup time.",
+  ruleFreed: "A rejected or cancelled order gives its place back at once.",
+  ruleKept: "Changing capacity never cancels an order that is already placed.",
 };
 
 type Dict = typeof en;
@@ -568,6 +602,38 @@ const ar: Dict = {
   closedConfirmed: (truck, time) => `${truck} مغلقة لهذه الليلة (أُغلقت ${time}).`,
   closedSince: (time) => `مغلقة لهذه الليلة من ${time}. التذاكر الموجودة تظل على لوحة المطبخ.`,
   closedByVendor: "العربة أوقفت استقبال الطلبات من عندها.",
+
+  capacitySettings: "إعدادات السعة",
+  backToBoard: "رجوع للوحة المطبخ",
+  capacityNow: (n) => `حتى ${arOrders(n)} لكل وقت استلام`,
+  change: "تغيير",
+  capacityScope: (truck) => `إعداد واحد لكل ${truck}`,
+  capacityTitle: "عدد الطلبات لكل وقت استلام (15 دقيقة)",
+  capacityBody: (truck) =>
+    `أكثر عدد طلبات تستقبله ${truck} لكل وقت استلام. ينطبق على كل الأوقات، مو على وقت واحد. اختر من 1 إلى 20.`,
+  capacitySavedSetting: (n) => `الإعداد المحفوظ: ${n} لكل وقت استلام`,
+  capacityFewer: "طلبات أقل لكل وقت استلام",
+  capacityMore: "طلبات أكثر لكل وقت استلام",
+  capacityValue: (n) => `${arOrders(n)} لكل وقت استلام`,
+  capacitySave: (truck) => `تحديث سعة ${truck}`,
+  capacityUnchanged: "غيّر الرقم عشان تحدّثه.",
+  capacitySaved: (truck, n) => `تم الحفظ. ${truck} الحين تستقبل حتى ${arOrders(n)} لكل وقت استلام.`,
+  capacityFailed: (n) => `ما انحفظ التغيير. الإعداد للحين ${n}.`,
+  capacityNotYours: "بائع هذه العربة بس هو اللي يقدر يغيّر سعتها.",
+  impactFull: (n, times) => `عند ${n}، يكتمل ${times}.`,
+  impactReopens: (n, times) => `عند ${n}، يرجع ${times} يستقبل طلبات.`,
+  impactOver: (n, times) =>
+    `${times} فيه الحين أكثر من ${arOrders(n)}. كل طلب موجود يظل على لوحتك. وما تنقبل طلبات جديدة للوقت لين يصير فيه أقل من ${n}.`,
+  tonightTimes: "أوقات الاستلام الليلة",
+  tonightAt: (n) => `الليلة عند ${n} لكل وقت استلام`,
+  notSavedYet: "ما انحفظ للحين",
+  overLimit: (extra) => `${extra} فوق الحد · ما في طلبات جديدة`,
+  otherTimesEmpty: (n) => `${n} وقت استلام ثاني ما فيه طلبات للحين.`,
+  noOrdersForTonight: "ما في طلبات الليلة للحين. كل الأوقات الـ24 فاضية.",
+  countingRules: "طريقة حساب الأماكن",
+  ruleCollected: "الطلب المستلَم يظل محسوب في وقته.",
+  ruleFreed: "الطلب المرفوض أو الملغي يرجّع مكانه على طول.",
+  ruleKept: "تغيير السعة ما يلغي أي طلب موجود.",
 };
 
 function arPlaces(n: number): string {
