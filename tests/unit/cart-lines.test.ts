@@ -14,6 +14,7 @@ const dish = (id: string, price: number, sold_out = false): MenuItem => ({
   price_kwd: price,
   description: null,
   sold_out,
+  allergens: [],
 });
 
 const menu = [dish("M201", 1.95), dish("M202", 2.1), dish("M204", 1.25)];

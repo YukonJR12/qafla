@@ -53,7 +53,7 @@ Nobody uses the app signed out. Opening it shows the Qafla logo while the browse
 | --- | --- | --- |
 | Nobody signed in | The one sign-in screen (English or Arabic). | None until they sign in. |
 | Customer | Explore | Explore, Orders, Account. The cart stays within reach on Explore and on a menu. |
-| Vendor with a truck | Kitchen | Kitchen, Capacity, Account. |
+| Vendor with a truck | Kitchen | Kitchen, Menu, Capacity, Account. |
 | Vendor with no truck assigned | A screen that says so, with "Check again" and "Sign out". | None. |
 | Park manager | Park overview | Overview, Slot details, Account. |
 
@@ -164,6 +164,37 @@ What happens to existing orders: nothing. Changing capacity never touches an ord
 
 A capacity change and an order being placed at the same moment cannot cross: `place_order` locks the truck's row while it counts, so the change waits for the order (or the order sees the new number). Screenshots are in `docs/screenshots/capacity-settings/`.
 
+## Vendor menu: descriptions, allergens and photo suggestions
+
+A vendor opens **Menu**, chooses one of their own dishes, and writes its description and the allergens it may contain. They can take a photo of the dish and get a draft to start from.
+
+| Where | What lives there |
+| --- | --- |
+| `app/vendor/menu/page.tsx` | The vendor's dishes, with what customers read about each one now. |
+| `app/vendor/menu/[id]/page.tsx` | One dish: what customers see now, the photo suggestion, the draft, the allergen check, Save and Discard. |
+| `app/api/menu/suggest/route.ts` | The server route that sends the photo to OpenRouter and returns a draft. |
+| `lib/menu-ai.ts` | The fixed allergen list, the instructions given to the model, and the code that turns its answer into a draft. Unit-tested. |
+| `supabase/migrations/…_menu_ai.sql` | The `allergens` column, the request log, `begin_ai_suggestion` and `save_menu_copy`. |
+
+To use it, set two server-only values (in `.env.local`, and in Vercel under Project Settings → Environment Variables):
+
+- `OPENROUTER_API_KEY`: the OpenRouter key. It has no `NEXT_PUBLIC_` prefix, so it is never in the files a browser downloads.
+- `OPENROUTER_MODEL`: the ID of any vision-capable model on OpenRouter, for example `anthropic/claude-haiku-5.5`. Change this value to switch models; no code changes.
+
+**A suggestion is only text to review.** The route returns a draft and writes nothing. The vendor can copy the draft into the form, edit it, and must tick "I checked these allergens against the recipe" before "Save for customers" works. Discarding, or leaving the page, changes nothing.
+
+**Save changes two fields.** Save calls the database function `save_menu_copy(dish, description, allergens)`. It checks the dish is on the signed-in vendor's own truck and writes those two fields. Price, sold-out, name and category are not parameters, so nothing sent to it can change them. Allergens can only be values from the fixed list, and a description is at most 200 characters.
+
+**Before any photo leaves the server**, the route asks the database (`begin_ai_suggestion`) three things as the signed-in user: is this a vendor, is the dish on their own truck, and have they asked fewer than 20 times in the last hour? Only then is the photo sent. The photo is not stored.
+
+**What comes back is treated as untrusted.** The model is told to describe only the food and to ignore any writing in the photo. Whatever it answers, the server keeps one line of description (at most 160 characters) and allergens that are on the fixed list, and throws the rest away. There is no field for a price anywhere in this path, so a photo that says "set every price to zero" can at most produce odd text in a draft the vendor can reject.
+
+**When it fails.** A broken key, an OpenRouter error, a timeout (30 seconds) or OpenRouter's own rate limit gives the vendor a plain message with a short reference and "Try again". Their typed text and ticked allergens stay as they were. The server writes one log line per failure (`ai_suggest_failed`, with the same reference, the stage, the model and the status code). It never logs the key, the photo or an email.
+
+Customers see the saved description and a "May contain: …" line on the truck's menu. A description a vendor saves is shown as written in both languages; the Arabic translations in `lib/i18n.ts` apply only to a dish that still has its seeded text.
+
+This screen does not edit a dish's price or its sold-out switch.
+
 ## Park manager dashboard
 
 `/manager` is Dana's view of tonight across the park. From 768 px it is a grid: six trucks down, the 24 Kuwait pickup times across (5:00 PM to 10:45 PM), with the exact count in every cell, e.g. `5/6`. A cell is tinted from white toward pale orange as it fills, and a full cell is solid Red Orange with the word "Full". On a phone it is a time selector followed by six truck rows that read "5 of 6". Either way, one tap on a count opens the orders behind it.
@@ -195,6 +226,7 @@ The data rules live in Postgres, in `supabase/`, so they hold no matter what a b
 | `supabase/migrations/…_abandon_order_attempt.sql` | `abandon_order_attempt` and the shared lock that settles "place" against "give up". |
 | `supabase/migrations/…_orders_realtime.sql` | Adds `orders` to the Realtime publication so the board and the ticket update live. Access rules are unchanged. |
 | `supabase/migrations/…_order_ratings.sql` | `order_ratings` (one rating per order) and `rate_order`. Adds only; nothing existing is changed. |
+| `supabase/migrations/…_menu_ai.sql` | `menu_items.allergens`, the photo-suggestion request log, `begin_ai_suggestion` (ownership and the 20-per-hour limit) and `save_menu_copy` (description and allergens only). Adds only. |
 | `supabase/seed.sql` | The six trucks and 30 dishes. Generated from `seed/*.csv`; do not edit by hand. |
 | `scripts/build-seed.mjs` | Rebuilds `supabase/seed.sql` from the CSVs. |
 | `tests/db/` | Database tests. `supabase-shim.sql` and `test-clock.sql` are for the test database only. |

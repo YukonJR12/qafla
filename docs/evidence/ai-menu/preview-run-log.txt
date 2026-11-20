@@ -1,0 +1,9 @@
+# The normal workflow on the Vercel Preview: photo -> draft -> vendor edit -> save.
+# Where: qafla-rjqd Preview, deployment dpl_Fr1h7tv6DGnfoofTK7hpLdpVQF3c (commit 3bfd786), 2026-11-20T16:10:20Z.
+# Dish: M203 Truffle smash (Dune Burgers), description blank before the run. Signed in as the test vendor.
+# Vercel runtime log (Logs tab), level info, POST /api/menu/suggest, environment=preview:
+{"event":"ai_suggest_ok","requestId":"ed5dfda5","itemId":"M203","vendor":"51cc8af8","model":"anthropic/claude-haiku-5.5","ms":4847,"allergens":4}
+
+# Two earlier Preview builds of this branch had no OpenRouter settings. Each failed cleanly and logged why (level error):
+{"event":"ai_suggest_failed","requestId":"a7162d1e","problem":"ai_failed","itemId":"M203","vendor":"51cc8af8","ms":1909,"stage":"configuration","detail":"OPENROUTER_API_KEY is not set"}
+{"event":"ai_suggest_failed","requestId":"1845ef25","problem":"ai_failed","itemId":"M203","vendor":"51cc8af8","ms":1962,"stage":"configuration","detail":"OPENROUTER_MODEL is not set"}

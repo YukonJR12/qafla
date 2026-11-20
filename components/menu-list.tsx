@@ -65,6 +65,13 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
               {t.add}
             </button>
           );
+          // Allergens the vendor has saved for this dish, e.g. "May contain: Gluten, Milk".
+          const mayContain =
+            item.allergens.length > 0 ? (
+              <p className="text-sm text-muted">
+                {t.mayContain(item.allergens.map((code) => t.allergenName[code] ?? code).join(locale === "ar" ? "، " : ", "))}
+              </p>
+            ) : null;
           const title = <h3 className={`text-lg leading-snug font-semibold ${item.sold_out ? "text-muted" : ""}`}>{name}</h3>;
           const price = <Money amount={item.price_kwd} locale={locale} />;
 
@@ -88,6 +95,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
                 <div className="min-w-0 flex-1">
                   {title}
                   {description && <p className="text-sm text-muted">{description}</p>}
+                  {mayContain}
                   <div className="mt-2 flex min-h-11 flex-wrap items-center justify-between gap-x-2 gap-y-2">
                     <p className="font-bold">{price}</p>
                     {control}
@@ -103,6 +111,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
               <div className="min-w-0">
                 {title}
                 {description && <p className="text-sm text-muted">{description}</p>}
+                {mayContain}
                 <p className="mt-1 font-bold">{price}</p>
               </div>
               {control}

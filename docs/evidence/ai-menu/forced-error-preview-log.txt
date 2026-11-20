@@ -1,0 +1,5 @@
+# Forced error on the Vercel Preview: OPENROUTER_API_KEY was not set for this deployment.
+# Where: qafla-rjqd Preview, deployment dpl_4npjKWXjD726Xm1zBjH5NnpnWhwD (commit 961f7ef), 2026-11-20T15:35:38Z.
+# What the vendor saw: "Couldn't suggest a description. Try again or write your own. Your edits are still here. Reference 238caf74"
+# Vercel runtime log (Logs tab), level error, POST /api/menu/suggest, environment=preview, stream=stderr:
+{"event":"ai_suggest_failed","requestId":"238caf74","problem":"ai_failed","itemId":"M203","vendor":"51cc8af8","ms":2033,"stage":"configuration","detail":"OPENROUTER_API_KEY is not set"}

@@ -107,9 +107,9 @@ test("a profile that could not be read shows a problem, never a guessed workspac
   assert.deepEqual(route({ status: "failed" }, "/"), { view: "failed", redirect: null });
 });
 
-test("the navigation offers each role its own three destinations", () => {
+test("the navigation offers each role its own destinations", () => {
   assert.deepEqual(navFor("customer").map((item) => item.key), ["explore", "orders", "account"]);
-  assert.deepEqual(navFor("vendor").map((item) => item.key), ["kitchen", "capacity", "account"]);
+  assert.deepEqual(navFor("vendor").map((item) => item.key), ["kitchen", "menu", "capacity", "account"]);
   assert.deepEqual(navFor("manager").map((item) => item.key), ["overview", "slot", "account"]);
   // Every destination is one that role may open.
   for (const role of ["customer", "vendor", "manager"] as const) {
@@ -125,6 +125,8 @@ test("the navigation marks where the user is", () => {
   assert.equal(activeNav("customer", "/account"), "account");
   assert.equal(activeNav("vendor", "/vendor"), "kitchen");
   assert.equal(activeNav("vendor", "/vendor/capacity"), "capacity");
+  assert.equal(activeNav("vendor", "/vendor/menu"), "menu");
+  assert.equal(activeNav("vendor", "/vendor/menu/M203"), "menu");
   assert.equal(activeNav("manager", "/manager"), "overview");
   assert.equal(activeNav("manager", "/manager", "slot=21:00"), "overview");
   assert.equal(activeNav("manager", "/manager", "slot=21:00&truck=T02"), "slot");

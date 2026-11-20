@@ -1432,6 +1432,129 @@ try {
   });
 
   // -------------------------------------------------------------------------
+  section("The vendor's menu: photo suggestions are limited, and Save changes two fields only");
+
+  const dish = async (id) =>
+    (
+      await admin.query(
+        "select id, name, category, price_kwd::text as price, sold_out, description, allergens from public.menu_items where id = $1",
+        [id],
+      )
+    ).rows[0];
+  const begin = (client, id) => client.query("select public.begin_ai_suggestion($1) as answer", [id]);
+  const saveCopy = (client, id, description, allergens) =>
+    client.query("select * from public.save_menu_copy($1, $2, $3::text[])", [id, description, allergens]);
+  const asked = async (vendor) =>
+    (await admin.query("select count(*)::int as n from public.ai_suggestion_requests where vendor_id = $1", [vendor])).rows[0].n;
+
+  await check("only a vendor can start a photo suggestion, and only for a dish on their own truck", async () => {
+    await setClock("17:00");
+    const before = await dish("M203");
+    const ok = await asUser(c1, duneVendor, (c) => begin(c, "M203"));
+    assert.deepEqual(ok.rows[0].answer, { item_id: "M203", item_name: "Truffle smash", category: "Burgers", remaining: 19 });
+
+    await rejects(asUser(c1, tacoVendor, (c) => begin(c, "M203")), "not_your_dish"); // Dune Burgers' dish
+    await rejects(asUser(c1, duneVendor, (c) => begin(c, "M999")), "not_your_dish"); // no such dish
+    await rejects(asUser(c1, aisha, (c) => begin(c, "M203")), "not_a_vendor"); // a customer
+    await rejects(asUser(c1, dana, (c) => begin(c, "M203")), "not_a_vendor"); // the manager is not a vendor
+    // Nobody signed in: the API's signed-out role may not even call it.
+    await c1.query("begin");
+    await c1.query("set local role anon");
+    await rejects(c1.query("select public.begin_ai_suggestion('M203')"), "42501");
+    await c1.query("rollback");
+
+    assert.equal(await asked(duneVendor), 1);
+    assert.equal(await asked(tacoVendor), 0);
+    assert.deepEqual(await dish("M203"), before, "starting a suggestion never touches the dish");
+    return "the truck's vendor is counted once; another vendor, a customer, the manager and a signed-out caller are refused and not counted";
+  });
+
+  await check("a vendor gets 20 suggestions an hour; the 21st is refused until the oldest is an hour old", async () => {
+    for (let n = 2; n <= 20; n += 1) {
+      const { rows } = await asUser(c1, duneVendor, (c) => begin(c, "M205"));
+      assert.equal(rows[0].answer.remaining, 20 - n);
+    }
+    const refused = await rejects(asUser(c1, duneVendor, (c) => begin(c, "M203")), "rate_limited");
+    assert.match(refused.detail, /^\d{4}-\d\d-\d\dT15:00:00Z$/, "it says when the next one is allowed (6:00 PM Kuwait)");
+    assert.equal(await asked(duneVendor), 20, "a refused request is not counted");
+
+    // The limit is per vendor: Taco Saha's vendor is unaffected.
+    const other = await asUser(c1, tacoVendor, (c) => begin(c, "M301"));
+    assert.equal(other.rows[0].answer.remaining, 19);
+
+    await setClock("17:59");
+    await rejects(asUser(c1, duneVendor, (c) => begin(c, "M203")), "rate_limited");
+    await setClock("18:01");
+    const again = await asUser(c1, duneVendor, (c) => begin(c, "M203"));
+    assert.equal(again.rows[0].answer.remaining, 19);
+    return "requests 1 to 20 pass, 21 is refused with the time it reopens, another vendor is unaffected, and an hour later it works again";
+  });
+
+  await check("Save changes the description and allergens, and leaves price, sold-out, name and category alone", async () => {
+    const before = await dish("M203");
+    assert.equal(before.description, null);
+    assert.deepEqual(before.allergens, []);
+
+    const { rows } = await asUser(c1, duneVendor, (c) =>
+      saveCopy(c, "M203", "  Smashed beef patty with  truffle mayo and swiss.  ", ["milk", "gluten", "milk"]),
+    );
+    assert.equal(rows[0].description, "Smashed beef patty with truffle mayo and swiss.");
+    assert.deepEqual(rows[0].allergens, ["gluten", "milk"], "no repeats, in the fixed list's order");
+
+    const after = await dish("M203");
+    assert.deepEqual(
+      { ...after, description: null, allergens: [] },
+      before,
+      "nothing else on the dish changed",
+    );
+    assert.equal(after.price, "2.750");
+    assert.equal(after.sold_out, false);
+
+    // Customers (and signed-out visitors) read the saved text straight away.
+    const seen = await asUser(c1, aisha, (c) => c.query("select description, allergens from public.menu_items where id = 'M203'"));
+    assert.deepEqual(seen.rows[0], { description: "Smashed beef patty with truffle mayo and swiss.", allergens: ["gluten", "milk"] });
+
+    // A sold-out dish keeps its sold-out switch too.
+    await admin.query("update public.menu_items set sold_out = true where id = 'M203'");
+    await asUser(c1, duneVendor, (c) => saveCopy(c, "M203", "Smashed beef, truffle mayo, swiss.", ["gluten", "milk", "egg"]));
+    assert.equal((await dish("M203")).sold_out, true);
+    assert.equal((await dish("M203")).price, "2.750");
+    await admin.query("update public.menu_items set sold_out = false where id = 'M203'");
+
+    // A blank description is saved as none.
+    await asUser(c1, duneVendor, (c) => saveCopy(c, "M203", "   ", []));
+    assert.equal((await dish("M203")).description, null);
+    return "price 2.750 and sold-out are untouched; text is trimmed; allergens are de-duplicated; customers read the saved text";
+  });
+
+  await check("nobody else can save a dish, and nothing outside the rules is stored", async () => {
+    const before = await dish("M203");
+    await rejects(asUser(c1, tacoVendor, (c) => saveCopy(c, "M203", "Free burgers", [])), "not_your_dish");
+    await rejects(asUser(c1, aisha, (c) => saveCopy(c, "M203", "Free burgers", [])), "not_your_dish");
+    await rejects(asUser(c1, dana, (c) => saveCopy(c, "M203", "Free burgers", [])), "not_your_dish");
+    await rejects(asUser(c1, duneVendor, (c) => saveCopy(c, "M301", "Not my truck", [])), "not_your_dish");
+    await rejects(asUser(c1, duneVendor, (c) => saveCopy(c, "M203", "x".repeat(201), [])), "description_too_long");
+    await rejects(asUser(c1, duneVendor, (c) => saveCopy(c, "M203", "Fine", ["price_kwd=0"])), "unknown_allergen");
+
+    // Allergens cannot be written around the function either.
+    await rejects(
+      asUser(c1, duneVendor, (c) => c.query("update public.menu_items set allergens = '{milk}' where id = 'M203'")),
+      "42501",
+    );
+    // The request log cannot be read or cleared through the API.
+    await rejects(asUser(c1, duneVendor, (c) => c.query("select * from public.ai_suggestion_requests")), "42501");
+    await rejects(asUser(c1, duneVendor, (c) => c.query("delete from public.ai_suggestion_requests")), "42501");
+
+    assert.deepEqual(await dish("M203"), before);
+    assert.deepEqual((await dish("M301")).description, null);
+    return "another vendor, a customer and the manager are refused; 201 characters and an unknown allergen are refused; M203 is unchanged";
+  });
+
+  // Leave the fixture as the seed had it.
+  await admin.query("update public.menu_items set description = null, allergens = '{}' where id = 'M203'");
+  await admin.query("delete from public.ai_suggestion_requests");
+
+  // -------------------------------------------------------------------------
   section("Dana's dashboard: every count is explained by tickets she can read");
 
   await check("for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count", async () => {

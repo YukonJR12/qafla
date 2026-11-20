@@ -32,6 +32,20 @@ export function supabaseBrowser(): SupabaseClient {
 }
 
 /**
+ * A client for the server to act AS one signed-in user, given the access
+ * token their browser sent. Every read and function call through it goes
+ * through the database's own rules for that user, exactly as it would from
+ * their browser. It holds no special key and stores nothing.
+ */
+export function supabaseAs(accessToken: string): SupabaseClient {
+  const config = requireConfig();
+  return createClient(config.url, config.key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}
+
+/**
  * A signed-out client for the server to read public data (trucks, menus,
  * slot counts). It never holds a session.
  */

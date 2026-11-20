@@ -19,6 +19,8 @@ export type MenuItem = {
   price_kwd: number;
   description: string | null;
   sold_out: boolean;
+  /** Codes from the fixed allergen list (lib/menu-ai.ts). Empty when none are listed. */
+  allergens: string[];
 };
 
 /** One 15-minute pickup slot as the database counts it right now. */
@@ -76,7 +78,7 @@ export async function fetchTruck(db: SupabaseClient, truckId: string): Promise<T
 export async function fetchMenu(db: SupabaseClient, truckId: string): Promise<MenuItem[]> {
   const { data, error } = await db
     .from("menu_items")
-    .select("id,truck_id,name,category,price_kwd,description,sold_out")
+    .select("id,truck_id,name,category,price_kwd,description,sold_out,allergens")
     .eq("truck_id", truckId)
     .order("id");
   if (error) throw new Error(error.message);
@@ -358,4 +360,30 @@ export async function fetchMyOrders(db: SupabaseClient, customerId: string): Pro
     .limit(60);
   if (error) throw new Error(error.message);
   return data as unknown as MyOrder[];
+}
+
+// ---------------------------------------------------------------------------
+// The vendor's menu: descriptions and allergens
+// ---------------------------------------------------------------------------
+
+/**
+ * The vendor's "Save". Asks the database to store a dish's description and
+ * allergens (save_menu_copy). The database checks that the dish is on this
+ * vendor's own truck and changes those two fields only: the price and the
+ * sold-out switch are not even sent. It answers with the saved dish, which
+ * is what the screen then shows.
+ */
+export async function saveMenuCopy(
+  db: SupabaseClient,
+  itemId: string,
+  description: string,
+  allergens: string[],
+): Promise<MenuItem> {
+  const { data, error } = await db.rpc("save_menu_copy", {
+    p_item_id: itemId,
+    p_description: description,
+    p_allergens: allergens,
+  });
+  if (error) throw new Error(error.message);
+  return data as MenuItem;
 }
