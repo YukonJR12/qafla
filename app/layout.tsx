@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Alexandria, Archivo_Black, DM_Sans } from "next/font/google";
+import { SessionGate } from "@/components/session-gate";
+import { AccountProvider } from "@/lib/account";
 import { CartProvider } from "@/lib/cart";
 import { LocaleProvider } from "@/lib/locale";
 import { getLocale } from "@/lib/locale-server";
@@ -45,7 +47,12 @@ export default async function RootLayout({
     >
       <body>
         <LocaleProvider locale={locale}>
-          <CartProvider>{children}</CartProvider>
+          {/* Who is signed in, then that account's cart, then the gate that picks the screen. */}
+          <AccountProvider>
+            <CartProvider>
+              <SessionGate>{children}</SessionGate>
+            </CartProvider>
+          </AccountProvider>
         </LocaleProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadError } from "@/components/cart-states";
 import { LanguageSwitch } from "@/components/language-switch";
 import { ArrowBack, CheckIcon, Isolate, MinusIcon, PlusIcon, primaryButton } from "@/components/ui";
+import { useAccount } from "@/lib/account";
 import { capacityImpact, MAX_CAPACITY, MIN_CAPACITY, slotFit } from "@/lib/capacity";
 import { fetchMyTruck, fetchSlots, setTruckCapacity, type Slot, type Truck } from "@/lib/data";
 import { truckName } from "@/lib/i18n";
@@ -28,6 +29,7 @@ import { useSession } from "@/lib/use-session";
 export default function CapacitySettingsPage() {
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
+  const { signOut } = useAccount();
   const userId = session?.user.id ?? null;
 
   // Step 1: which truck does this account run?
@@ -157,7 +159,7 @@ export default function CapacitySettingsPage() {
           <div className="mx-auto max-w-xl pt-10 text-center">
             <h2 className="text-2xl font-extrabold">{t.notVendorTitle}</h2>
             <p className="mt-2 text-muted">{t.notVendorBody}</p>
-            <button type="button" onClick={() => supabaseBrowser().auth.signOut()} className={`${primaryButton} mt-6`}>
+            <button type="button" onClick={() => signOut()} className={`${primaryButton} mt-6`}>
               {t.signOut}
             </button>
           </div>

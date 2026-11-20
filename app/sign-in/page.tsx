@@ -1,41 +1,27 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
-import { AppHeader } from "@/components/app-header";
+import Image from "next/image";
+import { useState } from "react";
+import { LanguageSwitch } from "@/components/language-switch";
 import { primaryButton } from "@/components/ui";
-import { useCart } from "@/lib/cart";
 import { useLocale } from "@/lib/locale";
 import { supabaseBrowser } from "@/lib/supabase";
 
 type Mode = "sign-in" | "sign-up";
 type AuthProblem = "invalidLogin" | "emailTaken" | "weakPassword" | "confirmEmail" | "authError";
 
-// Sign in or create a customer account. The cart is not touched here: it
-// lives in the browser's storage and is still there when the customer returns.
+// The one sign-in screen, in English or Arabic, for customers, vendors and
+// the park manager alike.
+//
+// This page never decides where to go next. Once Supabase confirms the
+// sign-in, the launch gate reads the account's profile from the database
+// and opens the right workspace, or the page the visitor first asked for
+// if their role may open it (see lib/routes.ts).
+//
+// Only customer accounts can be created here. Vendor and manager accounts
+// are set up by the park.
 export default function SignInPage() {
-  return (
-    <Suspense>
-      <SignInForm />
-    </Suspense>
-  );
-}
-
-/** Only allow returning to a page inside this app. */
-function safeNext(value: string | null): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/explore";
-}
-
-function SignInForm() {
-  const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
-  const { t } = useLocale();
-  const { count } = useCart();
-  // The kitchen board sends vendors here, and the park dashboard sends the
-  // manager. Neither kind of account is created on this page.
-  const forManager = next.startsWith("/manager");
-  const forVendor = next.startsWith("/vendor") || forManager;
-
+  const { t, locale } = useLocale();
   const [mode, setMode] = useState<Mode>("sign-in");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<AuthProblem | null>(null);
@@ -75,27 +61,42 @@ function SignInForm() {
       setProblem("confirmEmail");
       return;
     }
-    router.replace(next);
+    // Signed in. The button stays busy until the launch gate takes over.
   }
 
   const input =
     "mt-1 block min-h-12 w-full rounded-control border border-outline bg-snowy-white px-3 text-base text-ink placeholder:text-muted";
 
   return (
-    <div className="min-h-dvh">
-      <AppHeader title={mode === "sign-in" ? t.signIn : t.createAccount} backHref={next} backLabel={t.back} />
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 pb-10 md:px-6">
+      <div className="flex justify-end pt-3">
+        <LanguageSwitch />
+      </div>
 
-      <main className="mx-auto max-w-xl px-4 pt-6 pb-10 md:px-6">
-        <h2 className="text-2xl leading-tight font-extrabold text-balance">
-          {forManager ? t.managerSignInTitle : forVendor ? t.vendorSignInTitle : mode === "sign-in" ? t.signInTitle : t.signUpTitle}
-        </h2>
-        {forVendor ? (
-          <p className="mt-2 text-muted">{forManager ? t.managerSignInBody : t.vendorSignInBody}</p>
-        ) : (
-          count > 0 && <p className="mt-2 text-muted">{t.cartKept}</p>
-        )}
+      <div className="flex flex-1 flex-col justify-center py-4">
+        <div className="logo-enter flex flex-col items-center text-center">
+          <Image
+            src="/brand/qafla-logo.png"
+            alt=""
+            width={1254}
+            height={1254}
+            sizes="(min-width: 640px) 208px, 160px"
+            className="h-auto w-40 max-w-full sm:w-52"
+            preload
+          />
+          {locale === "en" && (
+            <p lang="ar" dir="rtl" aria-hidden className="font-arabic text-2xl leading-[1.35] font-black">
+              قافلة
+            </p>
+          )}
+        </div>
 
-        <form onSubmit={submit} className="mt-6 space-y-4" noValidate={false}>
+        <h1 className="mt-5 text-2xl leading-tight font-extrabold text-balance">
+          {mode === "sign-in" ? t.welcomeBack : t.signUpTitle}
+        </h1>
+        <p className="mt-1 text-muted">{mode === "sign-in" ? t.signInLead : t.signUpLead}</p>
+
+        <form onSubmit={submit} className="mt-5 space-y-4">
           {mode === "sign-up" && (
             <label className="block text-sm font-semibold">
               {t.name}
@@ -132,23 +133,22 @@ function SignInForm() {
           )}
 
           <button type="submit" disabled={busy} aria-busy={busy} className={primaryButton}>
-            {busy ? t.working : mode === "sign-in" ? t.signIn : t.createAccount}
+            <span aria-live="polite">{busy ? t.working : mode === "sign-in" ? t.signIn : t.createAccount}</span>
           </button>
         </form>
 
-        {!forVendor && (
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === "sign-in" ? "sign-up" : "sign-in");
-              setProblem(null);
-            }}
-            className="mt-4 min-h-11 w-full text-center font-bold underline underline-offset-4"
-          >
-            {mode === "sign-in" ? t.toSignUp : t.toSignIn}
-          </button>
-        )}
-      </main>
-    </div>
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === "sign-in" ? "sign-up" : "sign-in");
+            setProblem(null);
+          }}
+          className="mt-4 min-h-11 w-full text-center font-bold underline underline-offset-4"
+        >
+          {mode === "sign-in" ? t.toSignUp : t.toSignIn}
+        </button>
+        {mode === "sign-up" && <p className="mt-1 text-center text-sm text-muted">{t.staffHint}</p>}
+      </div>
+    </main>
   );
 }

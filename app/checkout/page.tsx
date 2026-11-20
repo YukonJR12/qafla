@@ -16,6 +16,7 @@ import {
   primaryButtonSplit,
   secondaryButton,
 } from "@/components/ui";
+import { useAccount } from "@/lib/account";
 import { requestIdForCart, storedCart, useCart } from "@/lib/cart";
 import { orderItems } from "@/lib/cart-lines";
 import { fetchClosed, fetchSlots, isFull, nextBookable, upcomingSlots, type Slot } from "@/lib/data";
@@ -63,6 +64,7 @@ export default function CheckoutPage() {
   const { cart, count, setSlot, forgetRequest, clear } = useCart();
   const cartLines = useCartLines();
   const { loading: sessionLoading, session } = useSession();
+  const { signOut } = useAccount();
 
   const truckId = cart?.truckId;
   const [attempt, setAttempt] = useState(0);
@@ -84,7 +86,7 @@ export default function CheckoutPage() {
   const openTicket = useCallback(
     (customerId: string, pending: PendingOrder, orderId: string) => {
       clearPending(customerId);
-      if (storedCart()?.requestId === pending.requestId) clear();
+      if (storedCart(customerId)?.requestId === pending.requestId) clear();
       setPlaced(true);
       router.replace(`/orders/${orderId}`);
     },
@@ -144,7 +146,7 @@ export default function CheckoutPage() {
         // A time the customer chose is never swapped for another one here,
         // even if it is no longer available: that case is explained on
         // screen and the customer picks again.
-        if (attempt === 0 && storedCart()?.slot == null) {
+        if (attempt === 0 && storedCart(userId)?.slot == null) {
           setSlot(nextBookable(fresh.slots)?.slot_start ?? null);
         }
       })
@@ -154,7 +156,7 @@ export default function CheckoutPage() {
     return () => {
       live = false;
     };
-  }, [truckId, attempt, setSlot]);
+  }, [truckId, attempt, setSlot, userId]);
 
   const current = availability && availability.truckId === truckId && availability.attempt === attempt ? availability : null;
   const reload = () => setAttempt((n) => n + 1);
@@ -559,7 +561,7 @@ export default function CheckoutPage() {
           <span className="min-w-0 break-all">{t.signedInAs(session.user.email ?? "")}</span>
           <button
             type="button"
-            onClick={() => supabaseBrowser().auth.signOut()}
+            onClick={() => signOut()}
             className="min-h-11 font-bold text-ink underline underline-offset-4"
           >
             {t.signOut}

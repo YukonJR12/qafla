@@ -83,6 +83,43 @@ dialog::backdrop {
   background: rgb(16 16 16 / 0.55);
 }
 
+/*
+ * Motion (DESIGN.md): 120 ms for feedback, 180 ms for a reveal, ease-out.
+ * Each animation ends in the element's normal state, so with reduced motion
+ * (below) the change is simply immediate.
+ */
+@keyframes logo-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+/* The Qafla logo arriving on the launch screen. */
+.logo-enter {
+  animation: logo-enter 180ms ease-out both;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+/* Something new arriving: the cart bar, the ready notice. */
+.reveal-up {
+  animation: reveal-up 180ms ease-out both;
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.22);
+  }
+}
+/* A count or a status that just changed. Re-keyed in React so it replays. */
+.bump {
+  animation: bump 180ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

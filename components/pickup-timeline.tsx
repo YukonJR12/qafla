@@ -50,7 +50,8 @@ export function PickupTimeline({ status, truck, announce }: { status: string; tr
                   }`}
                 >
                   {state === "done" && <CheckIcon className="size-4.5" />}
-                  {state === "current" && <span className="size-2.5 rounded-full bg-ink" />}
+                  {/* Mounted when this stage becomes the current one, so the dot bumps once per status change. */}
+                  {state === "current" && <span className="bump size-2.5 rounded-full bg-ink" />}
                 </span>
                 <span className="sr-only">
                   {state === "done" ? t.stageDone(name) : state === "current" ? t.stageCurrent(name) : t.stageTodo(name)}
