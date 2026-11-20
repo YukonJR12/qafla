@@ -69,6 +69,25 @@ What happens when the answer is lost: every "Place order" carries a request ID, 
 
 Screenshots of the flow, in English and Arabic, are in `docs/screenshots/customer-ordering/`.
 
+## Vendor kitchen board and live order status
+
+`/vendor` is the kitchen board. A vendor signs in and sees tonight's tickets for their own truck, grouped by Kuwait pickup time, earliest first. Which truck is theirs comes from the database (`trucks.vendor_id`), and row-level security returns only that truck's orders.
+
+| Where | What lives there |
+| --- | --- |
+| `app/vendor/page.tsx` | The board: header, "next pickup" line, one group per pickup time, finished tickets at the bottom. |
+| `components/kitchen-ticket.tsx` | One ticket: pickup time, reference, quantities and dishes, the next action, and the reject dialog. |
+| `lib/kitchen.ts` | The board's rules with no browser or database in them: the next status, grouping by time, what counts toward a slot. Unit-tested. |
+| `lib/use-live-orders.ts` | The live connection both screens share. |
+
+How a ticket moves: each button calls the database function `set_order_status`. The database decides whether this vendor may make this move (Placed → Accepted → Preparing → Ready → Collected, or Placed → Rejected with a reason). The board never changes a status by itself. It shows the status the database answered with. If no answer comes back, the ticket keeps its last confirmed status and the button becomes "Try again". A truck that is closed to new orders can still finish its tickets, because closing only stops `place_order`.
+
+How the screens stay live: `orders` is in Supabase's Realtime publication, so the vendor board and the customer's open ticket are told when an order is added or changed. Realtime checks the same row-level security rule as a normal read, so each listener only hears about orders they may see. A live message is only a nudge. The screen then re-reads the saved order from the database, so it always shows what is saved. The same re-read runs when the connection comes back, when the tab is shown again and when the phone comes back online, so a missed message cannot leave a screen stale. While the connection is down, the last known status stays on screen with "Reconnecting…".
+
+When the vendor taps "Mark ready", the customer's open ticket shows "Your order is ready for pickup" (`طلبك جاهز للاستلام`) with the truck's counter, and keeps showing it for as long as the order is ready.
+
+Vendor accounts are not created in the app yet. See "Create the park manager and assign vendors" below. Screenshots are in `docs/screenshots/kitchen-handoff/`.
+
 ## Database
 
 The data rules live in Postgres, in `supabase/`, so they hold no matter what a browser sends.
@@ -80,6 +99,7 @@ The data rules live in Postgres, in `supabase/`, so they hold no matter what a b
 | `supabase/migrations/…_order_functions.sql` | `place_order`, `set_order_status`, `close_truck_for_tonight` and `slot_usage`. Orders can only be created or changed through these. |
 | `supabase/migrations/…_order_request_id.sql` | One order per customer per request ID, so a retry returns the same ticket. |
 | `supabase/migrations/…_abandon_order_attempt.sql` | `abandon_order_attempt` and the shared lock that settles "place" against "give up". |
+| `supabase/migrations/…_orders_realtime.sql` | Adds `orders` to the Realtime publication so the board and the ticket update live. Access rules are unchanged. |
 | `supabase/seed.sql` | The six trucks and 30 dishes. Generated from `seed/*.csv`; do not edit by hand. |
 | `scripts/build-seed.mjs` | Rebuilds `supabase/seed.sql` from the CSVs. |
 | `tests/db/` | Database tests. `supabase-shim.sql` and `test-clock.sql` are for the test database only. |
@@ -95,7 +115,7 @@ pnpm db:seed:build    # rewrite supabase/seed.sql after changing a CSV
 
 ### Apply to a Supabase project
 
-Run the three files in `supabase/migrations/` in filename order, then `supabase/seed.sql`. Either paste each into the Supabase SQL editor, or use the Supabase CLI:
+Run every file in `supabase/migrations/` in filename order, then `supabase/seed.sql`. Either paste each into the Supabase SQL editor, or use the Supabase CLI:
 
 ```bash
 supabase link --project-ref <your-project-ref>

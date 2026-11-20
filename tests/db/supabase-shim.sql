@@ -56,5 +56,9 @@ language sql
 as $$ select 'still callable' $$;
 grant execute on function private.unrelated_helper() to anon;
 
+-- Supabase Realtime sends a browser the changes to tables in this
+-- publication. A hosted project already has it, empty.
+create publication supabase_realtime;
+
 grant usage on schema auth to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;

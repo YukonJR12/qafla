@@ -1021,6 +1021,79 @@ try {
     return "signed-out visitors and vendors are refused; one customer's decision does not touch another customer's attempt";
   });
 
+  // -------------------------------------------------------------------------
+  section("The kitchen board: one truck's tickets, moved one step at a time");
+
+  const boardSlot = "19:45";
+  let boardOrder;
+
+  await check("a vendor's board reads its own truck's tickets and lines, and nothing from another truck", async () => {
+    boardOrder = await asUser(c2, badr, (c) => place(c, "T03", boardSlot, tacoPair));
+    const read = (vendor, truck) =>
+      asUser(c1, vendor, async (c) => ({
+        orders: (await c.query("select count(*)::int as n from public.orders where truck_id = $1 and service_date = $2", [truck, today])).rows[0].n,
+        lines: (
+          await c.query(
+            "select count(*)::int as n from public.order_items i join public.orders o on o.id = i.order_id where o.truck_id = $1",
+            [truck],
+          )
+        ).rows[0].n,
+      }));
+    const own = await read(tacoVendor, "T03");
+    const other = await read(tacoVendor, "T02");
+    assert.ok(own.orders > 0 && own.lines > 0);
+    assert.deepEqual(other, { orders: 0, lines: 0 });
+    assert.deepEqual(await read(duneVendor, "T03"), { orders: 0, lines: 0 });
+    return `Taco Saha's vendor reads ${own.orders} of its tickets and 0 of Dune Burgers'; the Dune Burgers vendor reads 0 of Taco Saha's`;
+  });
+
+  await check("a ticket goes placed, accepted, preparing, ready, collected, and tapping an action twice saves it once", async () => {
+    const seen = [];
+    for (const status of ["accepted", "preparing", "ready", "collected"]) {
+      seen.push((await asUser(c1, tacoVendor, (c) => move(c, boardOrder.id, status))).status);
+      // The same tap again (a retry after a lost answer) changes nothing.
+      await rejects(asUser(c1, tacoVendor, (c) => move(c, boardOrder.id, status)), "transition_not_allowed");
+    }
+    assert.deepEqual(seen, ["accepted", "preparing", "ready", "collected"]);
+    const { rows } = await asUser(c2, badr, (c) =>
+      c.query("select status from public.orders where id = $1", [boardOrder.id]),
+    );
+    assert.equal(rows[0].status, "collected");
+    return "4 moves saved, 4 repeats refused; the customer reads 'collected'";
+  });
+
+  await check("a collected ticket still holds its place in the slot", async () => {
+    assert.equal(await slotCount("T03", boardSlot), 1);
+    const { rows } = await asUser(c2, badr, (c) =>
+      c.query("select booked from public.slot_usage('T03') where slot_start = $1", [boardSlot]),
+    );
+    assert.equal(rows[0].booked, 1);
+    return "1 qualifying order before and after collection";
+  });
+
+  await check("rejecting a placed ticket needs a reason; the customer reads it and the place is freed", async () => {
+    const order = await asUser(c2, badr, (c) => place(c, "T03", boardSlot, tacoPair));
+    assert.equal(await slotCount("T03", boardSlot), 2);
+    await rejects(asUser(c1, tacoVendor, (c) => move(c, order.id, "rejected")), "reason_required");
+    await asUser(c1, tacoVendor, (c) => move(c, order.id, "rejected", "  We ran out of an ingredient "));
+    const { rows } = await asUser(c2, badr, (c) =>
+      c.query("select status, rejection_reason from public.orders where id = $1", [order.id]),
+    );
+    assert.deepEqual(rows[0], { status: "rejected", rejection_reason: "We ran out of an ingredient" });
+    assert.equal(await slotCount("T03", boardSlot), 1);
+    // A rejected ticket is finished: no further kitchen action.
+    await rejects(asUser(c1, tacoVendor, (c) => move(c, order.id, "accepted")), "transition_not_allowed");
+    return "refused without a reason; saved with one; slot back to 1 place taken";
+  });
+
+  await check("live updates are switched on for orders only", async () => {
+    const { rows } = await admin.query(
+      "select schemaname || '.' || tablename as t from pg_publication_tables where pubname = 'supabase_realtime' order by 1",
+    );
+    assert.deepEqual(rows.map((r) => r.t), ["public.orders"]);
+    return "supabase_realtime publishes public.orders; who hears a change is still decided by orders_select";
+  });
+
   console.log(`\n${passedCount()} checks passed.`);
 } catch (error) {
   failed = true;

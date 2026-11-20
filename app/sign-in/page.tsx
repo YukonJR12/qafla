@@ -31,6 +31,8 @@ function SignInForm() {
   const next = safeNext(useSearchParams().get("next"));
   const { t } = useLocale();
   const { count } = useCart();
+  // The kitchen board sends vendors here. Vendor accounts are not created on this page.
+  const forVendor = next.startsWith("/vendor");
 
   const [mode, setMode] = useState<Mode>("sign-in");
   const [busy, setBusy] = useState(false);
@@ -83,9 +85,13 @@ function SignInForm() {
 
       <main className="mx-auto max-w-xl px-4 pt-6 pb-10 md:px-6">
         <h2 className="text-2xl leading-tight font-extrabold text-balance">
-          {mode === "sign-in" ? t.signInTitle : t.signUpTitle}
+          {forVendor ? t.vendorSignInTitle : mode === "sign-in" ? t.signInTitle : t.signUpTitle}
         </h2>
-        {count > 0 && <p className="mt-2 text-muted">{t.cartKept}</p>}
+        {forVendor ? (
+          <p className="mt-2 text-muted">{t.vendorSignInBody}</p>
+        ) : (
+          count > 0 && <p className="mt-2 text-muted">{t.cartKept}</p>
+        )}
 
         <form onSubmit={submit} className="mt-6 space-y-4" noValidate={false}>
           {mode === "sign-up" && (
@@ -128,16 +134,18 @@ function SignInForm() {
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === "sign-in" ? "sign-up" : "sign-in");
-            setProblem(null);
-          }}
-          className="mt-4 min-h-11 w-full text-center font-bold underline underline-offset-4"
-        >
-          {mode === "sign-in" ? t.toSignUp : t.toSignIn}
-        </button>
+        {!forVendor && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "sign-in" ? "sign-up" : "sign-in");
+              setProblem(null);
+            }}
+            className="mt-4 min-h-11 w-full text-center font-bold underline underline-offset-4"
+          >
+            {mode === "sign-in" ? t.toSignUp : t.toSignIn}
+          </button>
+        )}
       </main>
     </div>
   );

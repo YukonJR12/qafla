@@ -1,4 +1,4 @@
-// Every word the customer screens show, in English and Arabic.
+// Every word the customer and vendor screens show, in English and Arabic.
 // Voice (DESIGN.md): like someone handing an order across a counter.
 
 export type Locale = "en" | "ar";
@@ -178,6 +178,51 @@ const en = {
   backToTrucksFromTicket: "Back to trucks",
   orderNotFound: "We couldn’t find this order",
   orderNotFoundBody: "Sign in with the account that placed it.",
+  readyCounter: (truck: string) => `${truck} counter`,
+  reconnecting: "Reconnecting…",
+  live: "Live",
+
+  // Vendor kitchen board
+  kitchenBoard: "Kitchen board",
+  vendorSignInTitle: "Sign in to your truck",
+  vendorSignInBody: "Use your truck's vendor account to see tonight's orders.",
+  notVendorTitle: "This account doesn’t run a truck",
+  notVendorBody: "Sign out, then sign in with the vendor account for your truck.",
+  takingOrders: "Open · Taking orders",
+  closedNewOrders: "Closed to new orders tonight",
+  closedStillActive: (n: number) =>
+    n === 0 ? "No tickets left to finish." : n === 1 ? "1 order still to finish." : `${n} orders still to finish.`,
+  nextPickupDue: "Next pickup",
+  toCook: (n: number) => `${n} to cook`,
+  dueNext: "Due next",
+  orderCount: (n: number) => (n === 1 ? "1 order" : `${n} orders`),
+  slotPlaces: (booked: number, capacity: number) => `${booked}/${capacity}`,
+  slotPlacesLabel: (booked: number, capacity: number) => `${booked} of ${capacity} places taken`,
+  noOrdersYet: "No orders yet",
+  noOrdersBody: "New orders appear here as soon as they are placed.",
+  nothingToCook: "Nothing to cook right now",
+  nothingToCookBody: "Every ticket so far is finished. New orders appear here by themselves.",
+  boardLoadErrorTitle: "We couldn’t load tonight’s orders",
+  boardLoadErrorBody: "Check your connection and try again.",
+  kitchenAction: {
+    accepted: "Accept order",
+    preparing: "Start preparing",
+    ready: "Mark ready",
+    collected: "Mark collected",
+    rejected: "Reject order",
+  } as Record<string, string>,
+  saving: "Saving…",
+  reject: "Reject",
+  rejectTitle: (ref: string) => `Reject order ${ref}?`,
+  rejectReasonLabel: "Reason (the customer will see it)",
+  rejectReasonRequired: "Write a reason before you reject the order.",
+  rejectQuickReasons: ["We ran out of an ingredient", "The kitchen is too busy for this time"],
+  keepOrder: "Keep order",
+  actionFailed: (status: string) => `That didn’t save. This ticket is still ${status}.`,
+  ticketChanged: "This ticket changed while you were working. This is its latest status.",
+  unpaid: "Unpaid",
+  finishedTonight: (n: number) => `Finished tonight (${n})`,
+  ticketLabel: (ref: string, time: string) => `Order ${ref}, pickup ${time}`,
 };
 
 type Dict = typeof en;
@@ -344,7 +389,57 @@ const ar: Dict = {
   backToTrucksFromTicket: "رجوع إلى العربات",
   orderNotFound: "ما لقينا هذا الطلب",
   orderNotFoundBody: "سجّل الدخول بالحساب اللي أكّد الطلب.",
+  readyCounter: (truck) => `كاونتر ${truck}`,
+  reconnecting: "جارٍ إعادة الاتصال…",
+  live: "مباشر",
+
+  kitchenBoard: "لوحة المطبخ",
+  vendorSignInTitle: "سجّل الدخول لعربتك",
+  vendorSignInBody: "استخدم حساب البائع الخاص بعربتك عشان تشوف طلبات الليلة.",
+  notVendorTitle: "هذا الحساب ما يدير عربة",
+  notVendorBody: "سجّل الخروج، ثم ادخل بحساب البائع الخاص بعربتك.",
+  takingOrders: "مفتوحة · تستقبل طلبات",
+  closedNewOrders: "مغلقة للطلبات الجديدة الليلة",
+  closedStillActive: (n) =>
+    n === 0 ? "ما بقت تذاكر." : `${arOrders(n)} ${n === 1 ? "باقي يخلص" : "باقية تخلص"}.`,
+  nextPickupDue: "الاستلام القادم",
+  toCook: (n) => `${arOrders(n)} للتحضير`,
+  dueNext: "التالي",
+  orderCount: (n) => arOrders(n),
+  slotPlaces: (booked, capacity) => `${booked}/${capacity}`,
+  slotPlacesLabel: (booked, capacity) => `${booked} من ${capacity} أماكن محجوزة`,
+  noOrdersYet: "ما في طلبات للحين",
+  noOrdersBody: "الطلبات الجديدة تظهر هني أول ما تتأكد.",
+  nothingToCook: "ما في شي للتحضير الحين",
+  nothingToCookBody: "كل التذاكر خلصت. الطلبات الجديدة تظهر هني من نفسها.",
+  boardLoadErrorTitle: "ما قدرنا نحمّل طلبات الليلة",
+  boardLoadErrorBody: "تأكد من الاتصال وحاول مرة ثانية.",
+  kitchenAction: {
+    accepted: "قبول الطلب",
+    preparing: "بدء التحضير",
+    ready: "جاهز للاستلام",
+    collected: "تم التسليم",
+    rejected: "رفض الطلب",
+  },
+  saving: "جارٍ الحفظ…",
+  reject: "رفض",
+  rejectTitle: (ref) => `ترفض الطلب ${ref}؟`,
+  rejectReasonLabel: "السبب (بيشوفه العميل)",
+  rejectReasonRequired: "اكتب السبب قبل ما ترفض الطلب.",
+  rejectQuickReasons: ["خلص عندنا أحد المكونات", "المطبخ مزدحم في هذا الوقت"],
+  keepOrder: "إبقاء الطلب",
+  actionFailed: (status) => `ما انحفظ التغيير. حالة التذكرة للحين: ${status}.`,
+  ticketChanged: "هذه التذكرة تغيّرت وأنت تشتغل. هذي آخر حالة لها.",
+  unpaid: "غير مدفوع",
+  finishedTonight: (n) => `انتهت الليلة (${n})`,
+  ticketLabel: (ref, time) => `الطلب ${ref}، الاستلام ${time}`,
 };
+
+function arOrders(n: number): string {
+  if (n === 1) return "طلب واحد";
+  if (n === 2) return "طلبين";
+  return n <= 10 ? `${n} طلبات` : `${n} طلب`;
+}
 
 function arItems(n: number): string {
   if (n === 1) return "صنف واحد";
