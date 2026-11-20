@@ -11,6 +11,7 @@ import {
   ClockOffIcon,
   Isolate,
   Money,
+  CardIcon,
   StoreIcon,
   primaryButton,
   primaryButtonSplit,
@@ -61,7 +62,9 @@ type Reconciled =
 export default function CheckoutPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
-  const { cart, count, setSlot, forgetRequest, clear } = useCart();
+  const { cart, count, setSlot, setPayment, forgetRequest, clear } = useCart();
+  // The payment choice is kept with the cart, so it survives a refresh and a language switch.
+  const payment = cart?.payment === "online" ? "online" : "pay_at_pickup";
   const cartLines = useCartLines();
   const { loading: sessionLoading, session } = useSession();
   const { signOut } = useAccount();
@@ -305,12 +308,15 @@ export default function CheckoutPage() {
     // Only IDs and quantities are sent, for EVERY saved dish. The database
     // looks up the prices, checks the truck, the time and the slot, and
     // saves the order in one step.
+    // place_order_paying is place_order plus the payment choice. Still no
+    // price and no amount: the database works those out.
     const answer = await supabaseBrowser()
-      .rpc("place_order", {
+      .rpc("place_order_paying", {
         p_truck_id: truck.id,
         p_slot_start: selected,
         p_items: orderItems(cart.items),
         p_request_id: requestId,
+        p_payment_method: payment,
       })
       .then(
         (result) => result,
@@ -324,7 +330,10 @@ export default function CheckoutPage() {
       setPlaced(true);
       clear();
       // replace(), not push(): Back must not return to a form that could order again.
-      router.replace(`/orders/${data.id}`);
+      // What happens next follows the SAVED order, not the button that was tapped:
+      // an unpaid online order goes to its payment screen, anything else to its ticket.
+      const toPay = data.payment_method === "online" && data.payment_status === "unpaid";
+      router.replace(toPay ? `/orders/${data.id}/payment?start=1` : `/orders/${data.id}`);
       return;
     }
 
@@ -539,21 +548,43 @@ export default function CheckoutPage() {
         </fieldset>
       )}
 
-      {/* Payment: pay at pickup is the only method in this milestone. */}
+      {/* Payment: pay online (test mode) or at the counter. One choice, like the pickup time. */}
       {!closed && (
-        <section aria-labelledby="payment-heading" className="mt-6">
-          <h2 id="payment-heading" className="text-lg font-bold">
-            {t.payment}
-          </h2>
-          <div className="mt-2 flex items-center gap-3 rounded-control border-2 border-ink p-3">
-            <StoreIcon className="size-6" />
-            <div className="min-w-0 flex-1">
-              <p className="font-bold">{t.payAtPickup}</p>
-              <p className="text-sm text-muted">{t.payAtPickupHint(name)}</p>
-            </div>
-            <CheckIcon className="size-5" />
+        <fieldset className="mt-6">
+          <legend className="text-lg font-bold">{t.payment}</legend>
+          <div className="mt-2 grid gap-2">
+            {(["online", "pay_at_pickup"] as const).map((option) => {
+              const chosen = payment === option;
+              return (
+                // Chosen: ink fill, light text and a check, so it does not rely on colour.
+                <label
+                  key={option}
+                  className={`relative flex min-h-14 cursor-pointer items-center gap-3 rounded-control border-2 p-3 transition-colors duration-[120ms] ease-out has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${
+                    chosen ? "border-ink bg-ink text-snowy-white" : "border-outline bg-snowy-white hover:border-ink"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={option}
+                    checked={chosen}
+                    disabled={placing}
+                    onChange={() => setPayment(option)}
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                  />
+                  {option === "online" ? <CardIcon className="size-6" /> : <StoreIcon className="size-6" />}
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-bold">{option === "online" ? t.payOnline : t.payAtPickup}</span>
+                    <span className={`block text-sm ${chosen ? "" : "text-muted"}`}>
+                      {option === "online" ? t.payOnlineHint : t.payAtPickupHint(name)}
+                    </span>
+                  </span>
+                  {chosen && <CheckIcon className="size-5" />}
+                </label>
+              );
+            })}
           </div>
-        </section>
+        </fieldset>
       )}
 
       {session && (
@@ -603,7 +634,7 @@ export default function CheckoutPage() {
                   t.placing
                 ) : selected ? (
                   <>
-                    {t.placeOrder} · <Isolate>{formatSlot(selected, locale)}</Isolate>
+                    {payment === "online" ? t.placeAndPay : t.placeOrder} · <Isolate>{formatSlot(selected, locale)}</Isolate>
                   </>
                 ) : (
                   t.chooseTimeFirst

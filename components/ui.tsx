@@ -146,6 +146,16 @@ export function ListIcon({ className = "" }: IconProps) {
   );
 }
 
+/** A bank card: pay online. */
+export function CardIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <rect x="3" y="6" width="18" height="13" rx="2" />
+      <path d="M3 10.5h18M7 15h3" />
+    </svg>
+  );
+}
+
 /** A camera: choose or take a photo. */
 export function CameraIcon({ className = "" }: IconProps) {
   return (

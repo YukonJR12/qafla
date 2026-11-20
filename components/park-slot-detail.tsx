@@ -6,6 +6,7 @@ import { itemName, truckName } from "@/lib/i18n";
 import { isActive } from "@/lib/kitchen";
 import { useLocale } from "@/lib/locale";
 import { bookingDeadline, bookingState, explainSlot, type BookingState } from "@/lib/park";
+import { paymentView } from "@/lib/payments";
 import { supabaseBrowser } from "@/lib/supabase";
 import { formatKuwaitTime, formatSlot } from "@/lib/time";
 import { StatusChip } from "./kitchen-ticket";
@@ -156,7 +157,7 @@ export function ParkSlotDetail({
                     <span>
                       {order.status === "collected"
                         ? t.collectedAt(formatKuwaitTime(order.updated_at, locale))
-                        : `${t.payAtPickup} · ${t.unpaid}`}
+                        : t.paymentLabel[paymentView(order)]}
                     </span>
                     <Money amount={order.total_kwd} locale={locale} className="font-bold text-ink" />
                   </p>

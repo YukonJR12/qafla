@@ -115,6 +115,8 @@ export type Order = {
   slot_start: string;
   status: string;
   payment_method: string;
+  /** 'unpaid', 'paid' (confirmed by the server with the gateway) or 'refund_due'. */
+  payment_status: string;
   total_kwd: number;
   rejection_reason: string | null;
   trucks: { id: string; name: string } | null;
@@ -126,7 +128,7 @@ export async function fetchOrder(db: SupabaseClient, orderId: string): Promise<O
   const { data, error } = await db
     .from("orders")
     .select(
-      "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,total_kwd,rejection_reason,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
+      "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,payment_status,total_kwd,rejection_reason,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -158,7 +160,7 @@ export async function fetchKitchenOrders(db: SupabaseClient, truckId: string): P
   const { data, error } = await db
     .from("orders")
     .select(
-      "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,total_kwd,rejection_reason,placed_at,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
+      "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,payment_status,total_kwd,rejection_reason,placed_at,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
     )
     .eq("truck_id", truckId)
     .eq("service_date", kuwaitNow().date)
@@ -230,7 +232,7 @@ export async function fetchParkTonight(db: SupabaseClient): Promise<ParkTonight>
     db
       .from("orders")
       .select(
-        "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,total_kwd,rejection_reason,placed_at,updated_at,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
+        "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,payment_status,total_kwd,rejection_reason,placed_at,updated_at,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
       )
       .eq("service_date", today)
       .order("slot_start")
@@ -341,6 +343,8 @@ export type MyOrder = {
   service_date: string;
   slot_start: string;
   status: string;
+  payment_method: string;
+  payment_status: string;
   total_kwd: number;
   placed_at: string;
   trucks: { id: string; name: string } | null;
@@ -354,7 +358,7 @@ export type MyOrder = {
 export async function fetchMyOrders(db: SupabaseClient, customerId: string): Promise<MyOrder[]> {
   const { data, error } = await db
     .from("orders")
-    .select("id,ticket_ref,truck_id,service_date,slot_start,status,total_kwd,placed_at,trucks(id,name)")
+    .select("id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,payment_status,total_kwd,placed_at,trucks(id,name)")
     .eq("customer_id", customerId)
     .order("placed_at", { ascending: false })
     .limit(60);
