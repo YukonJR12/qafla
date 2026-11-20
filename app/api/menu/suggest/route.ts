@@ -117,7 +117,10 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         temperature: 0.2,
-        max_tokens: 300,
+        // Room for a model that thinks before it answers: the thinking counts
+        // toward this limit too, and the answer itself is about 60 tokens.
+        max_tokens: 2000,
+        reasoning: { effort: "low" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {
@@ -149,14 +152,21 @@ export async function POST(request: Request) {
 
   // 5. Keep a short description and known allergens. Throw the rest away.
   let content: unknown = null;
+  let cutOff = false;
   try {
     const json = await answer.json();
     content = json?.choices?.[0]?.message?.content ?? null;
+    cutOff = json?.choices?.[0]?.finish_reason === "length";
     if (Array.isArray(content)) content = content.map((part) => (typeof part?.text === "string" ? part.text : "")).join("");
   } catch {
     content = null;
   }
   const suggestion = readSuggestion(content);
+  if (!suggestion && cutOff) {
+    // The model ran out of room before it finished. That is our failure, not
+    // a photo without food, so the vendor is offered a retry.
+    return refuse("ai_failed", { remaining: dish.remaining }, { stage: "answer", model, detail: "the answer was cut off before any text" });
+  }
   if (!suggestion) {
     return refuse("no_suggestion", { remaining: dish.remaining }, { stage: "answer", model, detail: "no usable description in the answer" });
   }
