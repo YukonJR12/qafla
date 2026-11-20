@@ -1,55 +1,34 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useAccount } from "./account";
+import { dropLegacyCart, parseCart, readCart, readCartRaw, writeCart, type Cart, type KeyValueStore } from "./cart-store";
 
-// The cart lives in this browser's localStorage, so it survives a refresh,
-// a language switch and the trip through sign-in or signup.
+// The cart lives in this browser's localStorage, so it survives a refresh
+// and a language switch.
+//
+// It belongs to the signed-in account (see cart-store.ts): each account has
+// its own cart on this phone, and nobody sees anyone else's.
 //
 // It holds one truck and, per dish, an ID and a quantity. Prices are never
 // stored here: screens read them from the menu, and the server prices the
 // order itself when it is placed.
 
-export type Cart = {
-  truckId: string;
-  /** Canonical (English) truck name, kept so the cart can name its truck anywhere. */
-  truckName: string;
-  /** item id -> quantity (1 to 10) */
-  items: Record<string, number>;
-  /** The pickup slot chosen at checkout, e.g. "19:15:00". */
-  slot: string | null;
-  /**
-   * The ID of the checkout attempt for exactly these dishes and this time.
-   * It is created when the customer taps "Place order" and thrown away the
-   * moment the dishes or the time change. Sending the same ID again lets
-   * the database recognise a retry and return the order it already saved.
-   */
-  requestId?: string | null;
-  /** The signed-in customer that ID was made for. Nobody else may reuse it. */
-  requestBy?: string | null;
-};
+export type { Cart };
 
 export const MAX_QUANTITY = 10;
-const STORAGE_KEY = "qafla.cart.v1";
 const CHANGE_EVENT = "qafla-cart-change";
 
-function read(): string | null {
+function browserStore(): KeyValueStore | null {
   try {
-    return window.localStorage.getItem(STORAGE_KEY);
+    return window.localStorage;
   } catch {
-    return null; // private mode or blocked storage: behave as an empty cart
+    return null; // private mode or blocked storage
   }
 }
 
-function write(cart: Cart | null) {
-  try {
-    if (cart && Object.keys(cart.items).length > 0) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch {
-    // nothing to do; the cart just won't survive a refresh
-  }
+function write(userId: string | null, cart: Cart | null) {
+  writeCart(browserStore(), userId, cart);
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
@@ -62,37 +41,27 @@ function subscribe(onChange: () => void) {
   };
 }
 
-function parse(raw: string | null): Cart | null {
-  if (!raw) return null;
-  try {
-    const cart = JSON.parse(raw) as Cart;
-    return cart && typeof cart.truckId === "string" && cart.items ? cart : null;
-  } catch {
-    return null;
-  }
-}
-
-/** The cart as stored right now, for code that runs outside a render. */
-export function storedCart(): Cart | null {
-  return parse(read());
+/** This account's cart as stored right now, for code that runs outside a render. */
+export function storedCart(userId: string | null): Cart | null {
+  return readCart(browserStore(), userId);
 }
 
 /**
- * The request ID for the cart exactly as it is now, for this customer. The
- * first call makes one and saves it with the cart; later calls return the
- * same one until the dishes or the time change, or someone else signs in.
+ * The request ID for this customer's cart exactly as it is now. The first
+ * call makes one and saves it with the cart; later calls return the same
+ * one until the dishes or the time change.
  */
 export function requestIdForCart(customerId: string): string | null {
-  const cart = parse(read());
+  const cart = storedCart(customerId);
   if (!cart) return null;
   if (cart.requestId && cart.requestBy === customerId) return cart.requestId;
   const requestId = crypto.randomUUID();
-  write({ ...cart, requestId, requestBy: customerId });
+  write(customerId, { ...cart, requestId, requestBy: customerId });
   return requestId;
 }
 
 type CartApi = {
-  /** null until the browser has loaded, and whenever the cart is empty. */
+  /** null until the browser has loaded, when signed out, and whenever the cart is empty. */
   cart: Cart | null;
   /** false during server rendering and the first paint. */
   ready: boolean;
@@ -110,47 +79,65 @@ type CartApi = {
 const CartContext = createContext<CartApi | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { account } = useAccount();
+  // Only a signed-in account has a cart. Everything below reads and writes
+  // that account's own storage key.
+  const userId = account.status === "signed-in" ? account.userId : null;
+
   // useSyncExternalStore reads localStorage after hydration, so the server
   // and the first browser paint agree (both see "not ready").
-  const raw = useSyncExternalStore(subscribe, read, () => null);
+  const snapshot = useCallback(() => readCartRaw(browserStore(), userId), [userId]);
+  const raw = useSyncExternalStore(subscribe, snapshot, () => null);
   const ready = useSyncExternalStore(
     subscribe,
     () => true,
     () => false,
   );
-  const cart = useMemo(() => parse(raw), [raw]);
+  const cart = useMemo(() => parseCart(raw, userId), [raw, userId]);
+
+  // The cart everyone on this browser used to share has no owner. Drop it.
+  useEffect(() => dropLegacyCart(browserStore()), []);
 
   // Every change to the dishes or the time drops requestId: it is a
   // different order now, so it must not reuse the old attempt's ID.
 
-  const setQuantity = useCallback<CartApi["setQuantity"]>((truck, itemId, quantity) => {
-    const current = parse(read());
-    const base: Cart =
-      current && current.truckId === truck.id
-        ? current
-        : { truckId: truck.id, truckName: truck.name, items: {}, slot: null };
-    const items = { ...base.items };
-    const next = Math.max(0, Math.min(MAX_QUANTITY, quantity));
-    if (next === 0) delete items[itemId];
-    else items[itemId] = next;
-    write({ ...base, items, requestId: null, requestBy: null });
-  }, []);
+  const setQuantity = useCallback<CartApi["setQuantity"]>(
+    (truck, itemId, quantity) => {
+      const current = storedCart(userId);
+      const base: Cart =
+        current && current.truckId === truck.id
+          ? current
+          : { truckId: truck.id, truckName: truck.name, items: {}, slot: null };
+      const items = { ...base.items };
+      const next = Math.max(0, Math.min(MAX_QUANTITY, quantity));
+      if (next === 0) delete items[itemId];
+      else items[itemId] = next;
+      write(userId, { ...base, items, requestId: null, requestBy: null });
+    },
+    [userId],
+  );
 
-  const replaceWith = useCallback<CartApi["replaceWith"]>((truck, itemId) => {
-    write({ truckId: truck.id, truckName: truck.name, items: { [itemId]: 1 }, slot: null, requestId: null, requestBy: null });
-  }, []);
+  const replaceWith = useCallback<CartApi["replaceWith"]>(
+    (truck, itemId) => {
+      write(userId, { truckId: truck.id, truckName: truck.name, items: { [itemId]: 1 }, slot: null, requestId: null, requestBy: null });
+    },
+    [userId],
+  );
 
-  const setSlot = useCallback<CartApi["setSlot"]>((slot) => {
-    const current = parse(read());
-    if (current && current.slot !== slot) write({ ...current, slot, requestId: null, requestBy: null });
-  }, []);
+  const setSlot = useCallback<CartApi["setSlot"]>(
+    (slot) => {
+      const current = storedCart(userId);
+      if (current && current.slot !== slot) write(userId, { ...current, slot, requestId: null, requestBy: null });
+    },
+    [userId],
+  );
 
   const forgetRequest = useCallback(() => {
-    const current = parse(read());
-    if (current?.requestId) write({ ...current, requestId: null, requestBy: null });
-  }, []);
+    const current = storedCart(userId);
+    if (current?.requestId) write(userId, { ...current, requestId: null, requestBy: null });
+  }, [userId]);
 
-  const clear = useCallback(() => write(null), []);
+  const clear = useCallback(() => write(userId, null), [userId]);
 
   const api = useMemo<CartApi>(
     () => ({

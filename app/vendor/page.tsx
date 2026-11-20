@@ -6,6 +6,7 @@ import { LoadError } from "@/components/cart-states";
 import { KitchenTicket, StatusChip } from "@/components/kitchen-ticket";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Isolate, PickupSticker, primaryButton, StateLabel } from "@/components/ui";
+import { useAccount } from "@/lib/account";
 import { fetchClosed, fetchKitchenOrders, fetchMyTruck, type Truck } from "@/lib/data";
 import { truckName } from "@/lib/i18n";
 import { groupBySlot, needsCooking, type KitchenOrder } from "@/lib/kitchen";
@@ -24,6 +25,7 @@ import { useSession } from "@/lib/use-session";
 export default function VendorBoardPage() {
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
+  const { signOut } = useAccount();
   const userId = session?.user.id ?? null;
 
   // Step 1: which truck does this account run?
@@ -136,7 +138,7 @@ export default function VendorBoardPage() {
               </Link>
               <button
                 type="button"
-                onClick={() => supabaseBrowser().auth.signOut()}
+                onClick={() => signOut()}
                 className="ms-auto min-h-11 font-bold underline underline-offset-4"
               >
                 {t.signOut}
@@ -165,7 +167,7 @@ export default function VendorBoardPage() {
           <div className="mx-auto max-w-xl pt-10 text-center">
             <h2 className="text-2xl font-extrabold">{t.notVendorTitle}</h2>
             <p className="mt-2 text-muted">{t.notVendorBody}</p>
-            <button type="button" onClick={() => supabaseBrowser().auth.signOut()} className={`${primaryButton} mt-6`}>
+            <button type="button" onClick={() => signOut()} className={`${primaryButton} mt-6`}>
               {t.signOut}
             </button>
           </div>

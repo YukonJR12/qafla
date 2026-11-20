@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CartBar } from "@/components/cart-bar";
 import { LanguageSwitch } from "@/components/language-switch";
-import { SavedCartNotice } from "@/components/saved-cart-notice";
+import { TruckLogo } from "@/components/truck-logo";
 import { ArrowForward, Isolate, PickupSticker, StateLabel } from "@/components/ui";
 import { fetchTrucksTonight, type TruckTonight } from "@/lib/data";
 import { dictionary, truckBlurb, truckCuisine, truckName, type Locale } from "@/lib/i18n";
+import { truckPhoto } from "@/lib/images";
 import { getLocale } from "@/lib/locale-server";
 import { supabasePublic } from "@/lib/supabase";
 import { formatSlot } from "@/lib/time";
@@ -15,6 +17,8 @@ export const dynamic = "force-dynamic";
 
 const FEATURED_TRUCK = "T02"; // Dune Burgers carries the poster (DESIGN.md)
 
+// Explore: the customer's home. One truck on the Red Orange poster, the
+// others listed with their own logos and next pickup time.
 export default async function Explore() {
   const locale = await getLocale();
   const t = dictionary[locale];
@@ -26,21 +30,24 @@ export default async function Explore() {
   const rest = open.filter((truck) => truck !== featured);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-[1160px] overflow-x-clip pb-12">
-      {/* Park masthead: the Qafla logo is the park's identity, kept apart from any truck's poster. */}
-      <header className="border-b border-divider px-4 pt-2 pb-3 md:px-6">
+    // pb leaves room for the last truck above the cart bar.
+    <div className="mx-auto min-h-dvh max-w-[1160px] overflow-x-clip pb-28 md:pb-12">
+      {/*
+        Park masthead. On a phone it carries the Qafla logo; from 768 px the
+        logo is in the bar across the top, so it is not repeated here.
+      */}
+      <header className="border-b border-divider px-4 pt-2 pb-3 md:px-6 md:pt-4">
         <div className="flex items-center justify-between gap-3">
-          <Link href="/" aria-label={t.homeLabel} className="shrink-0 rounded-control">
-            <Image
-              src="/brand/qafla-logo.png"
-              alt=""
-              width={1254}
-              height={1254}
-              sizes="96px"
-              className="size-24"
-              preload
-            />
-          </Link>
+          <Image
+            src="/brand/qafla-logo.png"
+            alt=""
+            width={1254}
+            height={1254}
+            sizes="96px"
+            className="size-24 md:hidden"
+            preload
+          />
+          <h1 className="hidden text-[2rem] leading-tight font-extrabold md:block">{t.chooseTruck}</h1>
           <LanguageSwitch />
         </div>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted">
@@ -50,14 +57,17 @@ export default async function Explore() {
       </header>
 
       <main className="px-4 pt-4 md:px-6">
-        <h1 className="text-[1.75rem] leading-tight font-extrabold">{t.chooseTruck}</h1>
+        <h1 className="text-[1.75rem] leading-tight font-extrabold md:hidden">{t.chooseTruck}</h1>
 
-        <SavedCartNotice className="mt-3" />
-
-        <div className="mt-4 grid gap-4 md:grid-cols-2 md:gap-6">
+        {/* One column on a phone. From 1024 px the poster keeps 5/12 and the other trucks take the rest, two across. */}
+        <div className="mt-4 grid gap-4 md:mt-0 md:grid-cols-2 md:gap-6 lg:grid-cols-[5fr_7fr]">
           {featured && <Poster truck={featured} locale={locale} />}
 
-          <ul className="divide-y divide-divider border-y border-divider md:self-start">
+          <ul
+            className={`divide-y divide-divider border-y border-divider md:self-start lg:grid lg:grid-cols-2 lg:gap-3 lg:divide-y-0 lg:border-y-0 ${
+              featured ? "" : "md:col-span-2 lg:grid-cols-3"
+            }`}
+          >
             {rest.map((truck) => (
               <TruckRow key={truck.id} truck={truck} locale={locale} />
             ))}
@@ -65,11 +75,11 @@ export default async function Explore() {
         </div>
 
         {closed.length > 0 && (
-          <section aria-labelledby="closed-heading" className="mt-10 md:max-w-[calc(50%-12px)]">
+          <section aria-labelledby="closed-heading" className="mt-10">
             <h2 id="closed-heading" className="text-lg font-extrabold">
               {t.closedGroup}
             </h2>
-            <ul className="mt-2 divide-y divide-divider border-y border-divider">
+            <ul className="mt-2 divide-y divide-divider border-y border-divider md:max-w-[calc(50%-12px)] lg:grid lg:max-w-none lg:grid-cols-3 lg:gap-3 lg:divide-y-0 lg:border-y-0">
               {closed.map((truck) => (
                 <TruckRow key={truck.id} truck={truck} locale={locale} />
               ))}
@@ -77,6 +87,9 @@ export default async function Explore() {
           </section>
         )}
       </main>
+
+      {/* The cart stays within reach while choosing a truck. From 768 px it is in the bar across the top instead. */}
+      <CartBar showTruck className="md:hidden" />
     </div>
   );
 }
@@ -94,12 +107,13 @@ function Poster({ truck, locale }: { truck: TruckTonight; locale: Locale }) {
   const t = dictionary[locale];
   const name = truckName(truck, locale);
   const words = name.split(" ");
+  const photo = truckPhoto(truck.id);
 
   return (
     <Link
       href={`/trucks/${truck.id}`}
       aria-label={t.orderFromLabel(name, availability(truck, locale))}
-      className="poster-grid relative block rounded-poster bg-red-orange p-4 pb-5 text-snowy-white"
+      className="poster-grid relative block rounded-poster bg-red-orange p-4 pb-5 text-snowy-white md:self-start"
     >
       <p className="inline-block rounded-control bg-ink px-2.5 py-1 text-sm font-semibold text-snowy-white">
         {truckCuisine(truck, locale)}
@@ -130,16 +144,11 @@ function Poster({ truck, locale }: { truck: TruckTonight; locale: Locale }) {
         </svg>
 
         {/* The food on a white card, tilted 4 degrees and breaking the poster's edge. */}
-        <div className="absolute -end-7 -bottom-1 size-36 -rotate-[4deg] overflow-hidden rounded-panel border border-ink bg-white shadow-[0_10px_24px_rgb(16_16_16/0.35)] rtl:rotate-[4deg]">
-          <Image
-            src="/trucks/dune-burgers.webp"
-            alt=""
-            width={640}
-            height={640}
-            sizes="176px"
-            className="size-full object-cover"
-          />
-        </div>
+        {photo && (
+          <div className="absolute -end-7 -bottom-1 size-36 -rotate-[4deg] overflow-hidden rounded-panel border border-ink bg-white shadow-[0_10px_24px_rgb(16_16_16/0.35)] rtl:rotate-[4deg]">
+            <Image src={photo} alt="" width={640} height={640} sizes="176px" className="size-full object-cover" />
+          </div>
+        )}
       </div>
 
       <div className="relative mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -159,30 +168,32 @@ function Poster({ truck, locale }: { truck: TruckTonight; locale: Locale }) {
   );
 }
 
-/** A plain row for every other truck: name, cuisine, what it serves, next pickup. */
+/**
+ * Every other truck: its own logo, name, cuisine and next pickup. A plain
+ * row on a phone; from 1024 px a bordered card, two or three across.
+ */
 function TruckRow({ truck, locale }: { truck: TruckTonight; locale: Locale }) {
   return (
     <li>
       <Link
         href={`/trucks/${truck.id}`}
-        className="flex items-center justify-between gap-3 py-3.5 transition-colors duration-[120ms] ease-out hover:bg-subtle"
+        className="flex h-full items-center gap-3 py-3 transition-colors duration-[120ms] ease-out hover:bg-subtle lg:rounded-panel lg:border lg:border-divider lg:p-3 lg:hover:border-ink"
       >
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold">{truckName(truck, locale)}</h2>
+        <TruckLogo truck={truck} className="size-16 lg:size-20" sizes="80px" />
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg leading-snug font-bold">{truckName(truck, locale)}</h2>
           <p className="text-sm text-muted">
             {truckCuisine(truck, locale)} · {truckBlurb(truck, locale)}
           </p>
+          <p className="mt-1.5 flex items-center gap-1.5 text-sm font-bold">
+            {truck.nextSlot && !truck.closed ? (
+              <Isolate className="rounded-full border border-outline px-2.5 py-0.5">{availability(truck, locale)}</Isolate>
+            ) : (
+              <span className="text-muted">{availability(truck, locale)}</span>
+            )}
+          </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 text-end text-sm font-bold">
-          {truck.nextSlot && !truck.closed ? (
-            <Isolate className="rounded-full border border-outline px-2.5 py-1">
-              {formatSlot(truck.nextSlot, locale)}
-            </Isolate>
-          ) : (
-            <span className="max-w-[9.5rem] text-muted">{availability(truck, locale)}</span>
-          )}
-          <ArrowForward className="size-4 text-muted" />
-        </div>
+        <ArrowForward className="size-4 text-muted" />
       </Link>
     </li>
   );

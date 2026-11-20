@@ -7,6 +7,7 @@ import { LoadError } from "@/components/cart-states";
 import { LanguageSwitch } from "@/components/language-switch";
 import { ParkSlotDetail } from "@/components/park-slot-detail";
 import { ArrowForward, CheckIcon, Isolate, LockIcon, primaryButton, StateLabel } from "@/components/ui";
+import { useAccount } from "@/lib/account";
 import { fetchMyRole, fetchParkTonight, type ParkTonight, type ParkTruck } from "@/lib/data";
 import { truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
@@ -55,6 +56,7 @@ const TINT = [
 function ManagerDashboard() {
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
+  const { signOut } = useAccount();
   const userId = session?.user.id ?? null;
 
   // Step 1: is this the manager's account? (Only to choose what to show.)
@@ -167,6 +169,17 @@ function ManagerDashboard() {
   const busiestTruck = busiest && park?.trucks.find((truck) => truck.id === busiest.truckId);
   const nextSlot = currentSlot(now.seconds);
 
+  // "Slot details" in the navigation arrives as ?view=slot with no truck
+  // chosen. Open the busiest slot's orders, or the first truck's at the
+  // current time on a quiet night, so the link always lands on real tickets.
+  const wantsSlot = params.get("view") === "slot" && !truckId;
+  const openSlot = busiest?.slot ?? slot;
+  const openTruck = busiest?.truckId ?? park?.trucks[0]?.id ?? null;
+  useEffect(() => {
+    if (!wantsSlot || !openTruck) return;
+    window.history.replaceState(null, "", `?${new URLSearchParams({ slot: openSlot.slice(0, 5), truck: openTruck })}`);
+  }, [wantsSlot, openSlot, openTruck]);
+
   /** The short booking line for one truck at one time. */
   function bookingLine(truck: ParkTruck, at: string): { state: BookingState; text: string } {
     const usage = truck.slots.find((s) => s.slot_start === at);
@@ -213,7 +226,7 @@ function ManagerDashboard() {
               </span>
               <button
                 type="button"
-                onClick={() => supabaseBrowser().auth.signOut()}
+                onClick={() => signOut()}
                 className="ms-auto min-h-11 font-bold underline underline-offset-4"
               >
                 {t.signOut}
@@ -242,7 +255,7 @@ function ManagerDashboard() {
           <div className="mx-auto max-w-xl pt-10 text-center">
             <h2 className="text-2xl font-extrabold">{t.notManagerTitle}</h2>
             <p className="mt-2 text-muted">{t.notManagerBody}</p>
-            <button type="button" onClick={() => supabaseBrowser().auth.signOut()} className={`${primaryButton} mt-6`}>
+            <button type="button" onClick={() => signOut()} className={`${primaryButton} mt-6`}>
               {t.signOut}
             </button>
           </div>

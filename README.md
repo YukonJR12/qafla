@@ -45,11 +45,50 @@ pnpm build          # production build
 pnpm start          # serve the production build (after pnpm build)
 ```
 
+## Sign-in first, and getting around
+
+Nobody uses the app signed out. Opening it shows the Qafla logo while the browser restores its saved session, and then:
+
+| Who | Where they land | Their navigation |
+| --- | --- | --- |
+| Nobody signed in | The one sign-in screen (English or Arabic). | None until they sign in. |
+| Customer | Explore | Explore, Orders, Account. The cart stays within reach on Explore and on a menu. |
+| Vendor with a truck | Kitchen | Kitchen, Capacity, Account. |
+| Vendor with no truck assigned | A screen that says so, with "Check again" and "Sign out". | None. |
+| Park manager | Park overview | Overview, Slot details, Account. |
+
+On a phone the navigation is a bar across the bottom. From 768 px it moves to a bar across the top with the Qafla logo, and the page uses the full width (the menu gets a cart summary beside it from 1024 px).
+
+| Where | What lives there |
+| --- | --- |
+| `lib/routes.ts` | The rules, with no browser or database in them: each role's home, which screens it may open, where a sign-in returns to. Unit-tested. |
+| `lib/account.tsx` | Who is signed in. It restores the Supabase session, then reads the role, the name and (for a vendor) the truck from the database. |
+| `components/session-gate.tsx` | The launch gate. It shows the logo, sends people to sign-in or to their workspace, and draws the navigation. |
+| `components/app-nav.tsx` | The bottom bar and the desktop top bar. |
+| `app/orders/page.tsx` | Orders: tonight's unfinished orders first, then past orders. Each one reopens its live ticket (`/orders/<id>`). |
+| `app/account/page.tsx` | The account, the language and "Sign out". |
+| `lib/cart-store.ts` | Where the cart is kept: one storage key per account. Unit-tested. |
+| `lib/images.ts` | Which truck logo and dish photo belongs to which seed ID. |
+
+**The role comes from the database.** The gate reads `profiles.role` for the signed-in account and never trusts anything stored in the browser. It only chooses which screen to show. What an account can read or change is still decided by the database (row-level security and the order functions), so typing another role's address shows nothing that role's data. A signed-in user who opens another role's screen is sent to their own home.
+
+**Creating an account.** Sign-in is one email and password form for everyone. "Create an account" asks one extra question: Customer or Truck vendor. The choice is sent with the signup and the database's signup trigger saves the role; it accepts `customer` or `vendor` and turns anything else into `customer`. The app then routes from the saved profile. A new vendor has no truck until the park assigns one (see "Create the park manager and assign vendors"), so they land on the "No truck is assigned" screen. The manager role is only ever set in the database.
+
+**Returning to a link.** A signed-out visitor who opens a page, for example their pickup ticket, is sent to `/sign-in?next=…`. After sign-in they go back to that page if their role may open it, and to their own home if not. The address must be a plain page inside the app; anything else is ignored.
+
+**Several people on one phone.** Each account has its own cart (`qafla.cart.v2.<account id>`) and its own unconfirmed checkout attempt (`lib/pending-order.ts`), and both also name their owner. Signing out ends the session in this browser only and returns to a clean sign-in screen. The next person starts from their own home with their own cart and orders, and every screen is rebuilt from nothing for them. A cart is not deleted on sign-out, so it is there when its owner signs in again. It holds dish IDs and quantities only. The cart that every visitor used to share (`qafla.cart.v1`) had no owner, so it is removed instead of being handed to whoever signs in next.
+
+**Pictures.** The Qafla logo is the app's identity on the launch screen, sign-in, Explore, Account and the desktop bar. Each truck's own logo is on Explore, on its menu and in Orders, and each dish has its supplied photo. The originals were resized to WebP (`public/trucks/logos/`, `public/dishes/`, under 1 MB in total). Dune Burgers has no logo or dish photos in the pack yet, so it keeps its burger photo and plain menu rows.
+
+**Motion.** Three short animations, 180 ms each: the logo arriving, the cart count when a dish is added, and the status when an order moves on. With "reduce motion" switched on they do not play.
+
+Screenshots are in `docs/screenshots/sign-in-first/`.
+
 ## Customer ordering
 
 One customer journey works end to end against Supabase:
 
-`/` welcome → `/explore` → `/trucks/T02` menu → `/cart` → `/checkout` (pickup time, pay at pickup) → `/orders/<id>` ticket.
+sign in → `/explore` → `/trucks/T02` menu → `/cart` → `/checkout` (pickup time, pay at pickup) → `/orders/<id>` ticket.
 
 To run it, copy `.env.example` to `.env.local` and fill in the project URL and publishable key. Only those two public values are used by the app.
 
@@ -60,7 +99,7 @@ To run it, copy `.env.example` to `.env.local` and fill in the project URL and p
 | `lib/money.ts` | The one formatter for prices: `3.200 KWD` in English, `3.200 د.ك.` in Arabic. |
 | `lib/time.ts` | Kuwait time and pickup-slot formatting (`7:15 PM`, `7:15 م`). |
 | `lib/i18n.ts` | Every English and Arabic string, plus Arabic display labels for the seed trucks and dishes. |
-| `lib/cart.tsx` | The cart, kept in the browser's `localStorage` so it survives refresh, language switch and sign-in. It stores item IDs and quantities, never prices. |
+| `lib/cart.tsx`, `lib/cart-store.ts` | The signed-in account's cart, kept in the browser's `localStorage` so it survives a refresh and a language switch. It stores item IDs and quantities, never prices. |
 | `lib/data.ts`, `lib/supabase.ts` | Reads from Supabase and the two clients (signed-out for public data, signed-in for the customer). |
 
 How an order is placed: checkout calls the database function `place_order` with the truck ID, the pickup time and a list of item IDs and quantities. The database prices the order, checks the truck, the time and the slot, and saves it. The ticket page then reads the saved order back by its ID, so refreshing it never places another order.

@@ -109,6 +109,63 @@ export function StarIcon({ className = "", filled = false }: IconProps & { fille
   );
 }
 
+/** A ticket stub: the customer's orders. */
+export function TicketIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M4 7h16v3a2 2 0 000 4v3H4v-3a2 2 0 000-4V7zM14 7v10" />
+    </svg>
+  );
+}
+
+export function UserIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4.5 20a7.5 7.5 0 0115 0" />
+    </svg>
+  );
+}
+
+/** A flame: the kitchen board. */
+export function FlameIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 01-10 0c0-2 1-3.2 2-4 .2 1.6 1 2.4 2 2.6C10.5 9 11 6 12 3z" />
+    </svg>
+  );
+}
+
+/** Sliders: a setting, such as capacity. */
+export function SlidersIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="17" r="2" />
+    </svg>
+  );
+}
+
+/** A grid: the park overview. */
+export function GridIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M4 10h16M4 15h16M10 4v16M15 4v16" />
+    </svg>
+  );
+}
+
+export function ClockIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
 export function MinusIcon({ className = "" }: IconProps) {
   return (
     <svg {...base} className={`shrink-0 ${className}`}>

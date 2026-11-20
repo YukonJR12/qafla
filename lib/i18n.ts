@@ -368,6 +368,61 @@ const en = {
   ratedTitle: "Your rating",
   ratedStars: (n: number) => `${n} of 5 stars`,
   ratedThanks: "Thanks. Your rating is saved.",
+
+  // Launch and sign-in
+  restoring: "Opening Qafla Pickup…",
+  welcomeBack: "Sign in to Qafla Pickup",
+  signInLead: "One sign-in for customers, truck vendors and the park manager.",
+  signUpLead: "Choose how you’ll use Qafla Pickup.",
+  staffHint: "The park manager’s account is set up by the park.",
+  accountType: "I’m signing up as",
+  signupRole: {
+    customer: { name: "Customer", help: "Order ahead and collect at the truck." },
+    vendor: { name: "Truck vendor", help: "Run your truck’s kitchen. The park links your truck after you sign up." },
+  },
+  accountErrorTitle: "We couldn’t open your account",
+  accountErrorBody: "You’re still signed in. Check your connection and try again.",
+  unassignedTitle: "No truck is assigned to this account yet",
+  unassignedBody: "Your vendor sign-in works, but the park hasn’t linked it to a truck. Ask the park manager to assign your truck, then check again.",
+  checkAgain: "Check again",
+
+  // Navigation
+  navLabel: "Main",
+  nav: {
+    explore: "Explore",
+    orders: "Orders",
+    account: "Account",
+    kitchen: "Kitchen",
+    capacity: "Capacity",
+    overview: "Overview",
+    slot: "Slot details",
+  } as Record<string, string>,
+  cartWithCount: (n: number) => (n === 0 ? "Cart, empty" : n === 1 ? "Cart, 1 item" : `Cart, ${n} items`),
+  cartSummary: "Your cart",
+  cartSummaryEmpty: "Add a dish to start your order.",
+
+  // Orders list
+  ordersTitle: "Orders",
+  activeOrders: "Active",
+  pastOrders: "Past orders",
+  noActiveOrders: "Nothing on the way right now.",
+  noOrdersCustomerBody: "When you place an order, its ticket appears here.",
+  ordersLoadErrorTitle: "We couldn’t load your orders",
+  ordersLoadErrorBody: "Check your connection and try again.",
+  pickupAt: (time: string) => `Pickup ${time}`,
+  openTicket: "Open ticket",
+  backToOrders: "Back to orders",
+  myOrders: "See your orders",
+  orderNotYoursBody: "It isn’t on this account. Your own orders are listed in Orders.",
+
+  // Account
+  accountTitle: "Account",
+  roleLabel: "Signed in as",
+  roleName: { customer: "Customer", vendor: "Truck vendor", manager: "Park manager" } as Record<string, string>,
+  yourTruck: "Your truck",
+  language: "Language",
+  signOutNote: "Signing out keeps your cart on this device for the next time you sign in. Nobody else can see it.",
+  signingOut: "Signing out…",
 };
 
 type Dict = typeof en;
@@ -716,6 +771,57 @@ const ar: Dict = {
   ratedTitle: "تقييمك",
   ratedStars: (n) => `${n} من 5 نجوم`,
   ratedThanks: "شكراً. تقييمك محفوظ.",
+
+  restoring: "جارٍ فتح قافلة…",
+  welcomeBack: "سجّل الدخول إلى قافلة",
+  signInLead: "تسجيل دخول واحد للزباين وأصحاب العربات ومدير الساحة.",
+  signUpLead: "اختر طريقة استخدامك لقافلة.",
+  staffHint: "حساب مدير الساحة تجهّزه إدارة الساحة.",
+  accountType: "أسجّل كـ",
+  signupRole: {
+    customer: { name: "زبون", help: "أطلب قبل ما أوصل وأستلم من العربة." },
+    vendor: { name: "بائع عربة", help: "أدير مطبخ عربتي. إدارة الساحة تربط عربتك بعد التسجيل." },
+  },
+  accountErrorTitle: "ما قدرنا نفتح حسابك",
+  accountErrorBody: "أنت للحين مسجّل الدخول. تأكد من الاتصال وحاول مرة ثانية.",
+  unassignedTitle: "ما في عربة مربوطة بهذا الحساب للحين",
+  unassignedBody: "تسجيل دخولك كبائع شغّال، بس إدارة الساحة ما ربطته بعربة. اطلب من مدير الساحة يربط عربتك، وبعدين تحقق مرة ثانية.",
+  checkAgain: "تحقق مرة ثانية",
+
+  navLabel: "التنقل الرئيسي",
+  nav: {
+    explore: "العربات",
+    orders: "طلباتي",
+    account: "الحساب",
+    kitchen: "المطبخ",
+    capacity: "السعة",
+    overview: "الساحة",
+    slot: "تفاصيل الوقت",
+  },
+  cartWithCount: (n) => (n === 0 ? "السلة، فاضية" : `السلة، ${arItems(n)}`),
+  cartSummary: "سلتك",
+  cartSummaryEmpty: "أضف صنف عشان تبدأ طلبك.",
+
+  ordersTitle: "طلباتي",
+  activeOrders: "الحالية",
+  pastOrders: "الطلبات السابقة",
+  noActiveOrders: "ما في طلب بالطريق الحين.",
+  noOrdersCustomerBody: "لما تأكد طلب، تذكرته تطلع هني.",
+  ordersLoadErrorTitle: "ما قدرنا نحمّل طلباتك",
+  ordersLoadErrorBody: "تأكد من الاتصال وحاول مرة ثانية.",
+  pickupAt: (time) => `الاستلام ${time}`,
+  openTicket: "افتح التذكرة",
+  backToOrders: "رجوع إلى طلباتي",
+  myOrders: "شوف طلباتك",
+  orderNotYoursBody: "هذا الطلب مو على هذا الحساب. طلباتك موجودة في «طلباتي».",
+
+  accountTitle: "الحساب",
+  roleLabel: "مسجّل الدخول كـ",
+  roleName: { customer: "زبون", vendor: "بائع عربة", manager: "مدير الساحة" },
+  yourTruck: "عربتك",
+  language: "اللغة",
+  signOutNote: "تسجيل الخروج يخلّي سلتك محفوظة على هذا الجهاز للمرة الجاية. ما أحد غيرك يشوفها.",
+  signingOut: "جارٍ تسجيل الخروج…",
 };
 
 function arPlaces(n: number): string {

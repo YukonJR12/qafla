@@ -65,7 +65,7 @@ export default function OrderPage() {
 
   return (
     <div className="min-h-dvh">
-      <AppHeader title={t.yourOrder} backHref="/explore" backLabel={t.backToTrucksFromTicket} />
+      <AppHeader title={t.yourOrder} backHref="/orders" backLabel={t.backToOrders} />
 
       <main className="mx-auto max-w-xl px-4 pt-4 pb-10 md:px-6">
         {!loaded ? (
@@ -75,9 +75,10 @@ export default function OrderPage() {
         ) : !order ? (
           <div className="pt-10 text-center">
             <h2 className="text-2xl font-extrabold">{t.orderNotFound}</h2>
-            <p className="mt-2 text-muted">{t.orderNotFoundBody}</p>
-            <Link href={`/sign-in?next=/orders/${id}`} className={`${primaryButton} mt-6`}>
-              {t.signIn}
+            {/* Someone is always signed in here, so this order belongs to another account (or does not exist). */}
+            <p className="mt-2 text-muted">{t.orderNotYoursBody}</p>
+            <Link href="/orders" className={`${primaryButton} mt-6`}>
+              {t.myOrders}
             </Link>
           </div>
         ) : (
@@ -89,7 +90,7 @@ export default function OrderPage() {
             */}
             <div role="status">
               {order.status === "ready" && (
-                <p className="mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3">
+                <p className="reveal-up mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3">
                   <CheckIcon className="size-7" />
                   <span className="min-w-0">
                     <span className="block text-lg leading-snug font-extrabold">{t.statusHelp.ready}</span>
@@ -228,8 +229,8 @@ export default function OrderPage() {
                   {t.reconnecting}
                 </p>
               )}
-              <Link href="/explore" className={primaryButton}>
-                {t.backToTrucksFromTicket}
+              <Link href="/orders" className={primaryButton}>
+                {t.backToOrders}
               </Link>
             </div>
           </>

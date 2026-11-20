@@ -316,3 +316,46 @@ export async function rateOrder(db: SupabaseClient, orderId: string, stars: numb
   if (error) throw new Error(error.message);
   return data as Rating;
 }
+
+// ---------------------------------------------------------------------------
+// The signed-in account and its own orders
+// ---------------------------------------------------------------------------
+
+/** This account's role and name, as the database holds them. */
+export async function fetchMyProfile(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ role: string; display_name: string | null } | null> {
+  const { data, error } = await db.from("profiles").select("role,display_name").eq("id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/** An order as the customer's Orders list shows it. */
+export type MyOrder = {
+  id: string;
+  ticket_ref: string;
+  truck_id: string;
+  service_date: string;
+  slot_start: string;
+  status: string;
+  total_kwd: number;
+  placed_at: string;
+  trucks: { id: string; name: string } | null;
+};
+
+/**
+ * This customer's own orders, newest first. Row-level security already
+ * returns a customer only their own orders; asking for `customer_id` as
+ * well keeps a vendor or manager account from listing a truck's orders here.
+ */
+export async function fetchMyOrders(db: SupabaseClient, customerId: string): Promise<MyOrder[]> {
+  const { data, error } = await db
+    .from("orders")
+    .select("id,ticket_ref,truck_id,service_date,slot_start,status,total_kwd,placed_at,trucks(id,name)")
+    .eq("customer_id", customerId)
+    .order("placed_at", { ascending: false })
+    .limit(60);
+  if (error) throw new Error(error.message);
+  return data as unknown as MyOrder[];
+}
