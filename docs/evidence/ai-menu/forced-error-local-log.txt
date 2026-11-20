@@ -1,0 +1,5 @@
+# Forced error: the OpenRouter key was broken on purpose (OPENROUTER_API_KEY set to a made-up value).
+# Where: local production build (pnpm start) of this branch, calling the real OpenRouter. 2026-11-20.
+# What the vendor saw: "Couldn't suggest a description. Try again or write your own. Your edits are still here. Reference aafc1d85"
+# The server's log line (stderr). "vendor" is the first 8 characters of the test vendor's account ID. No key, email or photo is logged.
+{"event":"ai_suggest_failed","requestId":"aafc1d85","problem":"ai_failed","itemId":"M203","vendor":"51cc8af8","ms":1783,"stage":"openrouter","model":"anthropic/claude-haiku-5.5","status":401,"detail":"User not found."}
