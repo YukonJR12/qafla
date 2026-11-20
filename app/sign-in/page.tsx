@@ -74,7 +74,8 @@ export default function SignInPage() {
       </div>
 
       <div className="flex flex-1 flex-col justify-center py-4">
-        <div className="logo-enter flex flex-col items-center text-center">
+        {/* The logo already made its entrance on the launch screen, so here it is simply present. */}
+        <div className="flex flex-col items-center text-center">
           <Image
             src="/brand/qafla-logo.png"
             alt=""
