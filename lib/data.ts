@@ -185,3 +185,82 @@ export async function setOrderStatus(
   if (error) throw new Error(error.message);
   return data as { id: string; status: string; rejection_reason: string | null };
 }
+
+// ---------------------------------------------------------------------------
+// The park manager's dashboard
+// ---------------------------------------------------------------------------
+
+/** An order as the manager's dashboard reads it. */
+export type ParkOrder = KitchenOrder & { updated_at: string };
+
+export type ParkTruck = Truck & {
+  /** When the park manager closed this truck for tonight, or null. */
+  closedAt: string | null;
+  /** Closed to new orders: by the manager for tonight, or by the vendor's own switch. */
+  closed: boolean;
+  /** Tonight's 24 slots with the database's own count of places taken. */
+  slots: Slot[];
+};
+
+export type ParkTonight = { trucks: ParkTruck[]; orders: ParkOrder[] };
+
+/** This account's role, as the database holds it. Only used to choose which screen to show. */
+export async function fetchMyRole(db: SupabaseClient, userId: string): Promise<string | null> {
+  const { data, error } = await db.from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.role ?? null;
+}
+
+/**
+ * Tonight across the park: every truck, its closure state, its 24 slot
+ * counts, and every order behind those counts.
+ *
+ * The counts come from the database function `slot_usage`, the same one the
+ * customer's slot picker uses. The orders come from the `orders` table, and
+ * row-level security returns all of them only to the park manager. Anyone
+ * else calling this gets their own orders at most.
+ */
+export async function fetchParkTonight(db: SupabaseClient): Promise<ParkTonight> {
+  const today = kuwaitNow().date;
+  const [trucks, closures, orders] = await Promise.all([
+    db.from("trucks").select("id,name,cuisine,blurb,slot_capacity,is_open").order("id"),
+    db.from("truck_closures").select("truck_id,closed_at").eq("service_date", today),
+    db
+      .from("orders")
+      .select(
+        "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,total_kwd,rejection_reason,placed_at,updated_at,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
+      )
+      .eq("service_date", today)
+      .order("slot_start")
+      .order("placed_at"),
+  ]);
+  if (trucks.error) throw new Error(trucks.error.message);
+  if (closures.error) throw new Error(closures.error.message);
+  if (orders.error) throw new Error(orders.error.message);
+  const closedAt = new Map(closures.data.map((c) => [c.truck_id as string, c.closed_at as string]));
+
+  return {
+    trucks: await Promise.all(
+      trucks.data.map(async (truck) => ({
+        ...truck,
+        closedAt: closedAt.get(truck.id) ?? null,
+        closed: !truck.is_open || closedAt.has(truck.id),
+        slots: await fetchSlots(db, truck.id),
+      })),
+    ),
+    orders: orders.data as unknown as ParkOrder[],
+  };
+}
+
+/**
+ * Asks the database to close a truck for tonight (close_truck_for_tonight).
+ * The database refuses anyone who is not the park manager. It answers with
+ * the saved closure, and only then does the screen show the truck as closed.
+ */
+export async function closeTruckForTonight(db: SupabaseClient, truckId: string): Promise<{ truck_id: string; closed_at: string }> {
+  const { data, error } = await db.rpc("close_truck_for_tonight", { p_truck_id: truckId });
+  if (error) throw new Error(error.message);
+  const closure = data as { truck_id: string; closed_at: string } | null;
+  if (!closure?.closed_at) throw new Error("closure_not_confirmed");
+  return closure;
+}

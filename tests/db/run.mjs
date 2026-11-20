@@ -1094,6 +1094,86 @@ try {
     return "supabase_realtime publishes public.orders; who hears a change is still decided by orders_select";
   });
 
+  // -------------------------------------------------------------------------
+  section("Dana's dashboard: every count is explained by tickets she can read");
+
+  await check("for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count", async () => {
+    const result = await asUser(c1, dana, async (c) => {
+      // What the dashboard lists: tonight's orders, minus rejected and cancelled.
+      const tickets = (
+        await c.query(
+          `select truck_id, slot_start::text as slot, count(*)::int as n from public.orders
+           where service_date = $1 and ${QUALIFYING} group by 1, 2`,
+          [today],
+        )
+      ).rows;
+      const listed = new Map(tickets.map((r) => [`${r.truck_id} ${r.slot}`, r.n]));
+      // What the dashboard prints: the database's own count.
+      let cells = 0;
+      let busy = 0;
+      for (const truck of ["T01", "T02", "T03", "T04", "T05", "T06"]) {
+        const { rows } = await c.query("select slot_start::text as slot, booked from public.slot_usage($1)", [truck]);
+        assert.equal(rows.length, 24);
+        for (const row of rows) {
+          assert.equal(row.booked, listed.get(`${truck} ${row.slot}`) ?? 0, `${truck} ${row.slot}`);
+          cells += 1;
+          if (row.booked > 0) busy += 1;
+        }
+      }
+      const statuses = (
+        await c.query("select status::text as status, count(*)::int as n from public.orders where service_date = $1 group by 1", [today])
+      ).rows;
+      return { cells, busy, statuses: Object.fromEntries(statuses.map((r) => [r.status, r.n])) };
+    });
+    assert.equal(result.cells, 144);
+    assert.ok(result.busy > 0);
+    // The comparison only means something if each kind of order is present.
+    assert.ok(result.statuses.collected > 0 && result.statuses.rejected > 0 && result.statuses.cancelled > 0);
+    return `144 cells checked, ${result.busy} with orders; collected ${result.statuses.collected} counted, rejected ${result.statuses.rejected} and cancelled ${result.statuses.cancelled} left out`;
+  });
+
+  await check("the same dashboard read by a customer or a vendor returns only their own orders", async () => {
+    const read = (user) =>
+      asUser(c1, user, async (c) => ({
+        role: (await c.query("select role::text as role from public.profiles where id = auth.uid()")).rows[0].role,
+        seen: (await c.query("select count(*)::int as n from public.orders where service_date = $1", [today])).rows[0].n,
+        notMine: (
+          await c.query(
+            "select count(*)::int as n from public.orders where service_date = $1 and customer_id <> auth.uid() and truck_id is distinct from private.my_truck_id()",
+            [today],
+          )
+        ).rows[0].n,
+      }));
+    const all = (await totals()).orders;
+    const manager = await read(dana);
+    const customer = await read(badr);
+    const vendor = await read(tacoVendor);
+    assert.equal(manager.role, "manager");
+    assert.equal(manager.seen, all);
+    assert.equal(customer.notMine, 0);
+    assert.equal(vendor.notMine, 0);
+    assert.ok(customer.seen < all && vendor.seen < all);
+    return `manager reads ${manager.seen} of ${all}; customer ${customer.seen}, vendor ${vendor.seen}, none of them someone else's`;
+  });
+
+  await check("closing a truck answers with the saved closure; a second tap changes nothing; everyone can read it", async () => {
+    const before = await totals();
+    const close = () =>
+      asUser(c1, dana, async (c) => (await c.query("select truck_id, closed_at from public.close_truck_for_tonight('T03')")).rows[0]);
+    const first = await close();
+    const second = await close();
+    assert.equal(first.truck_id, "T03");
+    assert.ok(first.closed_at instanceof Date);
+    assert.deepEqual(second, first);
+    await rejects(asUser(c1, tacoVendor, (c) => c.query("select public.close_truck_for_tonight('T04')")), "not_a_manager");
+    const { rows } = await asUser(c2, badr, (c) =>
+      c.query("select count(*)::int as n from public.truck_closures where truck_id = 'T03' and service_date = $1", [today]),
+    );
+    assert.equal(rows[0].n, 1);
+    assert.deepEqual(await totals(), before); // closing touches no order
+    return "one closure row for T03, same closed_at both times; a vendor is refused; orders untouched";
+  });
+
   console.log(`\n${passedCount()} checks passed.`);
 } catch (error) {
   failed = true;

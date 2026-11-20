@@ -31,8 +31,10 @@ function SignInForm() {
   const next = safeNext(useSearchParams().get("next"));
   const { t } = useLocale();
   const { count } = useCart();
-  // The kitchen board sends vendors here. Vendor accounts are not created on this page.
-  const forVendor = next.startsWith("/vendor");
+  // The kitchen board sends vendors here, and the park dashboard sends the
+  // manager. Neither kind of account is created on this page.
+  const forManager = next.startsWith("/manager");
+  const forVendor = next.startsWith("/vendor") || forManager;
 
   const [mode, setMode] = useState<Mode>("sign-in");
   const [busy, setBusy] = useState(false);
@@ -85,10 +87,10 @@ function SignInForm() {
 
       <main className="mx-auto max-w-xl px-4 pt-6 pb-10 md:px-6">
         <h2 className="text-2xl leading-tight font-extrabold text-balance">
-          {forVendor ? t.vendorSignInTitle : mode === "sign-in" ? t.signInTitle : t.signUpTitle}
+          {forManager ? t.managerSignInTitle : forVendor ? t.vendorSignInTitle : mode === "sign-in" ? t.signInTitle : t.signUpTitle}
         </h2>
         {forVendor ? (
-          <p className="mt-2 text-muted">{t.vendorSignInBody}</p>
+          <p className="mt-2 text-muted">{forManager ? t.managerSignInBody : t.vendorSignInBody}</p>
         ) : (
           count > 0 && <p className="mt-2 text-muted">{t.cartKept}</p>
         )}
