@@ -23,6 +23,19 @@ export function isRole(value: unknown): value is Role {
   return value === "customer" || value === "vendor" || value === "manager";
 }
 
+/** The two kinds of account a person can create for themselves. The manager is never one of them. */
+export type SignupRole = "customer" | "vendor";
+
+/**
+ * The role a new account asks for. Anything other than "vendor" is a
+ * customer, which is also what the database's signup trigger does: it
+ * accepts 'customer' or 'vendor' and turns everything else, including
+ * 'manager', into 'customer'.
+ */
+export function signupRole(value: unknown): SignupRole {
+  return value === "vendor" ? "vendor" : "customer";
+}
+
 /** The first screen of each workspace. */
 export function homeFor(role: Role): string {
   return role === "vendor" ? "/vendor" : role === "manager" ? "/manager" : "/explore";

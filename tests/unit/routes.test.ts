@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { activeNav, afterSignIn, homeFor, mayOpen, navFor, route, safeNext, signInUrl, type Who } from "../../lib/routes.ts";
+import { activeNav, afterSignIn, homeFor, mayOpen, navFor, route, safeNext, signInUrl, signupRole, type Who } from "../../lib/routes.ts";
 
 const customer: Who = { status: "signed-in", role: "customer", hasTruck: false };
 const vendor: Who = { status: "signed-in", role: "vendor", hasTruck: true };
@@ -89,6 +89,17 @@ test("a vendor with no truck assigned gets its own screen everywhere, and is not
   for (const path of ["/", "/vendor", "/vendor/capacity", "/account", "/explore", "/sign-in"]) {
     assert.deepEqual(route(unassigned, path), { view: "unassigned", redirect: null }, path);
   }
+});
+
+test("creating an account can ask for customer or vendor, never manager", () => {
+  assert.equal(signupRole("customer"), "customer");
+  assert.equal(signupRole("vendor"), "vendor");
+  for (const other of ["manager", "admin", "", null, undefined, "VENDOR", 1]) assert.equal(signupRole(other), "customer", String(other));
+});
+
+test("a new vendor has no truck yet, so the first thing they see is the unassigned screen", () => {
+  assert.deepEqual(route({ status: "signed-in", role: "vendor", hasTruck: false }, "/sign-in"), { view: "unassigned", redirect: null });
+  assert.equal(route({ status: "signed-in", role: "customer", hasTruck: false }, "/sign-in").redirect, "/explore");
 });
 
 test("a profile that could not be read shows a problem, never a guessed workspace", () => {

@@ -3,8 +3,9 @@
 import Image from "next/image";
 import { useState } from "react";
 import { LanguageSwitch } from "@/components/language-switch";
-import { primaryButton } from "@/components/ui";
+import { CheckIcon, primaryButton } from "@/components/ui";
 import { useLocale } from "@/lib/locale";
+import { signupRole, type SignupRole } from "@/lib/routes";
 import { supabaseBrowser } from "@/lib/supabase";
 
 type Mode = "sign-in" | "sign-up";
@@ -18,11 +19,17 @@ type AuthProblem = "invalidLogin" | "emailTaken" | "weakPassword" | "confirmEmai
 // and opens the right workspace, or the page the visitor first asked for
 // if their role may open it (see lib/routes.ts).
 //
-// Only customer accounts can be created here. Vendor and manager accounts
-// are set up by the park.
+// "Create account" offers two kinds of account: customer or truck vendor.
+// The choice is sent with the signup, and the database's own signup trigger
+// saves the role (it accepts 'customer' or 'vendor' and nothing else). The
+// app then routes from that saved profile, never from what was chosen here.
+// A new vendor has no truck until the park assigns one, so they land on the
+// "no truck assigned" screen. The manager's account is only ever set in the
+// database.
 export default function SignInPage() {
   const { t, locale } = useLocale();
   const [mode, setMode] = useState<Mode>("sign-in");
+  const [role, setRole] = useState<SignupRole>("customer");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<AuthProblem | null>(null);
 
@@ -44,8 +51,8 @@ export default function SignInPage() {
     const { data, error } =
       mode === "sign-in"
         ? await auth.signInWithPassword({ email, password })
-        : // The database turns a new account into a 'customer' profile by itself.
-          await auth.signUp({ email, password, options: { data: { role: "customer", display_name: displayName } } });
+        : // The database's signup trigger reads this and saves the profile's role.
+          await auth.signUp({ email, password, options: { data: { role: signupRole(role), display_name: displayName } } });
 
     if (error) {
       setBusy(false);
@@ -98,6 +105,39 @@ export default function SignInPage() {
         <p className="mt-1 text-muted">{mode === "sign-in" ? t.signInLead : t.signUpLead}</p>
 
         <form onSubmit={submit} className="mt-5 space-y-4">
+          {mode === "sign-up" && (
+            <fieldset>
+              <legend className="text-sm font-semibold">{t.accountType}</legend>
+              <div className="mt-1 grid gap-2">
+                {(["customer", "vendor"] as const).map((option) => {
+                  const chosen = role === option;
+                  return (
+                    // Selected: ink fill, light text and a check, like a chosen pickup time.
+                    <label
+                      key={option}
+                      className={`relative flex min-h-12 cursor-pointer items-center gap-3 rounded-control border px-3 py-2.5 transition-colors duration-[120ms] ease-out has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${
+                        chosen ? "border-ink bg-ink text-snowy-white" : "border-outline bg-snowy-white text-ink hover:border-ink"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={option}
+                        checked={chosen}
+                        onChange={() => setRole(option)}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-bold">{t.signupRole[option].name}</span>
+                        <span className={`block text-sm ${chosen ? "" : "text-muted"}`}>{t.signupRole[option].help}</span>
+                      </span>
+                      {chosen && <CheckIcon className="size-5" />}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          )}
           {mode === "sign-up" && (
             <label className="block text-sm font-semibold">
               {t.name}
