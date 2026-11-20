@@ -1219,6 +1219,219 @@ try {
   });
 
   // -------------------------------------------------------------------------
+  section("The customer ticket: cancelling against the kitchen, and rating once");
+
+  await setClock("18:00");
+  const freeSlots = async () =>
+    (
+      await admin.query(
+        `select to_char(s, 'HH24:MI') as slot
+         from (select time '19:00' + n * interval '15 minutes' as s from generate_series(0, 15) as n) as slots
+         where (select count(*) from public.orders o where o.truck_id = 'T03' and o.service_date = $1 and o.slot_start = s
+                and o.status not in ('rejected', 'cancelled')) <= 2
+         order by s`,
+        [today],
+      )
+    ).rows.map((r) => r.slot);
+  const statusOf = async (id) => (await admin.query("select status::text as status from public.orders where id = $1", [id])).rows[0].status;
+  const [cancelSlot] = await freeSlots();
+
+  await check("a cancellation frees exactly one place, and the customer, the vendor and the manager all read it", async () => {
+    const start = await slotCount("T03", cancelSlot);
+    const mine = await asUser(c1, aisha, (c) => place(c, "T03", cancelSlot, tacoCart));
+    const other = await asUser(c1, badr, (c) => place(c, "T03", cancelSlot, tacoCart));
+    assert.equal(await slotCount("T03", cancelSlot), start + 2);
+    // Only the customer who placed it can cancel it.
+    await rejects(asUser(c1, badr, (c) => move(c, mine.id, "cancelled")), "order_not_found");
+    await rejects(asUser(c1, tacoVendor, (c) => move(c, mine.id, "cancelled")), "transition_not_allowed");
+    assert.equal((await asUser(c1, aisha, (c) => move(c, mine.id, "cancelled"))).status, "cancelled");
+    assert.equal(await slotCount("T03", cancelSlot), start + 1); // one place, not two
+    for (const reader of [aisha, tacoVendor, dana]) {
+      const { rows } = await asUser(c1, reader, (c) => c.query("select status::text as status from public.orders where id = $1", [mine.id]));
+      assert.deepEqual(rows, [{ status: "cancelled" }]);
+      const usage = (await asUser(c1, reader, (c) => c.query("select booked from public.slot_usage('T03') where slot_start = $1", [cancelSlot]))).rows[0];
+      assert.equal(usage.booked, start + 1);
+    }
+    assert.equal(await statusOf(other.id), "placed"); // the other customer's order is untouched
+    // Cancelling twice, or after the kitchen has it, is refused.
+    await rejects(asUser(c1, aisha, (c) => move(c, mine.id, "cancelled")), "transition_not_allowed");
+    await asUser(c1, tacoVendor, (c) => move(c, other.id, "accepted"));
+    await rejects(asUser(c1, badr, (c) => move(c, other.id, "cancelled")), "transition_not_allowed");
+    return `${start + 2} places -> ${start + 1} after the cancellation; all three roles read 'cancelled' and ${start + 1}; an accepted order cannot be cancelled`;
+  });
+
+  await check("the vendor accepts first: the customer's cancellation waits, then is refused, and the order stays accepted", async () => {
+    const [slot] = await freeSlots();
+    const start = await slotCount("T03", slot);
+    const order = await asUser(c1, aisha, (c) => place(c, "T03", slot, tacoCart));
+    await beginAs(c1, tacoVendor);
+    await move(c1, order.id, "accepted"); // holds the order's row; not committed yet
+    await beginAs(c2, aisha);
+    const cancelling = settled(move(c2, order.id, "cancelled"));
+    await waitUntilBlocked(admin, c2);
+    await c1.query("commit");
+    const outcome = await cancelling;
+    await c2.query("rollback");
+    assert.equal(outcome.error?.message, "transition_not_allowed");
+    assert.equal(await statusOf(order.id), "accepted");
+    assert.equal(await slotCount("T03", slot), start + 1);
+    return "cancellation waited for the acceptance, then transition_not_allowed; order 'accepted'; place still taken";
+  });
+
+  await check("the customer cancels first: the vendor's acceptance waits, then is refused, and the place is free", async () => {
+    const [slot] = await freeSlots();
+    const start = await slotCount("T03", slot);
+    const order = await asUser(c1, aisha, (c) => place(c, "T03", slot, tacoCart));
+    await beginAs(c1, aisha);
+    await move(c1, order.id, "cancelled"); // not committed yet
+    await beginAs(c2, tacoVendor);
+    const accepting = settled(move(c2, order.id, "accepted"));
+    await waitUntilBlocked(admin, c2);
+    await c1.query("commit");
+    const outcome = await accepting;
+    await c2.query("rollback");
+    assert.equal(outcome.error?.message, "transition_not_allowed");
+    assert.equal(await statusOf(order.id), "cancelled");
+    assert.equal(await slotCount("T03", slot), start);
+    return "acceptance waited for the cancellation, then transition_not_allowed; order 'cancelled'; its place is free again";
+  });
+
+  await check("cancel and accept fired at the same instant: exactly one wins, five times out of five", async () => {
+    const lines = [];
+    for (let round = 0; round < 5; round += 1) {
+      const [slot] = await freeSlots();
+      const start = await slotCount("T03", slot);
+      const order = await asUser(c1, aisha, (c) => place(c, "T03", slot, tacoCart));
+      await beginAs(c1, aisha);
+      await beginAs(c2, tacoVendor);
+      const attempt = async (client, target) => {
+        try {
+          await move(client, order.id, target);
+          await client.query("commit");
+          return { target, won: true };
+        } catch (error) {
+          await client.query("rollback");
+          return { target, won: false, reason: error.message };
+        }
+      };
+      const pair = [() => attempt(c1, "cancelled"), () => attempt(c2, "accepted")];
+      if (lines.length % 2 === 1) pair.reverse();
+      const results = await Promise.all(pair.map((start) => start()));
+      const winner = results.filter((r) => r.won);
+      assert.equal(winner.length, 1);
+      assert.equal(results.find((r) => !r.won).reason, "transition_not_allowed");
+      const saved = await statusOf(order.id);
+      assert.equal(saved, winner[0].target);
+      assert.equal(await slotCount("T03", slot), saved === "cancelled" ? start : start + 1);
+      lines.push(`${saved} (${saved === "cancelled" ? "place freed" : "place kept"})`);
+    }
+    return lines.join("; ");
+  });
+
+  // --- ratings -------------------------------------------------------------
+  const rateSql = "select order_id, stars, comment from public.rate_order($1, $2, $3)";
+  const rate = async (client, orderId, stars, comment = null) => (await client.query(rateSql, [orderId, stars, comment])).rows[0];
+  const ratingCount = async (orderId) =>
+    (await admin.query("select count(*)::int as n from public.order_ratings where order_id = $1", [orderId])).rows[0].n;
+  let ratedOrder;
+
+  await check("only the customer of a collected order can rate it, with 1 to 5 stars", async () => {
+    const [slot] = await freeSlots();
+    ratedOrder = await asUser(c1, aisha, (c) => place(c, "T03", slot, tacoCart));
+    // Not collected yet: refused at every earlier status.
+    await rejects(asUser(c1, aisha, (c) => rate(c, ratedOrder.id, 5)), "order_not_collected");
+    for (const status of ["accepted", "preparing", "ready"]) {
+      await asUser(c1, tacoVendor, (c) => move(c, ratedOrder.id, status));
+      await rejects(asUser(c1, aisha, (c) => rate(c, ratedOrder.id, 5)), "order_not_collected");
+    }
+    await asUser(c1, tacoVendor, (c) => move(c, ratedOrder.id, "collected"));
+    // Collected, but not theirs: another customer, the truck's vendor, the manager.
+    for (const outsider of [badr, tacoVendor, dana]) {
+      await rejects(asUser(c1, outsider, (c) => rate(c, ratedOrder.id, 5)), "order_not_found");
+    }
+    // Theirs, but not a real rating.
+    for (const stars of [0, 6, -1, null]) await rejects(asUser(c1, aisha, (c) => rate(c, ratedOrder.id, stars)), "invalid_stars");
+    await rejects(asUser(c1, aisha, (c) => rate(c, ratedOrder.id, 4, "x".repeat(501))), "comment_too_long");
+    // A cancelled or rejected order can never be rated.
+    const [other] = await freeSlots();
+    const gone = await asUser(c1, aisha, (c) => place(c, "T03", other, tacoCart));
+    await asUser(c1, aisha, (c) => move(c, gone.id, "cancelled"));
+    await rejects(asUser(c1, aisha, (c) => rate(c, gone.id, 5)), "order_not_collected");
+    assert.equal(await ratingCount(ratedOrder.id), 0);
+    return "refused before collection, for anyone but the customer, outside 1 to 5, over 500 characters, and for a cancelled order";
+  });
+
+  await check("the rating is saved once: a second submission is refused and the first one stays", async () => {
+    const saved = await asUser(c1, aisha, (c) => rate(c, ratedOrder.id, 4, "  Hot and fast.  "));
+    assert.deepEqual(saved, { order_id: ratedOrder.id, stars: 4, comment: "Hot and fast." });
+    await rejects(asUser(c1, aisha, (c) => rate(c, ratedOrder.id, 1, "changed my mind")), "already_rated");
+    await rejects(asUser(c1, aisha, (c) => rate(c, ratedOrder.id, 4, "Hot and fast.")), "already_rated");
+    const { rows } = await admin.query("select stars, comment from public.order_ratings where order_id = $1", [ratedOrder.id]);
+    assert.deepEqual(rows, [{ stars: 4, comment: "Hot and fast." }]);
+    // An empty comment is saved as no comment.
+    const [slot] = await freeSlots();
+    const quiet = await asUser(c1, badr, (c) => place(c, "T03", slot, tacoCart));
+    for (const status of ["accepted", "preparing", "ready", "collected"]) await asUser(c1, tacoVendor, (c) => move(c, quiet.id, status));
+    assert.deepEqual(await asUser(c1, badr, (c) => rate(c, quiet.id, 5, "   ")), { order_id: quiet.id, stars: 5, comment: null });
+    return "4 stars and the trimmed comment saved; two more submissions got already_rated; still one row, unchanged";
+  });
+
+  await check("two submissions of a rating at the same instant save one rating, five times out of five", async () => {
+    const lines = [];
+    for (let round = 0; round < 5; round += 1) {
+      const [slot] = await freeSlots();
+      const order = await asUser(c1, aisha, (c) => place(c, "T03", slot, tacoCart));
+      for (const status of ["accepted", "preparing", "ready", "collected"]) await asUser(c1, tacoVendor, (c) => move(c, order.id, status));
+      await beginAs(c1, aisha);
+      await beginAs(c2, aisha);
+      const attempt = async (client, stars) => {
+        try {
+          await rate(client, order.id, stars);
+          await client.query("commit");
+          return { stars, won: true };
+        } catch (error) {
+          await client.query("rollback");
+          return { stars, won: false, reason: error.message };
+        }
+      };
+      const results = await Promise.all([attempt(c1, 5), attempt(c2, 3)]);
+      const winner = results.filter((r) => r.won);
+      assert.equal(winner.length, 1);
+      assert.equal(results.find((r) => !r.won).reason, "already_rated");
+      const { rows } = await admin.query("select stars from public.order_ratings where order_id = $1", [order.id]);
+      assert.deepEqual(rows, [{ stars: winner[0].stars }]);
+      lines.push(`${winner[0].stars} stars saved`);
+    }
+    return lines.join(", ") + "; the other submission got already_rated each time";
+  });
+
+  await check("a rating can be read by its customer, the truck's vendor and the manager, and written by nobody directly", async () => {
+    const read = async (user) =>
+      (await asUser(c1, user, (c) => c.query("select count(*)::int as n from public.order_ratings where order_id = $1", [ratedOrder.id]))).rows[0].n;
+    assert.equal(await read(aisha), 1);
+    assert.equal(await read(tacoVendor), 1);
+    assert.equal(await read(dana), 1);
+    assert.equal(await read(badr), 0); // another customer
+    assert.equal(await read(duneVendor), 0); // another truck's vendor
+    // No direct writes, even to your own rating.
+    await rejects(asUser(c1, aisha, (c) => c.query("update public.order_ratings set stars = 5 where order_id = $1", [ratedOrder.id])), "42501");
+    await rejects(asUser(c1, aisha, (c) => c.query("delete from public.order_ratings where order_id = $1", [ratedOrder.id])), "42501");
+    await rejects(
+      asUser(c1, badr, (c) =>
+        c.query("insert into public.order_ratings (order_id, customer_id, truck_id, stars, rated_at) values ($1, auth.uid(), 'T03', 1, now())", [ratedOrder.id]),
+      ),
+      "42501",
+    );
+    // The table itself refuses a second rating and stars outside 1 to 5, whoever asks.
+    await rejects(
+      admin.query("insert into public.order_ratings (order_id, customer_id, truck_id, stars, rated_at) values ($1, $2, 'T03', 2, now())", [ratedOrder.id, aisha]),
+      "23505",
+    );
+    await rejects(admin.query("update public.order_ratings set stars = 6 where order_id = $1", [ratedOrder.id]), "23514");
+    return "read by customer, vendor and manager only; update, delete and insert through the API are refused; the table refuses a duplicate and 6 stars";
+  });
+
+  // -------------------------------------------------------------------------
   section("Dana's dashboard: every count is explained by tickets she can read");
 
   await check("for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count", async () => {

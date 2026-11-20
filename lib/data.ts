@@ -287,3 +287,32 @@ export async function setTruckCapacity(db: SupabaseClient, truckId: string, capa
   if (data.length !== 1) throw new Error("not_your_truck");
   return data[0].slot_capacity as number;
 }
+
+// ---------------------------------------------------------------------------
+// The customer's rating of a collected order
+// ---------------------------------------------------------------------------
+
+export type Rating = { order_id: string; stars: number; comment: string | null; rated_at: string };
+
+/** The saved rating for an order, or null when it has none. */
+export async function fetchRating(db: SupabaseClient, orderId: string): Promise<Rating | null> {
+  const { data, error } = await db
+    .from("order_ratings")
+    .select("order_id,stars,comment,rated_at")
+    .eq("order_id", orderId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Asks the database to save a rating (rate_order). The database checks that
+ * this is the customer's own order, that it was collected, that the stars
+ * are 1 to 5, and that it has not been rated before. It answers with the
+ * saved rating, which is what the ticket then shows.
+ */
+export async function rateOrder(db: SupabaseClient, orderId: string, stars: number, comment: string | null): Promise<Rating> {
+  const { data, error } = await db.rpc("rate_order", { p_order_id: orderId, p_stars: stars, p_comment: comment });
+  if (error) throw new Error(error.message);
+  return data as Rating;
+}
