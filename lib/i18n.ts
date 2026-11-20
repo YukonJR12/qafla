@@ -1,4 +1,4 @@
-// Every word the customer and vendor screens show, in English and Arabic.
+// Every word the customer, vendor and manager screens show, in English and Arabic.
 // Voice (DESIGN.md): like someone handing an order across a counter.
 
 export type Locale = "en" | "ar";
@@ -223,6 +223,75 @@ const en = {
   unpaid: "Unpaid",
   finishedTonight: (n: number) => `Finished tonight (${n})`,
   ticketLabel: (ref: string, time: string) => `Order ${ref}, pickup ${time}`,
+
+  // Park manager dashboard
+  managerTitle: "Park manager",
+  managerSignInTitle: "Sign in as the park manager",
+  managerSignInBody: "Use the park manager account to see tonight across the park.",
+  notManagerTitle: "This account isn’t the park manager",
+  notManagerBody: "Sign out, then sign in with the park manager account.",
+  parkLoadErrorTitle: "We couldn’t load tonight’s park view",
+  kuwaitTimeNow: (time: string) => `${time} · Kuwait time`,
+  tonightGrid: "Tonight across the park",
+  tonightGridHint: "Pickup times from 5:00 PM to 10:45 PM. Select a count to see its orders.",
+  truckColumn: "Truck",
+  busiest: "Busiest tonight",
+  noOrdersTonight: "No orders yet tonight",
+  countOf: (booked: number, capacity: number) => `${booked} of ${capacity}`,
+  countOfOrders: (booked: number, capacity: number) => `${booked} of ${capacity} orders`,
+  capacityPerSlot: (n: number) => `Up to ${n} per time`,
+  cellLabel: (truck: string, time: string, count: string, state: string) => `${truck}, ${time}: ${count} orders. ${state}`,
+  legendTitle: "How to read the counts",
+  legendEmpty: "Empty",
+  legendFilling: "Filling",
+  legendNearly: "Nearly full",
+  legendBookingClosed: "Booking closed",
+  bookingFull: "Full · no places left",
+  bookingDeadline: (time: string) => `Booking closed at ${time}`,
+  bookingTruckClosed: "Closed to new orders tonight",
+  bookingOpenLong: (n: number, deadline: string) =>
+    `Open for booking until ${deadline}. ${n === 1 ? "1 place" : `${n} places`} left.`,
+  bookingFullLong: "Full. Every place is taken, so customers can’t choose this time.",
+  bookingDeadlineLong: (deadline: string, left: number) =>
+    left > 0
+      ? `Booking closed at ${deadline}, 15 minutes before pickup. This time is not full: ${left === 1 ? "1 place was" : `${left} places were`} left.`
+      : `Booking closed at ${deadline}, 15 minutes before pickup. This time is also full.`,
+  bookingTruckClosedLong: (left: number) =>
+    left > 0
+      ? `No new orders: the truck is closed for tonight. ${left === 1 ? "1 place was" : `${left} places were`} left.`
+      : "No new orders: the truck is closed for tonight. This time is also full.",
+  selectTime: "Pickup time",
+  slotsTonight: "24 times tonight",
+  trucksAt: (time: string) => `Trucks at ${time}`,
+  tapForOrders: "Tap a truck to see its orders",
+  seeOrders: "See orders",
+  slotDetails: "Orders behind the count",
+  selectACell: "Select a truck and a time to see the orders behind its count.",
+  placesTaken: "Places taken",
+  bookingLabel: "Booking",
+  countedTitle: (n: number) => (n === 1 ? "1 order counts toward this time" : `${n} orders count toward this time`),
+  countedNone: "No orders for this time yet.",
+  countRule: "Every order counts except rejected and cancelled ones. Collected orders still count.",
+  matchesCount: (count: string) => `Adds up to ${count}`,
+  countMismatch: "The count just changed. Refreshing the orders…",
+  freedTitle: (n: number) => `Not counted (${n})`,
+  freedBody: "Rejected and cancelled orders give their place back.",
+  collectedAt: (time: string) => `Collected at ${time} · still counts`,
+  backToOverview: (time: string) => `Back to park overview (${time})`,
+  closeForTonight: "Close for tonight",
+  closeTitle: (truck: string) => `Close ${truck} for tonight?`,
+  closeBody: "New orders stop for tonight. The kitchen can still finish the tickets it already has.",
+  closeActive: (n: number) =>
+    n === 0 ? "No tickets are waiting right now." : n === 1 ? "1 ticket is still to finish." : `${n} tickets are still to finish.`,
+  closeUntil: "The truck stays closed until tomorrow.",
+  keepOpen: "Keep open",
+  closeConfirm: (truck: string) => `Close ${truck}`,
+  closing: "Closing…",
+  closeFailed: (truck: string) => `That didn’t save. ${truck} is still open.`,
+  closeNotAllowed: "Only the park manager can close a truck.",
+  closedConfirmed: (truck: string, time: string) => `${truck} is closed for tonight (closed at ${time}).`,
+  closedSince: (time: string) => `Closed for tonight at ${time}. Tickets already placed stay on the kitchen board.`,
+  closedByVendor: "The truck has switched itself off and is not taking orders.",
 };
 
 type Dict = typeof en;
@@ -433,7 +502,85 @@ const ar: Dict = {
   unpaid: "غير مدفوع",
   finishedTonight: (n) => `انتهت الليلة (${n})`,
   ticketLabel: (ref, time) => `الطلب ${ref}، الاستلام ${time}`,
+
+  managerTitle: "إدارة قافلة",
+  managerSignInTitle: "سجّل الدخول كمدير الساحة",
+  managerSignInBody: "استخدم حساب مدير الساحة عشان تشوف الليلة في كل العربات.",
+  notManagerTitle: "هذا الحساب مو حساب مدير الساحة",
+  notManagerBody: "سجّل الخروج، وبعدها ادخل بحساب مدير الساحة.",
+  parkLoadErrorTitle: "ما قدرنا نحمّل عرض الساحة لهذه الليلة",
+  kuwaitTimeNow: (time) => `${time} · بتوقيت الكويت`,
+  tonightGrid: "الليلة في كل الساحة",
+  tonightGridHint: "أوقات الاستلام من 5:00 م إلى 10:45 م. اختر أي عدد عشان تشوف طلباته.",
+  truckColumn: "العربة",
+  busiest: "الأكثر ازدحاماً الليلة",
+  noOrdersTonight: "ما في طلبات الليلة للحين",
+  countOf: (booked, capacity) => `${booked} من ${capacity}`,
+  countOfOrders: (booked, capacity) => `${booked} من ${capacity} طلبات`,
+  capacityPerSlot: (n) => `حتى ${n} لكل وقت`,
+  cellLabel: (truck, time, count, state) => `${truck}، ${time}: ${count} طلبات. ${state}`,
+  legendTitle: "طريقة قراءة الأعداد",
+  legendEmpty: "فاضي",
+  legendFilling: "يمتلي",
+  legendNearly: "قرب يكتمل",
+  legendBookingClosed: "الحجز مغلق",
+  bookingFull: "مكتمل · ما في أماكن",
+  bookingDeadline: (time) => `الحجز أُغلق ${time}`,
+  bookingTruckClosed: "مغلقة للطلبات الجديدة الليلة",
+  bookingOpenLong: (n, deadline) => `الحجز مفتوح لين ${deadline}. باقي ${arPlaces(n)}.`,
+  bookingFullLong: "مكتمل. كل الأماكن محجوزة، والعميل ما يقدر يختار هذا الوقت.",
+  bookingDeadlineLong: (deadline, left) =>
+    left > 0
+      ? `الحجز أُغلق ${deadline}، قبل الاستلام بـ15 دقيقة. هذا الوقت مو مكتمل: بقي ${arPlaces(left)}.`
+      : `الحجز أُغلق ${deadline}، قبل الاستلام بـ15 دقيقة. وهذا الوقت مكتمل بعد.`,
+  bookingTruckClosedLong: (left) =>
+    left > 0
+      ? `ما في طلبات جديدة: العربة مغلقة الليلة. بقي ${arPlaces(left)}.`
+      : "ما في طلبات جديدة: العربة مغلقة الليلة. وهذا الوقت مكتمل بعد.",
+  selectTime: "وقت الاستلام",
+  slotsTonight: "24 وقتاً الليلة",
+  trucksAt: (time) => `العربات ${time}`,
+  tapForOrders: "اضغط على العربة عشان تشوف طلباتها",
+  seeOrders: "عرض الطلبات",
+  slotDetails: "الطلبات اللي ورا العدد",
+  selectACell: "اختر عربة ووقت عشان تشوف الطلبات اللي ورا العدد.",
+  placesTaken: "الأماكن المحجوزة",
+  bookingLabel: "الحجز",
+  countedTitle: (n) => (n === 1 ? "طلب واحد محسوب في هذا الوقت" : `${arOrders(n)} محسوبة في هذا الوقت`),
+  countedNone: "ما في طلبات لهذا الوقت للحين.",
+  countRule: "كل طلب ينحسب إلا المرفوض والملغي. والطلب المستلَم يظل محسوب.",
+  matchesCount: (count) => `المجموع ${count}`,
+  countMismatch: "العدد تغيّر الحين. جارٍ تحديث الطلبات…",
+  freedTitle: (n) => `غير محسوبة (${n})`,
+  freedBody: "الطلب المرفوض أو الملغي يرجّع مكانه.",
+  collectedAt: (time) => `استُلم ${time} · يظل محسوب`,
+  backToOverview: (time) => `رجوع لعرض الساحة (${time})`,
+  closeForTonight: "إغلاق لهذه الليلة",
+  closeTitle: (truck) => `إغلاق ${truck} لهذه الليلة؟`,
+  closeBody: "تتوقف الطلبات الجديدة لهذه الليلة. والمطبخ يقدر يكمّل التذاكر اللي عنده.",
+  closeActive: (n) => (n === 0 ? "ما في تذاكر تنتظر الحين." : `باقي ${arTickets(n)} لازم تخلص.`),
+  closeUntil: "العربة تظل مغلقة لين باچر.",
+  keepOpen: "إبقاء العربة مفتوحة",
+  closeConfirm: (truck) => `إغلاق ${truck}`,
+  closing: "جارٍ الإغلاق…",
+  closeFailed: (truck) => `ما انحفظ التغيير. ${truck} للحين مفتوحة.`,
+  closeNotAllowed: "مدير الساحة بس هو اللي يقدر يغلق عربة.",
+  closedConfirmed: (truck, time) => `${truck} مغلقة لهذه الليلة (أُغلقت ${time}).`,
+  closedSince: (time) => `مغلقة لهذه الليلة من ${time}. التذاكر الموجودة تظل على لوحة المطبخ.`,
+  closedByVendor: "العربة أوقفت استقبال الطلبات من عندها.",
 };
+
+function arPlaces(n: number): string {
+  if (n === 1) return "مكان واحد";
+  if (n === 2) return "مكانين";
+  return n <= 10 ? `${n} أماكن` : `${n} مكان`;
+}
+
+function arTickets(n: number): string {
+  if (n === 1) return "تذكرة واحدة";
+  if (n === 2) return "تذكرتين";
+  return n <= 10 ? `${n} تذاكر` : `${n} تذكرة`;
+}
 
 function arOrders(n: number): string {
   if (n === 1) return "طلب واحد";

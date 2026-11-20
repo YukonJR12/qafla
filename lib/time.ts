@@ -41,3 +41,10 @@ export function formatSlot(slot: string, locale: Locale): string {
   const suffix = h < 12 ? (locale === "ar" ? "ص" : "AM") : locale === "ar" ? "م" : "PM";
   return `${hour12}:${minutes} ${suffix}`;
 }
+
+const kuwaitClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kuwait", hourCycle: "h23", hour: "2-digit", minute: "2-digit" });
+
+/** A saved moment (e.g. when an order was collected) as Kuwait time: "7:02 PM" or "7:02 م". */
+export function formatKuwaitTime(moment: string | Date, locale: Locale): string {
+  return formatSlot(kuwaitClock.format(typeof moment === "string" ? new Date(moment) : moment), locale);
+}

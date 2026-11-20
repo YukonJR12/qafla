@@ -88,6 +88,24 @@ When the vendor taps "Mark ready", the customer's open ticket shows "Your order 
 
 Vendor accounts are not created in the app yet. See "Create the park manager and assign vendors" below. Screenshots are in `docs/screenshots/kitchen-handoff/`.
 
+## Park manager dashboard
+
+`/manager` is Dana's view of tonight across the park. From 768 px it is a grid: six trucks down, the 24 Kuwait pickup times across (5:00 PM to 10:45 PM), with the exact count in every cell, e.g. `5/6`. A cell is tinted from white toward pale orange as it fills, and a full cell is solid Red Orange with the word "Full". On a phone it is a time selector followed by six truck rows that read "5 of 6". Either way, one tap on a count opens the orders behind it.
+
+| Where | What lives there |
+| --- | --- |
+| `app/manager/page.tsx` | The dashboard: busiest truck and time, the grid, the phone layout, and the selected slot. |
+| `components/park-slot-detail.tsx` | One truck at one time: the count, whether it can still be booked, the tickets that add up to the count, and "Close for tonight". |
+| `lib/park.ts` | The dashboard's rules with no browser or database in them: the 24 slots, the booking deadline, why a slot can or cannot be booked, which tickets count. Unit-tested. |
+
+Where the numbers come from: the count in each cell is the database function `slot_usage`, the same one the customer's slot picker uses. The tickets listed under a count are read from `orders`, which row-level security returns in full only to the manager's account. The screen lists every order except rejected and cancelled ones (so collected orders stay in), shows the rejected and cancelled ones apart as "Not counted", and says whether the list adds up to the count. If the two ever disagree, an order changed between the two reads, and the screen reads again.
+
+"Places taken" and "Booking" are two separate lines. A time can have a free place and still be closed for booking, because its deadline (15 minutes before pickup) has passed. That reads "Booking closed at 7:00 PM … This time is not full", which is different from "Full".
+
+"Close for tonight" names the truck and explains that new orders stop while the kitchen can still finish its tickets. "Keep open" closes the dialog and changes nothing: the same truck and time stay selected (they are kept in the page address, so a language switch or a reload keeps them too). Confirming calls the database function `close_truck_for_tonight`. The truck is shown as closed only after the database answers with the saved closure. The database refuses that call from any account that is not the park manager, whatever the screen shows. A closure lasts for the Kuwait service date; there is no "reopen" in the app.
+
+The dashboard is live the same way the kitchen board is: any new order or status change in the park is a nudge to re-read. The manager role is given in the database only. See "Create the park manager and assign vendors" below. Screenshots are in `docs/screenshots/manager-dashboard/`.
+
 ## Database
 
 The data rules live in Postgres, in `supabase/`, so they hold no matter what a browser sends.
@@ -122,7 +140,7 @@ supabase link --project-ref <your-project-ref>
 supabase db push --include-seed
 ```
 
-This step has not been run against a hosted project yet; so far the migrations are verified on the local test database only. Never run anything from `tests/db/` on a Supabase project.
+The migrations and the seed have been applied to the project's development Supabase project. Never run anything from `tests/db/` on a Supabase project.
 
 ### Create the park manager and assign vendors
 
