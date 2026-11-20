@@ -88,6 +88,23 @@ When the vendor taps "Mark ready", the customer's open ticket shows "Your order 
 
 Vendor accounts are not created in the app yet. See "Create the park manager and assign vendors" below. Screenshots are in `docs/screenshots/kitchen-handoff/`.
 
+## Customer pickup ticket: timeline, cancelling, rating
+
+The ticket page (`/orders/<id>`) follows one order from "placed" to "collected".
+
+| Where | What lives there |
+| --- | --- |
+| `components/pickup-timeline.tsx` | The five-stage timeline under the pickup time and truck name. |
+| `components/ticket-actions.tsx` | "Cancel order" with its confirmation, and the rating form. |
+| `lib/ticket.ts` | The ticket's rules with no browser or database in them: which stage is done or current, when cancelling and rating are offered. Unit-tested. |
+| `supabase/migrations/…_order_ratings.sql` | The `order_ratings` table and the `rate_order` function. |
+
+**Timeline.** Placed → Accepted → Preparing → Ready → Collected. It is drawn from the confirmed order status only, so it never runs ahead of the database. A finished stage has a check, the current stage has a Red Orange ring, and one caption says what is happening ("Dune Burgers is preparing your order."). Under 480 px the five markers are shown with that one caption; wider screens also print the stage names. The row follows the page direction, so it runs right to left in Arabic. The Yellow Punk notice still appears at Ready. A cancelled or rejected order has no timeline: it shows its own final message, with the truck's reason when it was rejected.
+
+**Cancelling.** While the order is "placed", the customer can cancel it after confirming. The ticket calls the existing `set_order_status`, which locks the order, so a cancellation and the vendor's "Accept" cannot both succeed. Whichever the database saves first wins, and the ticket shows that outcome: either "You cancelled this order", or "Dune Burgers had already moved your order, so it wasn't cancelled." A cancelled order stops counting toward its pickup time (the existing counting rule), which frees exactly one place. The vendor board and the manager dashboard are told by the same live update as any other status change.
+
+**Rating.** The brief: 1 to 5 stars and an optional comment; only the customer of a collected order; only once. The database enforces all of it in `rate_order`, and the order is the primary key of `order_ratings`, so a second rating cannot exist even if two requests arrive together. Nobody can insert, change or delete a rating through the API; only `rate_order` writes. The saved rating is read back when the ticket opens, so a refresh shows the rating instead of the form. A rating can be read by its customer, the truck's vendor and the manager. Screenshots are in `docs/screenshots/pickup-ticket/`.
+
 ## Vendor capacity settings
 
 `/vendor/capacity` is where a vendor sets how many orders their truck takes for each 15-minute pickup time, from 1 to 20. The kitchen board links to it ("Up to 6 orders per pickup time · Change").
@@ -138,6 +155,7 @@ The data rules live in Postgres, in `supabase/`, so they hold no matter what a b
 | `supabase/migrations/…_order_request_id.sql` | One order per customer per request ID, so a retry returns the same ticket. |
 | `supabase/migrations/…_abandon_order_attempt.sql` | `abandon_order_attempt` and the shared lock that settles "place" against "give up". |
 | `supabase/migrations/…_orders_realtime.sql` | Adds `orders` to the Realtime publication so the board and the ticket update live. Access rules are unchanged. |
+| `supabase/migrations/…_order_ratings.sql` | `order_ratings` (one rating per order) and `rate_order`. Adds only; nothing existing is changed. |
 | `supabase/seed.sql` | The six trucks and 30 dishes. Generated from `seed/*.csv`; do not edit by hand. |
 | `scripts/build-seed.mjs` | Rebuilds `supabase/seed.sql` from the CSVs. |
 | `tests/db/` | Database tests. `supabase-shim.sql` and `test-clock.sql` are for the test database only. |

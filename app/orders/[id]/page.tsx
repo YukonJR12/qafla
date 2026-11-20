@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PickupTimeline } from "@/components/pickup-timeline";
+import { CancelOrder, OrderRating } from "@/components/ticket-actions";
 import { CheckIcon, Isolate, Money, primaryButton, secondaryButton } from "@/components/ui";
 import { fetchOrder, type Order } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import { supabaseBrowser } from "@/lib/supabase";
+import { canCancel } from "@/lib/ticket";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
 import { useSession } from "@/lib/use-session";
@@ -20,12 +23,18 @@ import { useSession } from "@/lib/use-session";
 // While the ticket is open it listens for changes to this one order. When
 // the truck moves it (for example to "ready"), the page re-reads the saved
 // order and shows the new status without the customer tapping anything.
+//
+// The timeline, "Cancel order" and the rating all follow the confirmed
+// status: cancelling is offered only while the order is placed, and rating
+// only once it is collected. The database enforces both.
 export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
   const [state, setState] = useState<{ loaded: boolean; order: Order | null }>({ loaded: false, order: null });
   const [checking, setChecking] = useState(false);
+  // What happened when the customer tried to cancel, said once in words.
+  const [cancelNote, setCancelNote] = useState<"cancelled" | "too_late" | null>(null);
 
   const readNumber = useRef(0); // so an older, slower read never overwrites a newer one
 
@@ -56,7 +65,7 @@ export default function OrderPage() {
 
   return (
     <div className="min-h-dvh">
-      <AppHeader title={t.orderPlaced} backHref="/explore" backLabel={t.backToTrucksFromTicket} />
+      <AppHeader title={t.yourOrder} backHref="/explore" backLabel={t.backToTrucksFromTicket} />
 
       <main className="mx-auto max-w-xl px-4 pt-4 pb-10 md:px-6">
         {!loaded ? (
@@ -102,22 +111,42 @@ export default function OrderPage() {
                 {truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale)}
               </p>
 
+              {/* Directly below the time and the truck: where the order is now. */}
+              <PickupTimeline
+                status={order.status}
+                truck={truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale)}
+                announce={order.status !== "ready"}
+              />
+              {/* A cancelled or rejected order ends here, with its own message. */}
+              {order.status === "cancelled" && (
+                <div className="mt-5 rounded-control bg-subtle p-3">
+                  <p className="font-extrabold">{t.cancelledTitle}</p>
+                  <p className="mt-1 text-sm text-muted">{t.cancelledBody(formatSlot(order.slot_start, locale))}</p>
+                </div>
+              )}
+              {order.status === "rejected" && (
+                <div className="mt-5 rounded-control bg-error-surface p-3 text-error">
+                  <p className="font-extrabold">
+                    {t.rejectedTitle(truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale))}
+                  </p>
+                  {order.rejection_reason && (
+                    <p className="mt-1 text-sm">
+                      <span className="font-semibold">{t.rejectedReason}</span> <span className="wrap-anywhere">{order.rejection_reason}</span>
+                    </p>
+                  )}
+                  <p className="mt-1 text-sm">{t.rejectedBody}</p>
+                </div>
+              )}
+
               <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-dashed border-outline pt-4">
                 <dt className="text-sm font-semibold text-muted">{t.orderRef}</dt>
                 <dt className="text-sm font-semibold text-muted">{t.status}</dt>
                 <dd className="text-lg font-bold">
                   <Isolate>{order.ticket_ref}</Isolate>
                 </dd>
-                {/* The ready notice above already announces "ready"; do not say it twice. */}
-                <dd className="text-lg font-bold" aria-live={order.status === "ready" ? "off" : "polite"}>
-                  {t.statusName[order.status] ?? order.status}
-                </dd>
+                {/* The timeline's caption and the ready notice announce changes; this is the plain label. */}
+                <dd className="text-lg font-bold">{t.statusName[order.status] ?? order.status}</dd>
               </dl>
-              <p className="mt-1 text-sm text-muted">
-                {order.status === "rejected" && order.rejection_reason
-                  ? `${t.statusHelp.rejected} ${order.rejection_reason}`
-                  : order.status !== "ready" && t.statusHelp[order.status]}
-              </p>
 
               <ul className="mt-4 space-y-1.5 border-t border-divider pt-4">
                 {order.order_items.map((line) => (
@@ -141,7 +170,45 @@ export default function OrderPage() {
               </div>
             </article>
 
+            {/* Once collected, the customer can rate this order, one time. */}
+            {order.status === "collected" && <OrderRating orderId={order.id} />}
+
             <div className="mt-4 space-y-2">
+              <p role="status">
+                {cancelNote && (
+                  <span
+                    className={`block rounded-control p-3 font-semibold ${
+                      cancelNote === "cancelled" ? "bg-ink text-snowy-white" : "bg-warning-surface text-warning"
+                    }`}
+                  >
+                    {cancelNote === "cancelled"
+                      ? t.cancelDone
+                      : t.cancelTooLate(
+                          truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale),
+                          t.statusName[order.status] ?? order.status,
+                        )}
+                  </span>
+                )}
+              </p>
+              {canCancel(order.status) && (
+                <CancelOrder
+                  order={order}
+                  time={formatSlot(order.slot_start, locale)}
+                  truck={truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale)}
+                  onCancelled={(saved) => {
+                    // Show exactly the status the database saved, then re-read.
+                    readNumber.current++;
+                    setState((was) => (was.order ? { ...was, order: { ...was.order, status: saved.status } } : was));
+                    setCancelNote("cancelled");
+                    reread().catch(() => {});
+                  }}
+                  onTooLate={async () => {
+                    // The truck got there first. Read what was saved, then say so.
+                    await reread().catch(() => {});
+                    setCancelNote("too_late");
+                  }}
+                />
+              )}
               <button
                 type="button"
                 disabled={checking}
