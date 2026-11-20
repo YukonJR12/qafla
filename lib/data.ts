@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { KitchenOrder, OrderStatus } from "./kitchen";
 import { kuwaitNow, LEAD_SECONDS, slotSeconds } from "./time";
 
 export type Truck = {
@@ -129,4 +130,58 @@ export async function fetchOrder(db: SupabaseClient, orderId: string): Promise<O
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data as unknown as Order | null;
+}
+
+// ---------------------------------------------------------------------------
+// The vendor's kitchen board
+// ---------------------------------------------------------------------------
+
+/** The truck this vendor account runs, or null when it runs none. */
+export async function fetchMyTruck(db: SupabaseClient, vendorId: string): Promise<Truck | null> {
+  const { data, error } = await db
+    .from("trucks")
+    .select("id,name,cuisine,blurb,slot_capacity,is_open")
+    .eq("vendor_id", vendorId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Every order for one truck on tonight's Kuwait service date, with its
+ * lines. Row-level security returns rows only to that truck's vendor (and
+ * the manager), so asking for another truck's ID gives back nothing.
+ */
+export async function fetchKitchenOrders(db: SupabaseClient, truckId: string): Promise<KitchenOrder[]> {
+  const { data, error } = await db
+    .from("orders")
+    .select(
+      "id,ticket_ref,truck_id,service_date,slot_start,status,payment_method,total_kwd,rejection_reason,placed_at,trucks(id,name),order_items(item_id,item_name,quantity,unit_price_kwd)",
+    )
+    .eq("truck_id", truckId)
+    .eq("service_date", kuwaitNow().date)
+    .order("slot_start")
+    .order("placed_at");
+  if (error) throw new Error(error.message);
+  return data as unknown as KitchenOrder[];
+}
+
+/**
+ * Asks the database to move an order to a new status. The database decides
+ * whether this user may make this move (set_order_status) and answers with
+ * the saved status, which is the only status the screen then shows.
+ */
+export async function setOrderStatus(
+  db: SupabaseClient,
+  orderId: string,
+  status: OrderStatus,
+  reason?: string,
+): Promise<{ id: string; status: string; rejection_reason: string | null }> {
+  const { data, error } = await db.rpc("set_order_status", {
+    p_order_id: orderId,
+    p_status: status,
+    p_reason: reason ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return data as { id: string; status: string; rejection_reason: string | null };
 }
