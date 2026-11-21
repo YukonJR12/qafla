@@ -20,7 +20,7 @@ import {
 import { useAccount } from "@/lib/account";
 import { requestIdForCart, storedCart, useCart } from "@/lib/cart";
 import { orderItems } from "@/lib/cart-lines";
-import { fetchClosed, fetchSlots, isFull, nextBookable, upcomingSlots, type Slot } from "@/lib/data";
+import { fetchClosedBy, fetchSlots, isFull, nextBookable, upcomingSlots, type Slot } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import {
@@ -42,7 +42,7 @@ type Problem = "itemUnavailable" | "notCustomer" | "genericError";
 /** Pickup times as last read from the database, or a failed read. */
 type Availability =
   | { truckId: string; attempt: number; failed: true }
-  | { truckId: string; attempt: number; failed: false; slots: Slot[]; closed: boolean };
+  | { truckId: string; attempt: number; failed: false; slots: Slot[]; closed: boolean; paused: boolean };
 
 /**
  * Where this customer's unconfirmed attempt stands, if they have one.
@@ -254,7 +254,7 @@ export default function CheckoutPage() {
   }
 
   const { lines, total, orderable } = cartLines;
-  const { slots, closed } = current;
+  const { slots, closed, paused } = current;
   const truck = { id: cart.truckId, name: cart.truckName };
   const name = truckName(truck, locale);
   const upcoming = upcomingSlots(slots);
@@ -382,11 +382,17 @@ export default function CheckoutPage() {
           <div className="flex items-start gap-2.5">
             <StoreIcon className="mt-0.5 size-5" />
             <div>
-              <h2 className="text-base leading-snug font-extrabold">{t.truckClosedTitle(name)}</h2>
-              <p className="mt-1 text-sm">{t.truckClosedBody}</p>
+              {/* A vendor's pause may lift in minutes; the park's closure lasts all night. Say which. */}
+              <h2 className="text-base leading-snug font-extrabold">{paused ? t.truckPausedTitle(name) : t.truckClosedTitle(name)}</h2>
+              <p className="mt-1 text-sm">{paused ? t.truckPausedBody : t.truckClosedBody}</p>
             </div>
           </div>
-          <Link href="/explore" className={`${primaryButton} mt-3`}>
+          {paused && (
+            <button type="button" onClick={reload} className={`${primaryButton} mt-3`}>
+              {t.checkAgain}
+            </button>
+          )}
+          <Link href="/explore" className={`${paused ? secondaryButton : primaryButton} mt-3`}>
             {t.browseOpen}
           </Link>
         </section>
@@ -446,7 +452,8 @@ export default function CheckoutPage() {
         </section>
       )}
 
-      {problem && !closed && (
+      {/* When the dish is named in the list above, the general line would only repeat it. */}
+      {problem && !closed && !(problem === "itemUnavailable" && !orderable) && (
         <div role="alert" className="mb-4 rounded-panel bg-error-surface p-4 text-sm font-semibold text-error">
           <p>{t[problem]}</p>
         </div>
@@ -669,10 +676,10 @@ async function lookUpPending(
 }
 
 /** The truck's live slot counts and whether it is closed tonight. */
-async function loadAvailability(truckId: string): Promise<{ slots: Slot[]; closed: boolean }> {
+async function loadAvailability(truckId: string): Promise<{ slots: Slot[]; closed: boolean; paused: boolean }> {
   const db = supabaseBrowser();
-  const [slots, closed] = await Promise.all([fetchSlots(db, truckId), fetchClosed(db, truckId)]);
-  return { slots, closed };
+  const [slots, why] = await Promise.all([fetchSlots(db, truckId), fetchClosedBy(db, truckId)]);
+  return { slots, closed: why !== null, paused: why === "vendor" };
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

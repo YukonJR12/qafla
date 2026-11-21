@@ -36,6 +36,8 @@ type AccountApi = {
   signOut: () => Promise<void>;
   /** Reads the profile again (after a failure, or to check for a newly assigned truck). */
   retry: () => void;
+  /** The vendor saved new truck details: show them everywhere without reading the profile again. */
+  truckSaved: (truck: Truck) => void;
 };
 
 const AccountContext = createContext<AccountApi | null>(null);
@@ -109,7 +111,12 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const api = useMemo(() => ({ account, signOut, retry }), [account, signOut, retry]);
+  const truckSaved = useCallback(
+    (truck: Truck) => setProfile((was) => (was?.result?.truck?.id === truck.id ? { ...was, result: { ...was.result, truck } } : was)),
+    [],
+  );
+
+  const api = useMemo(() => ({ account, signOut, retry, truckSaved }), [account, signOut, retry, truckSaved]);
   return <AccountContext.Provider value={api}>{children}</AccountContext.Provider>;
 }
 

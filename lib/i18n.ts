@@ -23,7 +23,11 @@ const en = {
   nextPickup: (time: string) => `Next pickup · ${time}`,
   noSlotsToday: "No pickup times left today",
   closedTonight: "Closed for tonight",
-  closedGroup: "Closed tonight",
+  closedGroup: "Not taking orders",
+  pausedNow: "Not taking orders right now",
+  pausedMenuNote: (truck: string) => `${truck} has paused new orders for now. You can still read the menu. Check back soon.`,
+  truckPausedTitle: (truck: string) => `${truck} has paused new orders for now. Your order wasn’t placed.`,
+  truckPausedBody: "No order was created. Your cart stays saved, so you can order as soon as the truck is taking orders again.",
   seeMenu: "See menu",
   orderFromLabel: (truck: string, state: string) => `${truck}. ${state}`,
 
@@ -430,7 +434,7 @@ const en = {
 
   // Vendor menu: descriptions and allergens, with photo suggestions
   menuEditorTitle: "Menu",
-  menuEditorLead: "Choose a dish to write its description and allergens.",
+  menuEditorLead: "Choose a dish to change its price, description and allergens. Mark a dish sold out right here.",
   menuNoDescription: "No description yet",
   menuEdit: (dish: string) => `Edit ${dish}`,
   backToMenu: "Back to menu",
@@ -477,7 +481,59 @@ const en = {
   savedCopy: "Saved. Customers now see this.",
   discardedCopy: "Changes discarded. The menu is unchanged.",
   saveCopyFailed: "We couldn’t save. Your changes are still here. Try again.",
-  priceUntouched: "Price and sold-out are not changed on this screen.",
+  priceUntouched: "Saving the description and allergens does not change the price or availability.",
+
+  // Vendor controls: taking orders, truck details, price, sold out
+  takingOrdersSwitch: "Taking orders",
+  switchOn: "On",
+  switchOff: "Off",
+  pausedLabel: "Paused · Not taking orders",
+  parkClosedLabel: "Closed for tonight by the park",
+  pausedBody: "You switched new orders off. Customers can’t order until you switch them back on.",
+  parkClosedBody: "The park manager closed your truck for tonight, so your switch is locked until tomorrow.",
+  switchedOn: "Your truck is taking orders again.",
+  switchFailed: "That didn’t save. Nothing changed for customers.",
+  truckNotYours: "Only this truck’s vendor can change it.",
+  editDetails: "Edit details",
+  truckDetails: "Truck details",
+  truckDetailsLead: "How your truck is introduced to customers on Explore and on your menu.",
+  truckNameLabel: "Truck name",
+  cuisineLabel: "Cuisine",
+  blurbLabel: "Short description",
+  blurbHint: "One line under your truck’s name. Optional.",
+  detailProblem: {
+    name_missing: "Enter your truck’s name.",
+    name_long: "Keep the name to 40 characters or fewer.",
+    cuisine_missing: "Enter a cuisine, such as Burgers.",
+    cuisine_long: "Keep the cuisine to 30 characters or fewer.",
+    blurb_long: "Keep the description to 120 characters or fewer.",
+  } as Record<string, string>,
+  detailsLanguageNote: "Customers see these words exactly as you write them, in English and in Arabic.",
+  saveDetails: "Save details",
+  detailsSaved: "Saved. Customers now see this.",
+  noDescriptionLine: "No short description",
+  priceAndAvailability: "Price and availability",
+  priceLabel: "Price in KWD",
+  priceHint: "Up to three decimals, for example 1.950.",
+  priceProblem: {
+    price_missing: "Enter a price.",
+    price_not_a_number: "Enter the price as a number, for example 1.950.",
+    price_decimals: "Use three decimals at most, for example 1.950.",
+    price_zero: "The price must be more than 0.",
+    price_too_high: "The price must be less than 1000 KWD.",
+  } as Record<string, string>,
+  savePrice: "Save price",
+  priceSaved: (price: string) => `Saved. New orders pay ${price}. Orders already placed keep their price.`,
+  priceFailed: "We couldn’t save the price. Customers still see the old one. Try again.",
+  availabilityLegend: "Availability",
+  available: "Available",
+  markedSoldOut: "Marked sold out. Customers can’t add it.",
+  markedAvailable: "Back on sale. Customers can order it again.",
+  availabilityFailed: "That didn’t save. Nothing changed for customers.",
+  markSoldOut: "Mark sold out",
+  markAvailable: "Back on sale",
+  markSoldOutLabel: (dish: string) => `Mark ${dish} sold out`,
+  markAvailableLabel: (dish: string) => `Put ${dish} back on sale`,
   dishNotYoursTitle: "This dish isn’t on your truck",
   dishNotYoursBody: "You can edit only the dishes on your own menu.",
   menuLoadErrorTitle: "We couldn’t load your menu",
@@ -548,7 +604,11 @@ const ar: Dict = {
   nextPickup: (time) => `أقرب استلام · ${time}`,
   noSlotsToday: "ما في أوقات استلام متاحة اليوم",
   closedTonight: "مغلقة الليلة",
-  closedGroup: "مغلقة الليلة",
+  closedGroup: "ما تستقبل طلبات",
+  pausedNow: "ما نستقبل طلبات حاليًا",
+  pausedMenuNote: (truck) => `${truck} وقّفت الطلبات الجديدة مؤقتاً. تقدر تتصفح القائمة، وارجع بعد شوي.`,
+  truckPausedTitle: (truck) => `${truck} وقّفت الطلبات الجديدة مؤقتاً. طلبك ما تم.`,
+  truckPausedBody: "ما تم إنشاء أي طلب. سلتك محفوظة، وتقدر تطلب أول ما ترجع العربة تستقبل طلبات.",
   seeMenu: "القائمة",
   orderFromLabel: (truck, state) => `${truck}. ${state}`,
 
@@ -931,7 +991,7 @@ const ar: Dict = {
   signingOut: "جارٍ تسجيل الخروج…",
 
   menuEditorTitle: "القائمة",
-  menuEditorLead: "اختر صنف عشان تكتب وصفه ومسببات الحساسية.",
+  menuEditorLead: "اختر صنف عشان تغيّر سعره ووصفه ومسببات الحساسية. وتقدر تعلّم الصنف «خلصت الكمية» من هني.",
   menuNoDescription: "ما له وصف للحين",
   menuEdit: (dish) => `تعديل ${dish}`,
   backToMenu: "رجوع إلى القائمة",
@@ -978,7 +1038,58 @@ const ar: Dict = {
   savedCopy: "تم الحفظ. الزباين يشوفون هذا الحين.",
   discardedCopy: "تم تجاهل التغييرات. القائمة ما تغيرت.",
   saveCopyFailed: "ما قدرنا نحفظ. تغييراتك موجودة. حاول مرة ثانية.",
-  priceUntouched: "السعر وحالة «نفد» ما يتغيرون من هذه الشاشة.",
+  priceUntouched: "حفظ الوصف ومسببات الحساسية ما يغيّر السعر ولا التوفر.",
+
+  takingOrdersSwitch: "استقبال الطلبات",
+  switchOn: "شغّال",
+  switchOff: "موقّف",
+  pausedLabel: "موقّفة مؤقتاً · ما تستقبل طلبات",
+  parkClosedLabel: "مغلقة الليلة من إدارة الساحة",
+  pausedBody: "أنت وقّفت الطلبات الجديدة. الزباين ما يقدرون يطلبون لين ترجّع تشغّلها.",
+  parkClosedBody: "مديرة الساحة سكّرت عربتك الليلة، وزرّك مقفول لين باچر.",
+  switchedOn: "عربتك رجعت تستقبل طلبات.",
+  switchFailed: "ما انحفظ. ما تغيّر شي عند الزباين.",
+  truckNotYours: "بائع هذه العربة بس هو اللي يقدر يغيّرها.",
+  editDetails: "تعديل البيانات",
+  truckDetails: "بيانات العربة",
+  truckDetailsLead: "چذي تتعرّف عربتك على الزباين في «استكشف» وفي قائمتك.",
+  truckNameLabel: "اسم العربة",
+  cuisineLabel: "نوع الأكل",
+  blurbLabel: "وصف قصير",
+  blurbHint: "سطر واحد تحت اسم عربتك. اختياري.",
+  detailProblem: {
+    name_missing: "اكتب اسم عربتك.",
+    name_long: "خل الاسم 40 حرف أو أقل.",
+    cuisine_missing: "اكتب نوع الأكل، مثل برجر.",
+    cuisine_long: "خل نوع الأكل 30 حرف أو أقل.",
+    blurb_long: "خل الوصف 120 حرف أو أقل.",
+  },
+  detailsLanguageNote: "الزباين يشوفون هالكلمات مثل ما كتبتها بالضبط، بالإنجليزي وبالعربي.",
+  saveDetails: "حفظ البيانات",
+  detailsSaved: "تم الحفظ. الزباين يشوفون هذا الحين.",
+  noDescriptionLine: "ما في وصف قصير",
+  priceAndAvailability: "السعر والتوفر",
+  priceLabel: "السعر بالدينار الكويتي",
+  priceHint: "ثلاث خانات عشرية بالكثير، مثل 1.950.",
+  priceProblem: {
+    price_missing: "اكتب السعر.",
+    price_not_a_number: "اكتب السعر كرقم، مثل 1.950.",
+    price_decimals: "استخدم ثلاث خانات عشرية بالكثير، مثل 1.950.",
+    price_zero: "السعر لازم يكون أكثر من 0.",
+    price_too_high: "السعر لازم يكون أقل من 1000 د.ك.",
+  },
+  savePrice: "حفظ السعر",
+  priceSaved: (price) => `تم الحفظ. الطلبات الجديدة تدفع ${price}. والطلبات السابقة تبقى على سعرها.`,
+  priceFailed: "ما قدرنا نحفظ السعر. الزباين للحين يشوفون السعر القديم. حاول مرة ثانية.",
+  availabilityLegend: "التوفر",
+  available: "متوفر",
+  markedSoldOut: "تعلّم «خلصت الكمية». الزباين ما يقدرون يضيفونه.",
+  markedAvailable: "رجع للبيع. الزباين يقدرون يطلبونه.",
+  availabilityFailed: "ما انحفظ. ما تغيّر شي عند الزباين.",
+  markSoldOut: "علّمه «خلصت الكمية»",
+  markAvailable: "رجّعه للبيع",
+  markSoldOutLabel: (dish) => `علّم ${dish} «خلصت الكمية»`,
+  markAvailableLabel: (dish) => `رجّع ${dish} للبيع`,
   dishNotYoursTitle: "هذا الصنف مو على عربتك",
   dishNotYoursBody: "تقدر تعدّل أصناف قائمتك فقط.",
   menuLoadErrorTitle: "ما قدرنا نحمّل قائمتك",
@@ -1128,16 +1239,33 @@ const arItemDescriptions: Record<string, string> = {
   M601: "لقيمات مقرمشة مع دبس التمر والسمسم.",
 };
 
+// The six trucks' details as they are in seed/trucks.csv. An Arabic label
+// above is shown only while a truck still has its seeded English text. Once
+// a vendor saves their own name, cuisine or description, that is what
+// customers see in both languages (the same rule as dish descriptions).
+const seedTrucks: Record<string, { name: string; cuisine: string; blurb: string }> = {
+  T01: { name: "Karak Corner", cuisine: "Tea and snacks", blurb: "Karak, toasties and quick bites." },
+  T02: { name: "Dune Burgers", cuisine: "Burgers", blurb: "Smash burgers cooked to order." },
+  T03: { name: "Taco Saha", cuisine: "Tacos", blurb: "Street tacos with Gulf twists." },
+  T04: { name: "Noodle Wagon", cuisine: "Noodles", blurb: "Wok noodles, fresh off the flame." },
+  T05: { name: "Saj Station", cuisine: "Saj wraps", blurb: "Wraps made on the saj in front of you." },
+  T06: { name: "Lugaimat & Co", cuisine: "Desserts", blurb: "Lugaimat, kunafa and cold drinks." },
+};
+
+function truckText(id: string, field: "name" | "cuisine" | "blurb", saved: string, locale: Locale): string {
+  return locale === "ar" && saved === seedTrucks[id]?.[field] ? (arTrucks[id]?.[field] ?? saved) : saved;
+}
+
 export function truckName(truck: { id: string; name: string }, locale: Locale): string {
-  return locale === "ar" ? (arTrucks[truck.id]?.name ?? truck.name) : truck.name;
+  return truckText(truck.id, "name", truck.name, locale);
 }
 
 export function truckCuisine(truck: { id: string; cuisine: string }, locale: Locale): string {
-  return locale === "ar" ? (arTrucks[truck.id]?.cuisine ?? truck.cuisine) : truck.cuisine;
+  return truckText(truck.id, "cuisine", truck.cuisine, locale);
 }
 
 export function truckBlurb(truck: { id: string; blurb: string }, locale: Locale): string {
-  return locale === "ar" ? (arTrucks[truck.id]?.blurb ?? truck.blurb) : truck.blurb;
+  return truckText(truck.id, "blurb", truck.blurb, locale);
 }
 
 export function itemName(item: { id: string; name: string }, locale: Locale): string {

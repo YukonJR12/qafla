@@ -164,6 +164,42 @@ What happens to existing orders: nothing. Changing capacity never touches an ord
 
 A capacity change and an order being placed at the same moment cannot cross: `place_order` locks the truck's row while it counts, so the change waits for the order (or the order sees the new number). Screenshots are in `docs/screenshots/capacity-settings/`.
 
+## Vendor controls: details, open or closed, price, sold out
+
+A vendor with an assigned truck can now run it from the app.
+
+| Where | What the vendor does there |
+| --- | --- |
+| Kitchen (`app/vendor/page.tsx`, `components/operating-switch.tsx`) | The **Taking orders** switch, and a link to Truck details. |
+| Truck details (`app/vendor/truck/page.tsx`) | The truck's name, cuisine and one-line description. |
+| Menu (`app/vendor/menu/page.tsx`) | **Mark sold out** / **Back on sale** on every dish row. |
+| A dish (`app/vendor/menu/[id]/page.tsx`) | **Price in KWD** and **Availability**, each saved by itself, above the description. |
+| `lib/vendor-edits.ts` | Reads a typed price, tidies the three truck fields, and names the two closed states. Unit-tested. |
+| `supabase/migrations/…_vendor_controls.sql` | Limits on what can be saved. Grants nothing new. |
+
+**Who may change what is decided by the database, not by these screens.** Since the first migration a signed-in user has been allowed to update a few named columns, and row-level security has limited that to the truck's own assigned vendor. Each save here is a plain update of one row. When the row is not this account's to change, the database changes nothing and returns no row, and the screen says so. `vendor_id` and `id` are not among the named columns, so a vendor cannot hand themselves another truck.
+
+**Two different "closed" states.**
+
+| | The vendor's switch | Dana's Close for tonight |
+| --- | --- | --- |
+| Stored in | `trucks.is_open` | a row in `truck_closures` |
+| Lasts | until the vendor changes it | tonight's Kuwait service date |
+| Kitchen shows | "Paused · Not taking orders" | "Closed for tonight by the park", and the switch is locked |
+| Customers read | "Not taking orders right now" | "Closed for tonight" |
+
+Customers are told which it is on Explore, on the menu and at checkout, because a pause may lift in minutes and a closure lasts all night. When both are true the truck reads as closed for tonight (`closedBy` in `lib/vendor-edits.ts`). At checkout a paused truck offers "Check again"; the cart is kept either way.
+
+`place_order` refuses a new order when either says closed, so switching back on cannot undo Dana's closure. Neither touches an order that already exists: the kitchen keeps every ticket and its buttons, and can finish them.
+
+**Price.** Typed as a number with up to three decimals ("2.65" is saved as 2.650). The column keeps exactly three decimals, and a check keeps it above zero and below 1000. An order copies each dish's price when it is placed, so a new order pays the new price and an earlier ticket keeps the old one.
+
+**Sold out.** A sold-out dish stays readable on the customer's menu, labelled "Sold out", with no Add button. If it sells out after it is already in a cart, the server refuses the order (`item_sold_out`), nothing is saved, and checkout names the dish and sends the customer to their cart.
+
+**Arabic.** The seed data has Arabic labels for the six trucks. They are shown only while a truck still has its seeded English text. Once a vendor writes their own name, cuisine or description, customers see those words in both languages (the same rule as dish descriptions).
+
+Not built: adding or removing dishes, renaming a dish, and a truck photo or logo upload. The Kitchen learns about Dana's closure when it next reads the board (a new order, a status change, or coming back to the tab), not the instant she presses the button. Screenshots are in `docs/screenshots/vendor-controls/`.
+
 ## Vendor menu: descriptions, allergens and photo suggestions
 
 A vendor opens **Menu**, chooses one of their own dishes, and writes its description and the allergens it may contain. They can take a photo of the dish and get a draft to start from.
@@ -265,6 +301,7 @@ The data rules live in Postgres, in `supabase/`, so they hold no matter what a b
 | `supabase/migrations/…_abandon_order_attempt.sql` | `abandon_order_attempt` and the shared lock that settles "place" against "give up". |
 | `supabase/migrations/…_orders_realtime.sql` | Adds `orders` to the Realtime publication so the board and the ticket update live. Access rules are unchanged. |
 | `supabase/migrations/…_order_ratings.sql` | `order_ratings` (one rating per order) and `rate_order`. Adds only; nothing existing is changed. |
+| `supabase/migrations/…_vendor_controls.sql` | Check constraints for what a vendor can now type: a truck's name (1 to 40 characters), cuisine (1 to 30) and description (up to 120), each on one line, and a dish price above 0 and below 1000 KWD. Adds only. |
 | `supabase/migrations/…_online_payments.sql` | `orders.payment_status`, `order_payments`, the server-secret check, `place_order_paying`, `begin_online_payment`, `record_payment_page`, `settle_payment`, and the rule that an unpaid online order cannot be accepted. Adds only; existing orders stay pay-at-pickup and unpaid. |
 | `supabase/migrations/…_menu_ai.sql` | `menu_items.allergens`, the photo-suggestion request log, `begin_ai_suggestion` (ownership and the 20-per-hour limit) and `save_menu_copy` (description and allergens only). Adds only. |
 | `supabase/seed.sql` | The six trucks and 30 dishes. Generated from `seed/*.csv`; do not edit by hand. |

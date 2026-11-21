@@ -97,7 +97,7 @@ export default async function Explore() {
 /** What a truck can offer right now, as words. */
 function availability(truck: TruckTonight, locale: Locale): string {
   const t = dictionary[locale];
-  if (truck.closed) return t.closedTonight;
+  if (truck.closed) return truck.closedBy === "vendor" ? t.pausedNow : t.closedTonight;
   if (!truck.nextSlot) return t.noSlotsToday;
   return t.nextPickup(formatSlot(truck.nextSlot, locale));
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KitchenOrder, OrderStatus } from "./kitchen";
 import { kuwaitNow, LEAD_SECONDS, slotSeconds } from "./time";
+import { closedBy, type ClosedBy } from "./vendor-edits";
 
 export type Truck = {
   id: string;
@@ -29,6 +30,8 @@ export type Slot = { slot_start: string; booked: number; capacity: number };
 export type TruckTonight = Truck & {
   /** Closed by the vendor's switch or by the park manager for tonight. */
   closed: boolean;
+  /** Which of the two it is. The park manager's closure comes first. */
+  closedBy: ClosedBy;
   /** Earliest slot that can still be booked, or null when none is left. */
   nextSlot: string | null;
 };
@@ -54,15 +57,14 @@ export async function fetchSlots(db: SupabaseClient, truckId: string): Promise<S
   return data as Slot[];
 }
 
-/** Is this truck closed tonight? Checks the vendor switch and tonight's closure. */
-export async function fetchClosed(db: SupabaseClient, truckId: string): Promise<boolean> {
-  const [truck, closure] = await Promise.all([
-    db.from("trucks").select("is_open").eq("id", truckId).single(),
-    db.from("truck_closures").select("truck_id").eq("truck_id", truckId).eq("service_date", kuwaitNow().date),
-  ]);
-  if (truck.error) throw new Error(truck.error.message);
-  if (closure.error) throw new Error(closure.error.message);
-  return !truck.data.is_open || closure.data.length > 0;
+/**
+ * Why this truck is not taking orders right now: the park manager closed it
+ * for tonight ("park"), its vendor paused it ("vendor"), or null when it is
+ * open. Customers are told which, because one ends tonight and the other
+ * may end in a few minutes.
+ */
+export async function fetchClosedBy(db: SupabaseClient, truckId: string): Promise<ClosedBy> {
+  return closedBy(await fetchTruckState(db, truckId));
 }
 
 export async function fetchTruck(db: SupabaseClient, truckId: string): Promise<Truck | null> {
@@ -98,9 +100,10 @@ export async function fetchTrucksTonight(db: SupabaseClient): Promise<TruckTonig
 
   return Promise.all(
     trucks.data.map(async (truck) => {
-      const closed = !truck.is_open || closedIds.has(truck.id);
+      const why = closedBy({ isOpen: truck.is_open, closedByPark: closedIds.has(truck.id) });
+      const closed = why !== null;
       const slots = closed ? [] : await fetchSlots(db, truck.id);
-      return { ...truck, closed, nextSlot: nextBookable(slots)?.slot_start ?? null };
+      return { ...truck, closed, closedBy: why, nextSlot: nextBookable(slots)?.slot_start ?? null };
     }),
   );
 }
@@ -290,6 +293,87 @@ export async function setTruckCapacity(db: SupabaseClient, truckId: string, capa
   if (error) throw new Error(error.message);
   if (data.length !== 1) throw new Error("not_your_truck");
   return data[0].slot_capacity as number;
+}
+
+// ---------------------------------------------------------------------------
+// The vendor's own controls: details, open or closed, price, sold out
+// ---------------------------------------------------------------------------
+//
+// Each of these is a plain update of one row. The database decides whether
+// it happens: its grants name the columns a signed-in user may change, and
+// row-level security lets only the truck's assigned vendor change that
+// truck's row or its dishes. When the row is not this account's to change,
+// the database updates nothing and says so by returning no row, which is
+// reported here as "not_your_truck" or "not_your_dish". Every function
+// answers with what the database saved, and the screen shows that.
+
+/** The two things that can stop new orders, kept apart. */
+export type TruckState = {
+  /** The vendor's own switch (trucks.is_open). */
+  isOpen: boolean;
+  /** The park manager closed this truck for tonight (a row in truck_closures). */
+  closedByPark: boolean;
+};
+
+export async function fetchTruckState(db: SupabaseClient, truckId: string): Promise<TruckState> {
+  const [truck, closure] = await Promise.all([
+    db.from("trucks").select("is_open").eq("id", truckId).single(),
+    db.from("truck_closures").select("truck_id").eq("truck_id", truckId).eq("service_date", kuwaitNow().date),
+  ]);
+  if (truck.error) throw new Error(truck.error.message);
+  if (closure.error) throw new Error(closure.error.message);
+  return { isOpen: truck.data.is_open as boolean, closedByPark: closure.data.length > 0 };
+}
+
+/**
+ * The vendor's switch. It changes `trucks.is_open` and nothing else: no
+ * order is touched, so tonight's tickets stay on the board to finish. It
+ * cannot undo the park manager's closure, which is a separate row that
+ * `place_order` also checks.
+ */
+export async function setTruckOpen(db: SupabaseClient, truckId: string, open: boolean): Promise<boolean> {
+  const { data, error } = await db.from("trucks").update({ is_open: open }).eq("id", truckId).select("is_open");
+  if (error) throw new Error(error.message);
+  if (data.length !== 1) throw new Error("not_your_truck");
+  return data[0].is_open as boolean;
+}
+
+/** Saves the truck's name, cuisine and one-line description. */
+export async function saveTruckDetails(
+  db: SupabaseClient,
+  truckId: string,
+  details: { name: string; cuisine: string; blurb: string },
+): Promise<Truck> {
+  const { data, error } = await db
+    .from("trucks")
+    .update({ name: details.name, cuisine: details.cuisine, blurb: details.blurb })
+    .eq("id", truckId)
+    .select("id,name,cuisine,blurb,slot_capacity,is_open");
+  if (error) throw new Error(error.message);
+  if (data.length !== 1) throw new Error("not_your_truck");
+  return data[0] as Truck;
+}
+
+const DISH_COLUMNS = "id,truck_id,name,category,price_kwd,description,sold_out,allergens";
+
+/**
+ * Saves a dish's price. `price` is text with three decimals ("1.950"), so
+ * no floating-point number is ever involved. Orders already placed keep the
+ * price they were placed at: each order line has its own copy.
+ */
+export async function setDishPrice(db: SupabaseClient, itemId: string, price: string): Promise<MenuItem> {
+  const { data, error } = await db.from("menu_items").update({ price_kwd: price }).eq("id", itemId).select(DISH_COLUMNS);
+  if (error) throw new Error(error.message);
+  if (data.length !== 1) throw new Error("not_your_dish");
+  return data[0] as MenuItem;
+}
+
+/** Marks a dish sold out, or puts it back on sale. */
+export async function setDishSoldOut(db: SupabaseClient, itemId: string, soldOut: boolean): Promise<MenuItem> {
+  const { data, error } = await db.from("menu_items").update({ sold_out: soldOut }).eq("id", itemId).select(DISH_COLUMNS);
+  if (error) throw new Error(error.message);
+  if (data.length !== 1) throw new Error("not_your_dish");
+  return data[0] as MenuItem;
 }
 
 // ---------------------------------------------------------------------------

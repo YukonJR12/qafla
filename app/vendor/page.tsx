@@ -5,9 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadError } from "@/components/cart-states";
 import { KitchenTicket, StatusChip } from "@/components/kitchen-ticket";
 import { LanguageSwitch } from "@/components/language-switch";
-import { Isolate, PickupSticker, primaryButton, StateLabel } from "@/components/ui";
+import { OperatingSwitch } from "@/components/operating-switch";
+import { Isolate, PickupSticker, primaryButton } from "@/components/ui";
 import { useAccount } from "@/lib/account";
-import { fetchClosed, fetchKitchenOrders, fetchMyTruck, type Truck } from "@/lib/data";
+import { fetchKitchenOrders, fetchMyTruck, fetchTruckState, type Truck, type TruckState } from "@/lib/data";
 import { truckName } from "@/lib/i18n";
 import { groupBySlot, needsCooking, type KitchenOrder } from "@/lib/kitchen";
 import { useLocale } from "@/lib/locale";
@@ -16,6 +17,7 @@ import { supabaseBrowser } from "@/lib/supabase";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
 import { useSession } from "@/lib/use-session";
+import { operating } from "@/lib/vendor-edits";
 
 // The vendor's kitchen board: tonight's tickets for the signed-in vendor's
 // own truck, grouped by pickup time, earliest first.
@@ -23,6 +25,10 @@ import { useSession } from "@/lib/use-session";
 // Which truck that is comes from the database (trucks.vendor_id), never from
 // the address bar. Row-level security hands this account its own truck's
 // orders and nobody else's.
+//
+// The header also carries the vendor's own "Taking orders" switch. Switching
+// it off, or the park manager closing the truck for tonight, stops NEW
+// orders only: every ticket already here stays, with its buttons, to finish.
 export default function VendorBoardPage() {
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
@@ -48,7 +54,7 @@ export default function VendorBoardPage() {
   const truckId = truck?.id ?? null;
 
   // Step 2: tonight's tickets for that truck.
-  const [board, setBoard] = useState<{ truckId: string; orders: KitchenOrder[]; closed: boolean } | null>(null);
+  const [board, setBoard] = useState<{ truckId: string; orders: KitchenOrder[]; state: TruckState } | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const readNumber = useRef(0); // so an older, slower read never overwrites a newer one
 
@@ -57,9 +63,9 @@ export default function VendorBoardPage() {
     const mineNumber = ++readNumber.current;
     const db = supabaseBrowser();
     try {
-      const [orders, closed] = await Promise.all([fetchKitchenOrders(db, truckId), fetchClosed(db, truckId)]);
+      const [orders, state] = await Promise.all([fetchKitchenOrders(db, truckId), fetchTruckState(db, truckId)]);
       if (mineNumber !== readNumber.current) return;
-      setBoard({ truckId, orders, closed });
+      setBoard({ truckId, orders, state });
       setLoadFailed(false);
     } catch (error) {
       if (mineNumber === readNumber.current) setLoadFailed(true);
@@ -70,6 +76,14 @@ export default function VendorBoardPage() {
   // The first read does not wait for the live connection.
   useEffect(() => {
     reread().catch(() => {});
+  }, [reread]);
+
+  // Coming back to this tab re-reads too. The park manager's closure is not
+  // an order, so no live nudge announces it; this picks it up.
+  useEffect(() => {
+    const onVisible = () => document.visibilityState === "visible" && reread().catch(() => {});
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [reread]);
 
   // New orders and status changes arrive as nudges; each one re-reads the board.
@@ -84,6 +98,14 @@ export default function VendorBoardPage() {
   const { groups, finished } = groupBySlot(shown?.orders ?? []);
   const toCook = (shown?.orders ?? []).filter((order) => needsCooking(order.status)).length;
   const active = groups.reduce((n, group) => n + group.orders.length, 0);
+  const mode = shown ? operating(shown.state) : null;
+
+  // The database saved the switch: show it at once, then read everything again.
+  function switched(isOpen: boolean) {
+    readNumber.current++;
+    setBoard((was) => was && { ...was, state: { ...was.state, isOpen } });
+    reread().catch(() => {});
+  }
 
   // The database answered an action: show exactly the status it saved.
   function confirmed(saved: { id: string; status: string; rejection_reason: string | null }) {
@@ -118,12 +140,8 @@ export default function VendorBoardPage() {
           </div>
           {truck && (
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              {shown &&
-                (shown.closed ? (
-                  <StateLabel>{t.closedTonight}</StateLabel>
-                ) : (
-                  <span className="rounded-full border border-ink bg-yellow-punk px-2.5 py-0.5 font-bold">{t.takingOrders}</span>
-                ))}
+              {/* The vendor's own switch. Locked while the park manager's closure is in force. */}
+              {shown && <OperatingSwitch truckId={truck.id} state={shown.state} onSaved={switched} />}
               {/* If the live connection drops, the last known tickets stay and this says so. */}
               <span role="status" className="inline-flex items-center gap-1.5 font-semibold text-muted">
                 <span
@@ -136,6 +154,9 @@ export default function VendorBoardPage() {
               <Link href="/vendor/capacity" className="inline-flex min-h-11 items-center gap-1.5 font-semibold">
                 <span>{t.capacityNow(truck.slot_capacity)}</span>
                 <span className="font-bold underline underline-offset-4">{t.change}</span>
+              </Link>
+              <Link href="/vendor/truck" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">
+                {t.editDetails}
               </Link>
               <button
                 type="button"
@@ -184,9 +205,13 @@ export default function VendorBoardPage() {
         ) : (
           <>
             {/* Closed to new orders, but tonight's existing tickets still get finished. */}
-            {shown.closed && (
+            {/* Who closed it is said in words: the two closures are not the same thing. */}
+            {mode !== "open" && (
               <p className="mb-4 rounded-control bg-warning-surface p-3 text-warning">
-                <span className="font-extrabold">{t.closedNewOrders}</span> · {t.closedStillActive(active)}
+                <span className="font-extrabold">{mode === "park" ? t.parkClosedLabel : t.pausedLabel}</span>
+                <span className="block text-sm">
+                  {mode === "park" ? t.parkClosedBody : t.pausedBody} {t.closedStillActive(active)}
+                </span>
               </p>
             )}
 
