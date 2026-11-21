@@ -5,6 +5,7 @@ import { setOrderStatus } from "@/lib/data";
 import { itemName } from "@/lib/i18n";
 import { nextStatus, type KitchenOrder, type OrderStatus } from "@/lib/kitchen";
 import { useLocale } from "@/lib/locale";
+import { canAccept, paymentView } from "@/lib/payments";
 import { supabaseBrowser } from "@/lib/supabase";
 import { formatSlot } from "@/lib/time";
 import { CheckIcon, Isolate, Money, primaryButtonSplit, secondaryButton, primaryButton } from "./ui";
@@ -30,7 +31,7 @@ export function StatusChip({ status }: { status: string }) {
 }
 
 /** The answers that mean "this ticket is not in the status you thought". */
-const STALE = new Set(["transition_not_allowed", "order_not_found"]);
+const STALE = new Set(["transition_not_allowed", "order_not_found", "payment_not_confirmed"]);
 
 type Saved = { id: string; status: string; rejection_reason: string | null };
 
@@ -65,6 +66,8 @@ export function KitchenTicket({
   const id = useId();
 
   const next = nextStatus(order.status);
+  const pay = paymentView(order);
+  const waitingForPayment = order.status === "placed" && !canAccept(order);
   const time = formatSlot(order.slot_start, locale);
 
   async function move(target: OrderStatus, reason?: string) {
@@ -129,12 +132,18 @@ export function KitchenTicket({
       </ul>
 
       {/* Payment is its own, quieter line: it is not a kitchen status. */}
-      <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-divider pt-3 text-sm text-muted">
-        <span>
-          {t.payAtPickup}: <Money amount={order.total_kwd} locale={locale} className="font-bold text-ink" />
+      <p className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-divider pt-3 text-sm text-muted">
+        <Money amount={order.total_kwd} locale={locale} className="font-bold text-ink" />
+        <span
+          className={`rounded-control px-2 py-0.5 font-bold ${
+            pay === "paid" ? "bg-ink text-snowy-white" : pay === "refund_due" ? "bg-warning-surface text-warning" : "bg-subtle text-ink"
+          }`}
+        >
+          {t.paymentLabel[pay]}
         </span>
-        <span className="font-semibold">{t.unpaid}</span>
       </p>
+      {/* The kitchen starts on an online order only once it is paid. The database enforces it. */}
+      {waitingForPayment && <p className="mt-2 text-sm font-semibold text-warning">{t.awaitingPaymentHint}</p>}
 
       {problem && (
         <p role="alert" className="mt-3 rounded-control bg-error-surface p-3 text-sm font-semibold text-error">
@@ -160,7 +169,7 @@ export function KitchenTicket({
           {/* The one next kitchen action. Its width never changes while it saves. */}
           <button
             type="button"
-            disabled={busy !== null}
+            disabled={busy !== null || waitingForPayment}
             aria-busy={busy === next}
             onClick={() => move(next)}
             className={`${primaryButtonSplit} w-auto! grow-[3] basis-44`}

@@ -11,6 +11,7 @@ import { fetchOrder, type Order } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import { supabaseBrowser } from "@/lib/supabase";
+import { canPayNow, paymentView } from "@/lib/payments";
 import { canCancel } from "@/lib/ticket";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
@@ -122,7 +123,7 @@ export default function OrderPage() {
               {order.status === "cancelled" && (
                 <div className="mt-5 rounded-control bg-subtle p-3">
                   <p className="font-extrabold">{t.cancelledTitle}</p>
-                  <p className="mt-1 text-sm text-muted">{t.cancelledBody(formatSlot(order.slot_start, locale))}</p>
+                  <p className="mt-1 text-sm text-muted">{(paymentView(order) === "refund_due" ? t.cancelledBodyPaid : t.cancelledBody)(formatSlot(order.slot_start, locale))}</p>
                 </div>
               )}
               {order.status === "rejected" && (
@@ -135,7 +136,7 @@ export default function OrderPage() {
                       <span className="font-semibold">{t.rejectedReason}</span> <span className="wrap-anywhere">{order.rejection_reason}</span>
                     </p>
                   )}
-                  <p className="mt-1 text-sm">{t.rejectedBody}</p>
+                  <p className="mt-1 text-sm">{paymentView(order) === "refund_due" ? t.rejectedBodyPaid : t.rejectedBody}</p>
                 </div>
               )}
 
@@ -163,13 +164,43 @@ export default function OrderPage() {
 
               <div className="mt-4 border-t border-divider pt-4">
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="font-bold">{t.totalAtCounter}</p>
+                  <p className="font-bold">{paymentView(order) === "pickup" ? t.totalAtCounter : t.totalPlain}</p>
                   {/* The total the server saved with the order. */}
                   <Money amount={order.total_kwd} locale={locale} className="text-2xl font-extrabold" />
                 </div>
-                <p className="mt-1 text-sm text-muted">{t.paymentLine}</p>
+                {/* Payment has its own line and its own words; it is not a kitchen status. */}
+                <p
+                  key={order.payment_status}
+                  className={`bump mt-2 inline-flex items-center gap-1.5 rounded-control px-2.5 py-1 text-sm font-bold ${
+                    paymentView(order) === "paid"
+                      ? "bg-ink text-snowy-white"
+                      : paymentView(order) === "refund_due"
+                        ? "bg-warning-surface text-warning"
+                        : "bg-subtle text-ink"
+                  }`}
+                >
+                  {paymentView(order) === "paid" && <CheckIcon className="size-4" />}
+                  {t.paymentLabel[paymentView(order)]}
+                </p>
+                {paymentView(order) === "refund_due" && <p className="mt-1 text-sm text-muted">{t.refundDueBody}</p>}
               </div>
             </article>
+
+            {/* An online order that is not paid yet: say so plainly, and offer the way to pay. */}
+            {canPayNow(order) && (
+              <section className="mt-4 rounded-panel bg-warning-surface p-4 text-warning">
+                <h2 className="font-extrabold">{t.unpaidOnlineTitle}</h2>
+                <p className="mt-1 text-sm">
+                  {t.unpaidOnlineBody(formatSlot(order.slot_start, locale), truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale))}
+                </p>
+                <Link href={`/orders/${order.id}/payment?start=1`} className={`${primaryButton} mt-3`}>
+                  {t.payNow}
+                </Link>
+                <Link href={`/orders/${order.id}/payment`} className={`${secondaryButton} mt-2`}>
+                  {t.checkPayment}
+                </Link>
+              </section>
+            )}
 
             {/* Once collected, the customer can rate this order, one time. */}
             {order.status === "collected" && <OrderRating orderId={order.id} />}

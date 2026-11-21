@@ -1555,6 +1555,241 @@ try {
   await admin.query("delete from public.ai_suggestion_requests");
 
   // -------------------------------------------------------------------------
+  section("Online payment: paid only when the gateway's answer matches the saved order");
+
+  await setClock("18:00");
+  const SERVER_SECRET = "test-only-server-secret-0123456789abcdef"; // exists only in this throwaway database
+  await admin.query(
+    "insert into private.server_keys (name, secret_hash) values ('payments', encode(sha256(convert_to($1, 'UTF8')), 'hex'))",
+    [SERVER_SECRET],
+  );
+  const PAY_SLOT = "22:30";
+  // Dune Burgers is closed for tonight by this point in the story, so the
+  // 3.200 KWD order here is Taco Saha's: one Halloumi taco and two Elote cups.
+  const paidCart = [
+    { item_id: "M303", quantity: 1 },
+    { item_id: "M304", quantity: 2 },
+  ];
+  const placePaying = async (client, method, requestId = randomUUID()) =>
+    (
+      await client.query(
+        "select id, ticket_ref, status, payment_method, payment_status, total_kwd::text as total_kwd from public.place_order_paying($1, $2::time, $3::jsonb, $4::uuid, $5)",
+        ["T03", PAY_SLOT, JSON.stringify(paidCart), requestId, method],
+      )
+    ).rows[0];
+  const paySlot = async () =>
+    (await admin.query("select booked from public.slot_usage('T03') where slot_start = $1::time", [PAY_SLOT])).rows[0].booked;
+  const payState = async (orderId) =>
+    (await admin.query("select status::text, payment_method, payment_status, total_kwd::text as total, paid_at from public.orders where id = $1", [orderId])).rows[0];
+  // What our server does after the gateway makes a payment page.
+  const recordPage = (client, secret, orderId, invoice) =>
+    client.query("select * from public.record_payment_page($1, $2, $3, $4)", [secret, orderId, invoice, `https://demo.example/pay/${invoice}`]);
+  // What our server does with the gateway's answer about one invoice.
+  const settleAs = async (client, secret, invoice, fact) =>
+    (
+      await client.query("select public.settle_payment($1, $2, $3, $4, $5, $6, $7, $8) as answer", [
+        secret,
+        invoice,
+        fact.paymentId ?? `PAY-${invoice}`,
+        fact.invoice ?? "PAID",
+        fact.txn ?? "SUCCESS",
+        fact.amount ?? 3.2,
+        fact.currency ?? "KWD",
+        fact.order,
+      ])
+    ).rows[0].answer;
+  const paymentRows = async (orderId) =>
+    (await admin.query("select invoice_id, status from public.order_payments where order_id = $1 order by id", [orderId])).rows;
+
+  let paidOrder;
+  await check("Pay online places one order and takes one place; a retry adds nothing", async () => {
+    const before = await paySlot();
+    const requestId = randomUUID();
+    const first = await asUser(c1, aisha, (c) => placePaying(c, "online", requestId));
+    const again = await asUser(c1, aisha, (c) => placePaying(c, "online", requestId));
+    const thirdTime = await asUser(c1, aisha, (c) => placePaying(c, "pay_at_pickup", requestId));
+    assert.equal(again.id, first.id);
+    assert.equal(thirdTime.id, first.id);
+    assert.deepEqual(
+      { method: first.payment_method, paid: first.payment_status, total: first.total_kwd, status: first.status },
+      { method: "online", paid: "unpaid", total: "3.200", status: "placed" },
+    );
+    assert.equal(thirdTime.payment_method, "online", "the saved order keeps the method it was saved with");
+    assert.equal(await paySlot(), before + 1, "one place, however many times the request arrives");
+    await rejects(asUser(c1, aisha, (c) => placePaying(c, "free")), "invalid_payment_method");
+    await rejects(asUser(c1, aisha, (c) => placePaying(c, null)), "invalid_payment_method");
+    assert.equal(await paySlot(), before + 1);
+    paidOrder = first;
+    return `${first.ticket_ref}: online, unpaid, 3.200; ${PAY_SLOT} went from ${before} to ${before + 1} and stayed there after two retries`;
+  });
+
+  await check("a customer cannot mark their own order paid", async () => {
+    const id = paidOrder.id;
+    await rejects(asUser(c1, aisha, (c) => c.query("update public.orders set payment_status = 'paid' where id = $1", [id])), "42501");
+    await rejects(asUser(c1, aisha, (c) => recordPage(c, "guess", id, "INV-FAKE")), "not_the_server");
+    await rejects(asUser(c1, aisha, (c) => recordPage(c, null, id, "INV-FAKE")), "not_the_server");
+    await rejects(asUser(c1, aisha, (c) => settleAs(c, "guess-guess-guess-guess-guess-guess-guess", "INV-FAKE", { order: id })), "not_the_server");
+    await rejects(asUser(c1, aisha, (c) => c.query("insert into public.order_payments (order_id, customer_id, invoice_id, amount_kwd, payment_url, created_at) values ($1, $2, 'X', 3.2, 'https://x', now())", [id, aisha])), "42501");
+    await rejects(asUser(c1, aisha, (c) => c.query("select * from private.server_keys")), "42501");
+    assert.equal((await payState(id)).payment_status, "unpaid");
+    assert.deepEqual(await paymentRows(id), []);
+    return "direct update, both server functions without the secret, a hand-made payment row and reading the secret's hash are all refused; still unpaid";
+  });
+
+  await check("the amount to charge comes from the saved order, and only its own customer can start paying", async () => {
+    const id = paidOrder.id;
+    const begun = (await asUser(c1, aisha, (c) => c.query("select public.begin_online_payment($1) as a", [id]))).rows[0].a;
+    assert.equal(Number(begun.amount_kwd), 3.2);
+    assert.equal(begun.currency, "KWD");
+    assert.equal(begun.open_payment_url, null);
+    await rejects(asUser(c1, badr, (c) => c.query("select public.begin_online_payment($1)", [id])), "order_not_found");
+    await rejects(asUser(c1, tacoVendor, (c) => c.query("select public.begin_online_payment($1)", [id])), "order_not_found");
+    const pickup = await asUser(c1, aisha, (c) => placePaying(c, "pay_at_pickup"));
+    await rejects(asUser(c1, aisha, (c) => c.query("select public.begin_online_payment($1)", [pickup.id])), "not_online_order");
+    await asUser(c1, aisha, (c) => move(c, pickup.id, "cancelled"));
+    return "3.200 KWD read from the order; another customer and the vendor get order_not_found; a pay-at-pickup order cannot be paid online";
+  });
+
+  await check("the kitchen cannot accept an online order until it is paid, but can still see it", async () => {
+    const id = paidOrder.id;
+    await rejects(asUser(c1, tacoVendor, (c) => move(c, id, "accepted")), "payment_not_confirmed");
+    const seen = await asUser(c1, tacoVendor, (c) => c.query("select payment_method, payment_status from public.orders where id = $1", [id]));
+    assert.deepEqual(seen.rows[0], { payment_method: "online", payment_status: "unpaid" });
+    assert.equal((await payState(id)).status, "placed");
+    return "accept is refused with payment_not_confirmed; the vendor reads online / unpaid";
+  });
+
+  await check("a gateway answer that does not match the order never marks it paid", async () => {
+    const id = paidOrder.id;
+    const slot = await paySlot();
+    for (const invoice of ["INV-A", "INV-B", "INV-C", "INV-D", "INV-E", "INV-F", "INV-G"]) await recordPage(admin, SERVER_SECRET, id, invoice);
+    const again = (await asUser(c1, aisha, (c) => c.query("select public.begin_online_payment($1) as a", [id]))).rows[0].a;
+    assert.equal(again.open_payment_url, "https://demo.example/pay/INV-G", "a recent payment page is reused, not made again");
+
+    const other = randomUUID();
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-A", { order: id, amount: 3.199 })).payment, "mismatch"); // paid, wrong amount
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-B", { order: id, currency: "USD" })).payment, "mismatch"); // paid, wrong currency
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-C", { order: other })).payment, "mismatch"); // paid, for another order
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-D", { order: id, invoice: "PENDING", txn: "FAILED" })).payment, "failed");
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-E", { order: id, invoice: "CANCELED", txn: "CANCELED" })).payment, "cancelled");
+    const pending = await settleAs(admin, SERVER_SECRET, "INV-F", { order: id, invoice: "PENDING", txn: "INPROGRESS" });
+    assert.deepEqual({ payment: pending.payment, changed: pending.changed }, { payment: "created", changed: false });
+    await rejects(settleAs(admin, SERVER_SECRET, "INV-NOT-OURS", { order: id }), "unknown_invoice");
+    // A decided invoice stays decided, even if a "paid" answer arrives for it later.
+    assert.deepEqual((await settleAs(admin, SERVER_SECRET, "INV-A", { order: id })).payment, "mismatch");
+
+    assert.equal((await payState(id)).payment_status, "unpaid");
+    assert.equal((await payState(id)).paid_at, null);
+    assert.equal(await paySlot(), slot, "none of this touches the slot");
+    return "wrong amount, wrong currency and another order's ID are 'mismatch'; failed, cancelled and pending leave it unpaid; an unknown invoice is refused";
+  });
+
+  await check("a matching answer marks it paid once; repeating the answer changes nothing", async () => {
+    const id = paidOrder.id;
+    const slot = await paySlot();
+    const first = await settleAs(admin, SERVER_SECRET, "INV-F", { order: id });
+    assert.deepEqual(first, { order_id: id, payment: "paid", payment_status: "paid", changed: true });
+    const paidAt = (await payState(id)).paid_at;
+    for (let n = 0; n < 3; n += 1) {
+      // The return page reloaded, the notification arriving twice, "Check payment" tapped.
+      const repeat = await settleAs(admin, SERVER_SECRET, "INV-F", { order: id });
+      assert.deepEqual(repeat, { order_id: id, payment: "paid", payment_status: "paid", changed: false });
+    }
+    // Two answers at the same instant.
+    const both = await Promise.all([settleAs(c1, SERVER_SECRET, "INV-F", { order: id }), settleAs(c2, SERVER_SECRET, "INV-F", { order: id })]);
+    assert.deepEqual(both.map((b) => b.changed), [false, false]);
+    // A second, different invoice that was also paid is recorded as a duplicate, not as a second payment.
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-G", { order: id })).payment, "duplicate");
+
+    const state = await payState(id);
+    assert.deepEqual({ paid: state.payment_status, status: state.status, total: state.total }, { paid: "paid", status: "placed", total: "3.200" });
+    assert.equal(String(state.paid_at), String(paidAt), "paid_at did not move");
+    assert.equal((await paymentRows(id)).filter((r) => r.status === "paid").length, 1);
+    assert.equal(await paySlot(), slot);
+    await rejects(asUser(c1, aisha, (c) => c.query("select public.begin_online_payment($1)", [id])), "already_paid");
+    await rejects(recordPage(admin, SERVER_SECRET, id, "INV-LATE"), "order_not_payable");
+    // Now the kitchen can accept it.
+    assert.equal((await asUser(c1, tacoVendor, (c) => move(c, id, "accepted"))).status, "accepted");
+    return "paid once; five more answers (two at the same instant) changed nothing; a second paid invoice is 'duplicate'; one paid row; slot count unchanged; then accepted";
+  });
+
+  await check("a failed try does not close the invoice: a later successful try on it still pays the order", async () => {
+    const order = await asUser(c1, badr, (c) => placePaying(c, "online"));
+    await recordPage(admin, SERVER_SECRET, order.id, "INV-T1");
+    const failed = await settleAs(admin, SERVER_SECRET, "INV-T1", { order: order.id, invoice: "PENDING", txn: "FAILED", paymentId: "TRY-1" });
+    assert.deepEqual({ payment: failed.payment, changed: failed.changed }, { payment: "failed", changed: true });
+    // The same failed answer again, and a still-pending second try: nothing changes.
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-T1", { order: order.id, invoice: "PENDING", txn: "FAILED", paymentId: "TRY-1" })).changed, false);
+    const pending = await settleAs(admin, SERVER_SECRET, "INV-T1", { order: order.id, invoice: "PENDING", txn: "INPROGRESS", paymentId: "TRY-2" });
+    assert.deepEqual({ payment: pending.payment, changed: pending.changed }, { payment: "failed", changed: false });
+    assert.equal((await payState(order.id)).payment_status, "unpaid");
+    // The second try succeeds.
+    const paid = await settleAs(admin, SERVER_SECRET, "INV-T1", { order: order.id, paymentId: "TRY-2" });
+    assert.deepEqual({ payment: paid.payment, status: paid.payment_status, changed: paid.changed }, { payment: "paid", status: "paid", changed: true });
+    // An old failed answer arriving late does not undo it.
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-T1", { order: order.id, invoice: "PAID", txn: "FAILED", paymentId: "TRY-1" })).payment, "paid");
+    assert.equal((await payState(order.id)).payment_status, "paid");
+    await asUser(c1, badr, (c) => move(c, order.id, "cancelled"));
+    return `${order.ticket_ref}: failed, then pending (still unpaid), then paid; a late failed answer changes nothing`;
+  });
+
+  await check("a paid order that is rejected or cancelled shows Refund due, and its place is freed", async () => {
+    // Rejected by the vendor after paying.
+    const rejected = await asUser(c1, badr, (c) => placePaying(c, "online"));
+    await recordPage(admin, SERVER_SECRET, rejected.id, "INV-R1");
+    await settleAs(admin, SERVER_SECRET, "INV-R1", { order: rejected.id });
+    const slot = await paySlot();
+    await asUser(c1, tacoVendor, (c) => move(c, rejected.id, "rejected", "Out of buns"));
+    assert.deepEqual(
+      { status: (await payState(rejected.id)).status, paid: (await payState(rejected.id)).payment_status },
+      { status: "rejected", paid: "refund_due" },
+    );
+    assert.equal(await paySlot(), slot - 1);
+    const seen = await asUser(c1, badr, (c) => c.query("select payment_status from public.orders where id = $1", [rejected.id]));
+    assert.equal(seen.rows[0].payment_status, "refund_due");
+
+    // Cancelled by the customer after paying.
+    const cancelled = await asUser(c1, badr, (c) => placePaying(c, "online"));
+    await recordPage(admin, SERVER_SECRET, cancelled.id, "INV-R2");
+    await settleAs(admin, SERVER_SECRET, "INV-R2", { order: cancelled.id });
+    await asUser(c1, badr, (c) => move(c, cancelled.id, "cancelled"));
+    assert.equal((await payState(cancelled.id)).payment_status, "refund_due");
+
+    // Cancelled first, and the payment arrives afterwards.
+    const late = await asUser(c1, badr, (c) => placePaying(c, "online"));
+    await recordPage(admin, SERVER_SECRET, late.id, "INV-R3");
+    await asUser(c1, badr, (c) => move(c, late.id, "cancelled"));
+    assert.equal((await payState(late.id)).payment_status, "unpaid");
+    assert.equal((await settleAs(admin, SERVER_SECRET, "INV-R3", { order: late.id })).payment_status, "refund_due");
+
+    // An unpaid order that is rejected owes nothing.
+    const unpaid = await asUser(c1, badr, (c) => placePaying(c, "online"));
+    await asUser(c1, tacoVendor, (c) => move(c, unpaid.id, "rejected", "Closing early"));
+    assert.equal((await payState(unpaid.id)).payment_status, "unpaid");
+    return `${rejected.ticket_ref} paid then rejected: refund_due and ${PAY_SLOT} ${slot} -> ${slot - 1}; paid then cancelled: refund_due; cancelled then paid: refund_due; unpaid then rejected: unpaid`;
+  });
+
+  await check("pay at pickup works as before, and payment rows are private", async () => {
+    const pickup = await asUser(c1, badr, (c) => place(c, "T03", PAY_SLOT, paidCart));
+    assert.deepEqual(
+      { method: (await payState(pickup.id)).payment_method, paid: (await payState(pickup.id)).payment_status },
+      { method: "pay_at_pickup", paid: "unpaid" },
+    );
+    assert.equal((await asUser(c1, tacoVendor, (c) => move(c, pickup.id, "accepted"))).status, "accepted");
+    // The table itself refuses "paid" on a pay-at-pickup order.
+    await rejects(admin.query("update public.orders set payment_status = 'paid' where id = $1", [pickup.id]), "23514");
+
+    const count = async (who) => (await asUser(c1, who, (c) => c.query("select count(*)::int as n from public.order_payments"))).rows[0].n;
+    const all = (await admin.query("select count(*)::int as n from public.order_payments")).rows[0].n;
+    const aishas = (await admin.query("select count(*)::int as n from public.order_payments where customer_id = $1", [aisha])).rows[0].n;
+    assert.equal(await count(aisha), aishas);
+    assert.equal(await count(tacoVendor), 0);
+    assert.equal(await count(dana), all);
+    assert.ok(aishas > 0 && all > aishas);
+    return `old place_order: pay_at_pickup, unpaid, accepted normally; payment rows: customer reads own ${aishas}, vendor 0, manager all ${all}`;
+  });
+
+  // -------------------------------------------------------------------------
   section("Dana's dashboard: every count is explained by tickets she can read");
 
   await check("for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count", async () => {

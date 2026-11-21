@@ -195,6 +195,45 @@ Customers see the saved description and a "May contain: …" line on the truck's
 
 This screen does not edit a dish's price or its sold-out switch.
 
+## Online payment (test mode)
+
+At checkout a customer chooses **Pay online** or **Pay at pickup**. Online payment goes through MyFatoorah's v3 hosted payment page, always in **sandbox** mode: no real money moves.
+
+| Where | What lives there |
+| --- | --- |
+| `app/checkout/page.tsx` | The two payment choices. |
+| `app/orders/[id]/payment/page.tsx` | The payment screen: sends the customer to the gateway, and shows what happened when they come back. |
+| `app/api/payments/start/route.ts` | Server: asks the gateway for a payment page for the order's saved total. |
+| `app/api/payments/verify/route.ts` | Server: asks the gateway what happened, and hands the answer to the database. |
+| `app/api/payments/notify/route.ts` | Server: the gateway's own notifications. Treated as a nudge to ask again. |
+| `lib/payments.ts` | Reads the gateway's answers; decides what a ticket says about money. Unit-tested. |
+| `supabase/migrations/…_online_payments.sql` | `payment_status` on orders, the `order_payments` table, and the functions below. |
+
+Three server-only values are needed (in `.env.local`, and in Vercel for Preview and Production):
+
+- `MYFATOORAH_API_KEY`: MyFatoorah's **test** token for Kuwait, published on their docs page "API Key" under "Test (Demo) Token".
+- `PAYMENTS_SERVER_SECRET`: a long random string you make up (at least 32 characters). It proves to the database that a payment result comes from this server.
+- After choosing the secret, store its hash in the database once, in the SQL editor: `insert into private.server_keys (name, secret_hash) values ('payments', encode(sha256(convert_to('<the secret>', 'UTF8')), 'hex')) on conflict (name) do update set secret_hash = excluded.secret_hash;`
+
+**How an order gets paid.**
+
+1. Checkout places the order as before (`place_order_paying` is `place_order` plus the payment choice). The order takes its pickup place straight away and is marked "to pay online, not paid".
+2. The server asks the database for the amount (`begin_online_payment`), which is the order's saved total. The page never sends an amount. The server asks MyFatoorah for a payment page for that amount in KWD, and saves the invoice number against the order **before** the customer is sent there.
+3. The customer pays on MyFatoorah's page and is sent back to `/orders/<id>/payment?paymentId=…`.
+4. The server asks MyFatoorah about that payment ID and passes the answer to `settle_payment`. The **database** marks the order paid only if the invoice is one we saved, MyFatoorah says it is paid, the currency is KWD, the amount equals the order's total, and the order ID MyFatoorah holds is this order's ID.
+
+**Why opening the success page does nothing.** That page only asks the server to check. With made-up values, or even a real payment ID that belongs to another order, the gateway has no paid invoice matching this order, so it stays unpaid.
+
+**Why a customer cannot mark their own order paid.** `settle_payment` and `record_payment_page` need the server secret. The database stores only its hash. A signed-in customer calling them directly gets `not_the_server`, and customers have no permission to change an order's payment columns.
+
+**Safe to repeat.** Tapping "Place order" again returns the same order (the request ID from before). Tapping "Pay" again reuses a payment page nobody has tried yet, and otherwise makes a fresh one, because MyFatoorah allows only a few tries per invoice. Reloading the return page, tapping "Check payment" and receiving the same notification several times all end in the same `settle_payment` call, which changes nothing the second time. An order can have one paid payment; a second paid invoice for it is recorded as `duplicate`. None of this touches the slot count: the order holds one place from the moment it is placed until it is rejected or cancelled.
+
+**What each role sees.** A ticket says "Pay at pickup · not paid yet", "Pay online · not paid yet" (with Pay now), "Paid online" or "Refund due". The kitchen board shows the same label and will not accept an online order until it is paid; the database enforces that too. If a paid order is rejected or cancelled it becomes **Refund due**. The refund itself is made by the park in MyFatoorah's portal; the app does not send refunds.
+
+**Running it locally.** MyFatoorah's sandbox refuses `localhost` as a return address but accepts `127.0.0.1`, so open the local app at `http://127.0.0.1:3000` when testing payments. The sandbox's KNET test card is on MyFatoorah's "Test Cards" page.
+
+**Notifications.** A Vercel Preview is behind Vercel's sign-in, so MyFatoorah cannot reach `/api/payments/notify` there. On a Preview, confirmation comes from the return page and "Check payment". The app does not verify the notification's signature; it does not need to, because nothing in a notification is believed.
+
 ## Park manager dashboard
 
 `/manager` is Dana's view of tonight across the park. From 768 px it is a grid: six trucks down, the 24 Kuwait pickup times across (5:00 PM to 10:45 PM), with the exact count in every cell, e.g. `5/6`. A cell is tinted from white toward pale orange as it fills, and a full cell is solid Red Orange with the word "Full". On a phone it is a time selector followed by six truck rows that read "5 of 6". Either way, one tap on a count opens the orders behind it.
@@ -226,6 +265,7 @@ The data rules live in Postgres, in `supabase/`, so they hold no matter what a b
 | `supabase/migrations/…_abandon_order_attempt.sql` | `abandon_order_attempt` and the shared lock that settles "place" against "give up". |
 | `supabase/migrations/…_orders_realtime.sql` | Adds `orders` to the Realtime publication so the board and the ticket update live. Access rules are unchanged. |
 | `supabase/migrations/…_order_ratings.sql` | `order_ratings` (one rating per order) and `rate_order`. Adds only; nothing existing is changed. |
+| `supabase/migrations/…_online_payments.sql` | `orders.payment_status`, `order_payments`, the server-secret check, `place_order_paying`, `begin_online_payment`, `record_payment_page`, `settle_payment`, and the rule that an unpaid online order cannot be accepted. Adds only; existing orders stay pay-at-pickup and unpaid. |
 | `supabase/migrations/…_menu_ai.sql` | `menu_items.allergens`, the photo-suggestion request log, `begin_ai_suggestion` (ownership and the 20-per-hour limit) and `save_menu_copy` (description and allergens only). Adds only. |
 | `supabase/seed.sql` | The six trucks and 30 dishes. Generated from `seed/*.csv`; do not edit by hand. |
 | `scripts/build-seed.mjs` | Rebuilds `supabase/seed.sql` from the CSVs. |

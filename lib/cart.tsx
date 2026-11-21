@@ -71,6 +71,8 @@ type CartApi = {
   /** Throws away the current cart and starts one for another truck. */
   replaceWith: (truck: { id: string; name: string }, itemId: string) => void;
   setSlot: (slot: string | null) => void;
+  /** Remembers the payment choice with the cart. It is not part of what is ordered, so the attempt's ID stays. */
+  setPayment: (payment: "pay_at_pickup" | "online") => void;
   /** Forget the current attempt's ID so the next "Place order" starts a new attempt. */
   forgetRequest: () => void;
   clear: () => void;
@@ -132,6 +134,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [userId],
   );
 
+  const setPayment = useCallback<CartApi["setPayment"]>(
+    (payment) => {
+      const current = storedCart(userId);
+      if (current && current.payment !== payment) write(userId, { ...current, payment });
+    },
+    [userId],
+  );
+
   const forgetRequest = useCallback(() => {
     const current = storedCart(userId);
     if (current?.requestId) write(userId, { ...current, requestId: null, requestBy: null });
@@ -147,10 +157,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setQuantity,
       replaceWith,
       setSlot,
+      setPayment,
       forgetRequest,
       clear,
     }),
-    [cart, ready, setQuantity, replaceWith, setSlot, forgetRequest, clear],
+    [cart, ready, setQuantity, replaceWith, setSlot, setPayment, forgetRequest, clear],
   );
 
   return <CartContext.Provider value={api}>{children}</CartContext.Provider>;
