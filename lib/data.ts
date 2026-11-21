@@ -87,6 +87,16 @@ export async function fetchMenu(db: SupabaseClient, truckId: string): Promise<Me
   return data;
 }
 
+/**
+ * Every dish's ID, truck and name: what Explore's search looks through, so
+ * "karak" finds the truck that serves it. Menus are public to read.
+ */
+export async function fetchDishNames(db: SupabaseClient): Promise<{ id: string; truck_id: string; name: string }[]> {
+  const { data, error } = await db.from("menu_items").select("id,truck_id,name").order("id");
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 /** Every truck with tonight's closure state and its next bookable time. */
 export async function fetchTrucksTonight(db: SupabaseClient): Promise<TruckTonight[]> {
   const today = kuwaitNow().date;

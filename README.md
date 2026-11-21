@@ -84,17 +84,26 @@ On a phone the navigation is a bar across the bottom. From 768 px it moves to a 
 
 Screenshots are in `docs/screenshots/sign-in-first/`.
 
-## Launch, navigation and everyday screens
+## Launch and the customer screens
 
-**Launch.** `components/splash.tsx` is the one launch screen. The server renders it, so it is the first frame: the whole viewport in Red Orange with the complete Qafla logo on a white tile. It is shown only while the app works out who is signed in and where they belong (`components/session-gate.tsx`, `lib/routes.ts`), and leaves the moment that is known. There is no timer. The truck rolls forward and settles once per page load; the logo image is drawn twice and each copy is clipped to its part, so the truck moves and the wordmark stays still without editing the artwork. If the wait passes 0.7 s, three dots appear. With reduced motion the logo is static. Moving between screens inside the app never plays it again.
+**Launch.** `components/splash.tsx` is the one launch screen. The server renders it, so it is the first frame: the whole viewport in Snowy White with the complete Qafla logo in the centre. It is shown only while the app works out who is signed in and where they belong (`components/session-gate.tsx`, `lib/routes.ts`), and leaves the moment that is known. There is no timer. The logo itself is the loading animation: it starts a little left of centre, rolls forward and eases to a stop, once per page load. If the wait passes 0.7 s, a small bar appears under it. With reduced motion the logo is static. Moving between screens inside the app never plays it again.
 
 **Where each role lands.** Unchanged rules, from the database profile: a customer on Explore, an assigned vendor on Kitchen, the manager on Park overview, an unassigned vendor on a screen that says so with Check again and Sign out. A page that was asked for before signing in (a pickup ticket, a staff screen) is opened afterwards if that role may open it.
 
-**Explore.** Each truck row reads: logo, name and cuisine; three of its dishes; whether it is taking orders and the next pickup; "See menu". The whole row is one link. The photos come from `truckDishPhotos` in `lib/images.ts`, which uses the dish IDs (T03's dishes are M301 to M305), so there is no second list to keep in step. `components/scroll-memory.tsx` puts a customer back where they were in the list when they return from a menu. It remembers in memory only, so a fresh launch starts at the top.
+| Screen | What is on it, and where it comes from |
+| --- | --- |
+| Sign in / Create account (`app/sign-in/page.tsx`) | The logo once, a black banner naming the screen, labelled fields, a show/hide button on the password. Create account offers Customer and Truck vendor as two cards; the manager's account is still only ever set in the database. |
+| Explore (`app/explore/page.tsx`, `components/truck-list.tsx`) | The park's banner, then one photo-led row for each of the six trucks: its lead dish, its logo, cuisine, and the next pickup time that can still be booked (the same slot logic as checkout) or why it is not taking orders. |
+| Explore's search and filters (`lib/truck-search.ts`) | The search looks in every truck's name, cuisine and description and in the names of the dishes on its menu, in English and Arabic. The filters are the cuisines the trucks have saved. There is no prep-time estimate, because nothing in the project is a source for one. |
+| A truck's menu (`app/trucks/[id]/page.tsx`, `components/menu-list.tsx`) | A compact header, tabs for the menu's own categories, and rows that keep a dish's photo, name, price and its control together: a round "+" that becomes a quantity stepper. |
+| Orders (`app/orders/page.tsx`) | Each active pickup as a black ticket ending in "Open live ticket" (there can be several). Past orders grouped under their date. |
+| Live ticket (`app/orders/[id]/page.tsx`, `components/ticket-card.tsx`, `components/pickup-timeline.tsx`) | The black ticket with the pickup time as its largest element, then five labelled stages driven by the live order, or a clear final state for a cancelled or rejected order. The lines show the prices saved with the order. |
+| The ticket's money line (`moneyLine` in `lib/payments.ts`) | One of: Due at pickup, To pay online, Paid, Refund due, Nothing to pay. A cancelled or rejected order that was never paid says "Nothing to pay" and shows no payment reminder. |
+| Account (`app/account/page.tsx`) | A black card with the account's initials, name and email, then rows for the role, the language and sign out. A row exists only where something works behind it. |
 
-**Orders, Account, bottom bar.** The active pickup's card ends in an "Open live ticket" button. On Account the email has the full width. The phone's bottom bar marks the current destination with its icon on an ink pill and a bold label. On a live ticket, "Ready for pickup" draws attention once, only if it turns ready while the ticket is open; reopening a ready ticket shows the notice already in place.
+`components/scroll-memory.tsx` puts a customer back where they were on Explore when they return from a menu. It remembers in memory only, so a fresh launch starts at the top. On a live ticket, "Ready for pickup" draws attention once, only if it turns ready while the ticket is open. The phone's bottom bar marks the current destination with a Red Orange icon, a bold label and a Red Orange line.
 
-Dune Burgers now has its logo and five dish photos like the other trucks (`public/trucks/logos/T02.webp`, `public/dishes/M201.webp` to `M205.webp`). Screenshots and a recording are in `docs/screenshots/app-ux-polish/`.
+**Pictures by ID.** Every truck's logo is `public/trucks/logos/<truck id>.webp` and every dish's photo is `public/dishes/<dish id>.webp`; a truck's lead photo is its first dish (`lib/images.ts`). Dune Burgers (T02) uses the same mapping as the other five. Screenshots and a recording are in `docs/screenshots/app-ux-polish/`.
 
 ## Customer ordering
 

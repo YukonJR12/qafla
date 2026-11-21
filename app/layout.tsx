@@ -32,11 +32,10 @@ export const metadata: Metadata = {
   description: "Order ahead from Qafla's food trucks and collect your food hot.",
 };
 
-// `cover` lets the launch screen paint under a phone's notch and home
-// indicator. The colour of the browser's own bars is not set here: the launch
-// screen and the session gate each render the <meta name="theme-color"> that
-// fits what is on screen (Red Orange at launch, Snowy White after).
+// `cover` lets a screen paint under a phone's notch and home indicator, and
+// the browser's own bars are Snowy White like the launch screen and the app.
 export const viewport: Viewport = {
+  themeColor: "#fdfdff",
   viewportFit: "cover",
 };
 

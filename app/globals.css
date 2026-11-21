@@ -89,64 +89,54 @@ dialog::backdrop {
  * (below) the change is simply immediate.
  */
 /*
- * The launch screen (components/splash.tsx). While it is up, the page
- * behind it is Red Orange too, so a phone's safe areas and an overscroll
- * never show white.
+ * The launch screen (components/splash.tsx): the logo on Snowy White.
+ * The logo itself is the loading animation. It starts a little left of
+ * centre, rolls forward and eases to a stop.
  */
-html:has(.launch),
-html:has(.launch) body {
-  background-color: var(--color-red-orange);
+@keyframes launch-roll {
+  from {
+    transform: translateX(-22px);
+  }
 }
-/* One logo image drawn twice: the truck (top 75%) and the wordmark (the rest). */
-.launch-truck {
-  clip-path: inset(0 0 25% 0);
-}
-.launch-wordmark {
-  clip-path: inset(75% 0 0 0);
-}
-/* The dots wait 0.7 s, so a quick launch never shows them. */
+/* If launching takes longer than 0.7 s, a small bar appears under the logo. */
 .launch-wait {
+  width: 88px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--color-divider);
   opacity: 0;
   animation: launch-wait 200ms ease-out 700ms forwards;
 }
-.launch-wait span {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background-color: var(--color-snowy-white);
+.launch-wait::after {
+  content: "";
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--color-red-orange);
 }
 @keyframes launch-wait {
   to {
     opacity: 1;
   }
 }
-@keyframes launch-roll {
+@keyframes launch-slide {
   from {
-    transform: translateX(-14px);
+    transform: translateX(-100%);
   }
-  70% {
-    transform: translateX(2px);
-  }
-}
-@keyframes launch-dot {
-  50% {
-    opacity: 0.35;
+  to {
+    transform: translateX(250%);
   }
 }
-/* Movement is opt-in: with reduced motion the logo is simply there and the dots do not pulse. */
+/* Movement is opt-in: with reduced motion the logo is simply there and the bar does not move. */
 @media (prefers-reduced-motion: no-preference) {
-  /* The truck rolls forward and settles. Always left to right: it faces right in both languages. */
+  /* Always left to right: the truck faces right in both languages. */
   .launch-roll {
-    animation: launch-roll 520ms cubic-bezier(0.2, 0, 0, 1) both;
+    animation: launch-roll 700ms cubic-bezier(0.16, 0.85, 0.25, 1) both;
   }
-  .launch-wait span {
-    animation: launch-dot 900ms ease-in-out 700ms infinite;
-  }
-  .launch-wait span:nth-child(2) {
-    animation-delay: 850ms;
-  }
-  .launch-wait span:nth-child(3) {
-    animation-delay: 1000ms;
+  .launch-wait::after {
+    animation: launch-slide 1100ms ease-in-out 700ms infinite;
   }
 }
 
@@ -193,7 +183,7 @@ html:has(.launch) body {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
   }
-  /* The launch dots still arrive after their wait; they just do not fade in. */
+  /* The launch bar still arrives after its wait; it just does not fade in. */
   .launch-wait {
     animation-duration: 1ms !important;
   }

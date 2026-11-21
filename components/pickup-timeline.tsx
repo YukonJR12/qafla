@@ -1,20 +1,24 @@
 "use client";
 
-import { Fragment } from "react";
 import { useLocale } from "@/lib/locale";
 import { timeline } from "@/lib/ticket";
-import { CheckIcon } from "./ui";
+import { CheckIcon, StageIcon } from "./ui";
 
 /**
- * The pickup timeline: Placed, Accepted, Preparing, Ready, Collected.
+ * Order progress: Placed, Accepted, Preparing, Ready, Collected, as five
+ * labelled tiles in a row.
  *
  * It is drawn from the confirmed order status and nothing else, so it can
- * never run ahead of what the database has saved. A finished stage has a
- * check, the current stage has a Red Orange ring, and one caption says in
- * plain words what is happening. The row follows the page direction, so in
- * Arabic it runs right to left by itself.
+ * never run ahead of what the database has saved. A finished stage has an
+ * ink outline and a small check; the current stage is filled ink with a
+ * Yellow Punk drawing and a bold label; a stage still to come is quiet.
+ * One caption underneath says in plain words what is happening. The row
+ * follows the page direction, so in Arabic it runs right to left.
  *
- * A cancelled or rejected order has no timeline; the ticket shows a final
+ * The five tiles share the width equally and their labels shrink with the
+ * screen, so all five stay readable at 320 px in English and Arabic.
+ *
+ * A cancelled or rejected order has no stages; the ticket shows a final
  * message instead.
  */
 export function PickupTimeline({ status, truck, announce }: { status: string; truck: string; announce: boolean }) {
@@ -23,56 +27,51 @@ export function PickupTimeline({ status, truck, announce }: { status: string; tr
   if (!stages) return null;
 
   return (
-    <div className="mt-5">
-      <ol aria-label={t.orderProgress} className="flex items-center">
-        {stages.map(({ stage, state }, index) => {
+    <div>
+      <ol aria-label={t.orderProgress} className="grid grid-cols-5 gap-1.5 sm:gap-2.5">
+        {stages.map(({ stage, state }) => {
           const name = t.statusName[stage] ?? stage;
+          // The tile's own label is the short one ("Ready"), so five fit across a phone.
+          const label = t.stageLabel[stage] ?? name;
           return (
-            <Fragment key={stage}>
-              {/* The line between two markers is solid once the later stage is reached. */}
-              {index > 0 && (
-                <li
-                  aria-hidden
-                  className={`h-0.5 min-w-2 flex-1 transition-colors duration-[180ms] ease-out motion-reduce:transition-none ${
-                    state === "todo" ? "bg-divider" : "bg-ink"
-                  }`}
-                />
-              )}
-              <li aria-current={state === "current" ? "step" : undefined} className="relative flex flex-col items-center">
-                <span
-                  aria-hidden
-                  className={`flex size-8 items-center justify-center rounded-full transition-colors duration-[180ms] ease-out motion-reduce:transition-none ${
-                    state === "done"
-                      ? "bg-ink text-snowy-white"
-                      : state === "current"
-                        ? "border-4 border-red-orange bg-snowy-white"
-                        : "border-2 border-divider bg-snowy-white"
-                  }`}
-                >
-                  {state === "done" && <CheckIcon className="size-4.5" />}
-                  {/* Mounted when this stage becomes the current one, so the dot bumps once per status change. */}
-                  {state === "current" && <span className="bump size-2.5 rounded-full bg-ink" />}
-                </span>
-                <span className="sr-only">
-                  {state === "done" ? t.stageDone(name) : state === "current" ? t.stageCurrent(name) : t.stageTodo(name)}
-                </span>
-                {/* Stage names fit under the markers from 480 px. Narrower screens rely on the caption. */}
-                <span
-                  aria-hidden
-                  className={`absolute top-full mt-1 hidden text-xs whitespace-nowrap min-[480px]:block ${
-                    state === "current" ? "font-extrabold" : state === "done" ? "font-semibold" : "text-muted"
-                  }`}
-                >
-                  {name}
-                </span>
-              </li>
-            </Fragment>
+            <li key={stage} aria-current={state === "current" ? "step" : undefined} className="flex min-w-0 flex-col items-center">
+              <span
+                aria-hidden
+                // Re-keyed when a stage becomes the current one, so it bumps once per status change.
+                key={state}
+                className={`relative flex aspect-square w-full max-w-20 items-center justify-center rounded-panel border transition-colors duration-[180ms] ease-out ${
+                  state === "current"
+                    ? "bump border-ink bg-ink text-yellow-punk"
+                    : state === "done"
+                      ? "border-ink bg-snowy-white text-ink"
+                      : "border-divider bg-snowy-white text-muted"
+                }`}
+              >
+                <StageIcon stage={stage} className="size-[52%]" />
+                {state === "done" && (
+                  <span className="absolute -end-1 -top-1 flex size-4.5 items-center justify-center rounded-full bg-ink text-snowy-white">
+                    <CheckIcon className="size-3" />
+                  </span>
+                )}
+              </span>
+              <span className="sr-only">
+                {state === "done" ? t.stageDone(name) : state === "current" ? t.stageCurrent(name) : t.stageTodo(name)}
+              </span>
+              <span
+                aria-hidden
+                className={`mt-1.5 max-w-full text-center text-[clamp(0.625rem,2.9vw,0.875rem)] leading-tight wrap-anywhere ${
+                  state === "current" ? "font-extrabold text-ink" : state === "done" ? "font-semibold text-ink" : "text-muted"
+                }`}
+              >
+                {label}
+              </span>
+            </li>
           );
         })}
       </ol>
 
-      {/* One caption, readable at 320 px. The ready notice already announces "ready". */}
-      <p className="mt-3 text-base leading-snug font-bold min-[480px]:mt-8" aria-live={announce ? "polite" : "off"}>
+      {/* One caption in plain words. The ready notice already announces "ready". */}
+      <p className="mt-3 rounded-control bg-subtle px-3 py-2.5 leading-snug font-semibold" aria-live={announce ? "polite" : "off"}>
         {(t.timelineCaption[status] ?? (() => t.statusName[status] ?? status))(truck)}
       </p>
     </div>

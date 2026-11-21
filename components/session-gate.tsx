@@ -46,25 +46,14 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
 
   if (view === "failed") return <AccountProblem />;
   if (view === "unassigned") return <UnassignedVendor />;
-  // The launch screen colours the browser's own bars Red Orange itself.
   if (view === "splash" || account.status === "restoring") return <Splash label={t.restoring} />;
 
-  // Every other screen is on Snowy White, and says so to the browser's bars.
-  const bars = <meta name="theme-color" content="#fdfdff" />;
-
   // The sign-in screen stands alone: no navigation until someone is signed in.
-  if (account.status !== "signed-in" || path === SIGN_IN)
-    return (
-      <>
-        {bars}
-        {children}
-      </>
-    );
+  if (account.status !== "signed-in" || path === SIGN_IN) return <>{children}</>;
 
   const bottomBar = !hidesBottomBar(path);
   return (
     <Fragment key={account.userId}>
-      {bars}
       {/* The bars read the address's query (Slot details), which needs a Suspense boundary. */}
       <Suspense>
         <TopBar role={account.role} />

@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { LanguageSwitch } from "@/components/language-switch";
-import { CheckIcon, primaryButton, secondaryButton } from "@/components/ui";
+import { ParkLineArt } from "@/components/line-art";
+import { CheckIcon, EyeIcon, LockIcon, MailIcon, primaryButton, TruckIcon, UserIcon } from "@/components/ui";
 import { useLocale } from "@/lib/locale";
 import { signupRole, type SignupRole } from "@/lib/routes";
 import { supabaseBrowser } from "@/lib/supabase";
@@ -27,7 +28,7 @@ type AuthProblem = "invalidLogin" | "emailTaken" | "weakPassword" | "confirmEmai
 // "no truck assigned" screen. The manager's account is only ever set in the
 // database.
 export default function SignInPage() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [mode, setMode] = useState<Mode>("sign-in");
   const [role, setRole] = useState<SignupRole>("customer");
   const [busy, setBusy] = useState(false);
@@ -71,125 +72,150 @@ export default function SignInPage() {
     // Signed in. The button stays busy until the launch gate takes over.
   }
 
+  const [showPassword, setShowPassword] = useState(false);
   const input =
-    "mt-1 block min-h-12 w-full rounded-control border border-outline bg-snowy-white px-3 text-base text-ink placeholder:text-muted";
+    "block min-h-12 w-full rounded-control border border-outline bg-snowy-white px-3 text-base text-ink placeholder:text-muted";
+  const label = "flex items-center gap-2 text-base font-bold";
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 pb-10 md:px-6">
-      <div className="flex justify-end pt-3">
+      {/* The complete logo, once. It carries the QAFLA wordmark, so no second name sits beside it. */}
+      <div className="flex items-center justify-between gap-3 pt-3">
+        <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="96px" className="size-24" preload />
         <LanguageSwitch />
       </div>
 
-      <div className="flex flex-1 flex-col justify-center py-4">
-        {/* The logo already made its entrance on the launch screen, so here it is simply present. */}
-        <div className="flex flex-col items-center text-center">
-          <Image
-            src="/brand/qafla-logo.png"
-            alt=""
-            width={1254}
-            height={1254}
-            sizes="(min-width: 640px) 208px, 160px"
-            className="h-auto w-40 max-w-full sm:w-52"
-            preload
-          />
-          {locale === "en" && (
-            <p lang="ar" dir="rtl" aria-hidden className="font-arabic text-2xl leading-[1.35] font-black">
-              قافلة
-            </p>
-          )}
-        </div>
-
-        <h1 className="mt-5 text-2xl leading-tight font-extrabold text-balance">
-          {mode === "sign-in" ? t.welcomeBack : t.signUpTitle}
+      {/* The black banner names the screen. Its line art is decoration. */}
+      <div className="relative mt-2 flex min-h-28 items-center overflow-hidden rounded-poster bg-ink px-5 py-4 text-snowy-white">
+        <ParkLineArt className="pointer-events-none absolute end-1 bottom-0 h-[4.5rem] w-auto text-snowy-white/45 sm:h-24" />
+        <h1 className="relative max-w-[58%] text-[1.75rem] leading-tight font-extrabold text-balance">
+          {mode === "sign-in" ? t.signIn : t.createAccount}
+          <span aria-hidden className="mt-2 block h-1 w-12 rounded-full bg-yellow-punk" />
         </h1>
-        <p className="mt-1 text-muted">{mode === "sign-in" ? t.signInLead : t.signUpLead}</p>
+      </div>
 
-        <form onSubmit={submit} className="mt-5 space-y-4">
-          {mode === "sign-up" && (
-            <fieldset>
-              <legend className="text-sm font-semibold">{t.accountType}</legend>
-              <div className="mt-1 grid gap-2">
-                {(["customer", "vendor"] as const).map((option) => {
-                  const chosen = role === option;
-                  return (
-                    // Selected: ink fill, light text and a check, like a chosen pickup time.
-                    <label
-                      key={option}
-                      className={`relative flex min-h-12 cursor-pointer items-center gap-3 rounded-control border px-3 py-2.5 transition-colors duration-[120ms] ease-out has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${
-                        chosen ? "border-ink bg-ink text-snowy-white" : "border-outline bg-snowy-white text-ink hover:border-ink"
+      {mode === "sign-in" && <p className="mt-4 text-muted">{t.signInFor}</p>}
+
+      <form onSubmit={submit} className="mt-4 space-y-4">
+        {mode === "sign-up" && (
+          <fieldset>
+            <legend className="text-lg font-extrabold">{t.accountType}</legend>
+            <div className="mt-2 grid gap-2">
+              {(["customer", "vendor"] as const).map((option) => {
+                const chosen = role === option;
+                const Icon = option === "customer" ? UserIcon : TruckIcon;
+                return (
+                  // Chosen: a Yellow Punk tint, an ink edge and a filled check. Not chosen: an empty ring.
+                  <label
+                    key={option}
+                    className={`relative flex min-h-16 cursor-pointer items-center gap-3 rounded-panel border px-3 py-2.5 transition-colors duration-[120ms] ease-out has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${
+                      chosen ? "border-ink bg-yellow-punk/25" : "border-outline bg-snowy-white hover:border-ink"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={option}
+                      checked={chosen}
+                      onChange={() => setRole(option)}
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                    />
+                    <Icon className="size-7" />
+                    <span className="min-w-0 flex-1 border-s border-divider ps-3">
+                      <span className="block text-lg leading-snug font-extrabold">{t.signupRole[option].name}</span>
+                      <span className="block text-sm text-muted">{t.signupRole[option].help}</span>
+                    </span>
+                    <span
+                      aria-hidden
+                      className={`flex size-7 shrink-0 items-center justify-center rounded-full border-2 ${
+                        chosen ? "border-ink bg-ink text-yellow-punk" : "border-outline"
                       }`}
                     >
-                      <input
-                        type="radio"
-                        name="role"
-                        value={option}
-                        checked={chosen}
-                        onChange={() => setRole(option)}
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-bold">{t.signupRole[option].name}</span>
-                        <span className={`block text-sm ${chosen ? "" : "text-muted"}`}>{t.signupRole[option].help}</span>
-                      </span>
-                      {chosen && <CheckIcon className="size-5" />}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          )}
-          {mode === "sign-up" && (
-            <label className="block text-sm font-semibold">
+                      {chosen && <CheckIcon className="size-4" />}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+        {mode === "sign-up" && (
+          <div>
+            <label htmlFor="signin-name" className={label}>
+              <UserIcon className="size-5" />
               {t.name}
-              <input name="name" type="text" autoComplete="name" className={input} />
             </label>
-          )}
-          <label className="block text-sm font-semibold">
+            <input id="signin-name" name="name" type="text" autoComplete="name" className={`${input} mt-1.5`} />
+          </div>
+        )}
+        <div>
+          <label htmlFor="signin-email" className={label}>
+            <MailIcon className="size-5" />
             {t.email}
-            <input name="email" type="email" required autoComplete="email" dir="ltr" className={input} />
           </label>
-          <label className="block text-sm font-semibold">
+          <input id="signin-email" name="email" type="email" required autoComplete="email" dir="ltr" className={`${input} mt-1.5`} />
+        </div>
+        <div>
+          <label htmlFor="signin-password" className={label}>
+            <LockIcon className="size-5 shrink-0" />
             {t.password}
+          </label>
+          {/* The field and its show/hide button share one outlined box. */}
+          <div className="relative mt-1.5">
             <input
+              id="signin-password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               minLength={mode === "sign-up" ? 8 : undefined}
               autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
               aria-describedby={mode === "sign-up" ? "password-hint" : undefined}
               dir="ltr"
-              className={input}
+              className={`${input} pe-12`}
             />
-            {mode === "sign-up" && (
-              <span id="password-hint" className="mt-1 block font-normal text-muted">
-                {t.passwordHint}
-              </span>
-            )}
-          </label>
-
-          {problem && (
-            <p role="alert" className="rounded-control bg-error-surface p-3 text-sm font-semibold text-error">
-              {t[problem]}
+            <button
+              type="button"
+              onClick={() => setShowPassword((was) => !was)}
+              aria-label={showPassword ? t.hidePassword : t.showPassword}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 end-0 inline-flex w-12 items-center justify-center rounded-control text-ink"
+            >
+              <EyeIcon className="size-5" off={showPassword} />
+            </button>
+          </div>
+          {mode === "sign-up" && (
+            <p id="password-hint" className="mt-1 text-sm text-muted">
+              {t.passwordHint}
             </p>
           )}
+        </div>
 
-          <button type="submit" disabled={busy} aria-busy={busy} className={primaryButton}>
-            <span aria-live="polite">{busy ? t.working : mode === "sign-in" ? t.signIn : t.createAccount}</span>
-          </button>
-        </form>
+        {problem && (
+          <p role="alert" className="rounded-control bg-error-surface p-3 text-sm font-semibold text-error">
+            {t[problem]}
+          </p>
+        )}
 
+        <button type="submit" disabled={busy} aria-busy={busy} className={`${primaryButton} min-h-14! text-lg!`}>
+          <span aria-live="polite">{busy ? t.working : mode === "sign-in" ? t.signIn : t.createAccount}</span>
+        </button>
+      </form>
+
+      {/* The secondary action: a sentence with its link, as one 44 px target. */}
+      <p className="mt-3 text-center">
         <button
           type="button"
           onClick={() => {
             setMode(mode === "sign-in" ? "sign-up" : "sign-in");
             setProblem(null);
           }}
-          className={`${secondaryButton} mt-3`}
+          className="inline-flex min-h-11 items-center gap-1.5 px-2"
         >
-          {mode === "sign-in" ? t.toSignUp : t.toSignIn}
+          <span>{mode === "sign-in" ? t.newHere : t.haveAccount}</span>
+          <span className="font-bold underline underline-offset-4">{mode === "sign-in" ? t.createAnAccount : t.signIn}</span>
         </button>
-        {mode === "sign-up" && <p className="mt-2 text-center text-sm text-muted">{t.staffHint}</p>}
-      </div>
+      </p>
+      {mode === "sign-up" && <p className="mt-1 text-center text-sm text-muted">{t.staffHint}</p>}
     </main>
   );
 }

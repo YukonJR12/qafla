@@ -19,6 +19,21 @@ const en = {
 
   // Explore
   chooseTruck: "Choose a truck",
+  parkName: "Qafla Food Truck Park",
+  exploreTrucksTitle: "Explore trucks",
+  searchTrucks: "Search trucks or dishes",
+  clearSearch: "Clear search",
+  filterByCuisine: "Filter by cuisine",
+  allTrucks: "All",
+  trucksShown: (n: number) => (n === 1 ? "1 truck shown" : `${n} trucks shown`),
+  noTrucksMatch: "No truck matches that",
+  noTrucksMatchBody: "Try a truck’s name, a cuisine or a dish.",
+  showAllTrucks: "Show all trucks",
+  servesDish: (dishes: string) => `Serves ${dishes}`,
+  nextPickupLabel: "Next pickup",
+  trucks: "Trucks",
+  menuCategories: "Menu categories",
+  allDishes: "All",
   openCount: (n: number) => `${n} open`,
   nextPickup: (time: string) => `Next pickup · ${time}`,
   noSlotsToday: "No pickup times left today",
@@ -146,6 +161,12 @@ const en = {
   createAccount: "Create account",
   working: "One moment…",
   toSignUp: "New here? Create an account",
+  newHere: "New here?",
+  createAnAccount: "Create an account",
+  haveAccount: "Already have an account?",
+  signInFor: "For customers, truck vendors and the park manager.",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
   toSignIn: "Have an account? Sign in",
   invalidLogin: "That email and password don’t match. Check them and try again.",
   emailTaken: "This email already has an account. Sign in instead.",
@@ -381,7 +402,7 @@ const en = {
   welcomeBack: "Sign in to Qafla Pickup",
   signInLead: "One sign-in for customers, truck vendors and the park manager.",
   signUpLead: "Choose how you’ll use Qafla Pickup.",
-  staffHint: "The park manager’s account is set up by the park.",
+  staffHint: "The park sets up manager accounts.",
   accountType: "I’m signing up as",
   signupRole: {
     customer: { name: "Customer", help: "Order ahead and collect at the truck." },
@@ -420,6 +441,17 @@ const en = {
   pickupAt: (time: string) => `Pickup ${time}`,
   openTicket: "Open ticket",
   openLiveTicket: "Open live ticket",
+  activeOrder: "Active order",
+  scheduledPickup: "Scheduled pickup",
+  stageLabel: { placed: "Placed", accepted: "Accepted", preparing: "Preparing", ready: "Ready", collected: "Collected" } as Record<string, string>,
+  orderDetails: "Order details",
+  moneyLine: {
+    nothing_to_pay: { title: "Nothing to pay", note: "No payment was taken for this order." },
+    refund_due: { title: "Refund due", note: "Paid online" },
+    paid: { title: "Paid", note: "Paid online" },
+    due_at_pickup: { title: "Due at pickup", note: "Pay at pickup · Not paid yet" },
+    online_unpaid: { title: "To pay online", note: "Pay online · Not paid yet" },
+  } as Record<string, { title: string; note: string }>,
   backToOrders: "Back to orders",
   myOrders: "See your orders",
   orderNotYoursBody: "It isn’t on this account. Your own orders are listed in Orders.",
@@ -601,6 +633,21 @@ const ar: Dict = {
   parkHours: "الاستلام من 5:00 إلى 11:00 م · بتوقيت الكويت",
 
   chooseTruck: "اختر عربة",
+  parkName: "ساحة قافلة لعربات الطعام",
+  exploreTrucksTitle: "استكشف العربات",
+  searchTrucks: "ابحث عن عربة أو صنف",
+  clearSearch: "امسح البحث",
+  filterByCuisine: "فلتر حسب نوع الأكل",
+  allTrucks: "الكل",
+  trucksShown: (n) => `${n} عربات معروضة`,
+  noTrucksMatch: "ما في عربة تطابق بحثك",
+  noTrucksMatchBody: "جرّب اسم عربة أو نوع أكل أو صنف.",
+  showAllTrucks: "اعرض كل العربات",
+  servesDish: (dishes) => `تقدّم ${dishes}`,
+  nextPickupLabel: "أقرب استلام",
+  trucks: "العربات",
+  menuCategories: "أقسام القائمة",
+  allDishes: "الكل",
   openCount: (n) => `${n} مفتوحة`,
   nextPickup: (time) => `أقرب استلام · ${time}`,
   noSlotsToday: "ما في أوقات استلام متاحة اليوم",
@@ -719,6 +766,12 @@ const ar: Dict = {
   createAccount: "إنشاء حساب",
   working: "لحظة…",
   toSignUp: "جديد؟ أنشئ حساب",
+  newHere: "جديد؟",
+  createAnAccount: "أنشئ حساب",
+  haveAccount: "عندك حساب؟",
+  signInFor: "للزباين وأصحاب العربات ومدير الساحة.",
+  showPassword: "إظهار كلمة المرور",
+  hidePassword: "إخفاء كلمة المرور",
   toSignIn: "عندك حساب؟ سجّل الدخول",
   invalidLogin: "البريد أو كلمة المرور غير صحيحة. تأكد وحاول مرة ثانية.",
   emailTaken: "هذا البريد له حساب. سجّل الدخول.",
@@ -943,7 +996,7 @@ const ar: Dict = {
   welcomeBack: "سجّل الدخول إلى قافلة",
   signInLead: "تسجيل دخول واحد للزباين وأصحاب العربات ومدير الساحة.",
   signUpLead: "اختر طريقة استخدامك لقافلة.",
-  staffHint: "حساب مدير الساحة تجهّزه إدارة الساحة.",
+  staffHint: "حسابات المدراء تجهّزها إدارة الساحة.",
   accountType: "أسجّل كـ",
   signupRole: {
     customer: { name: "زبون", help: "أطلب قبل ما أوصل وأستلم من العربة." },
@@ -980,6 +1033,17 @@ const ar: Dict = {
   pickupAt: (time) => `الاستلام ${time}`,
   openTicket: "افتح التذكرة",
   openLiveTicket: "افتح التذكرة المباشرة",
+  activeOrder: "الطلب الحالي",
+  scheduledPickup: "موعد الاستلام",
+  stageLabel: { placed: "تم الطلب", accepted: "مقبول", preparing: "تحضير", ready: "جاهز", collected: "تم الاستلام" },
+  orderDetails: "تفاصيل الطلب",
+  moneyLine: {
+    nothing_to_pay: { title: "ما عليك شي", note: "ما انسحب أي مبلغ لهذا الطلب." },
+    refund_due: { title: "المبلغ مستحق للاسترداد", note: "مدفوع أونلاين" },
+    paid: { title: "مدفوع", note: "مدفوع أونلاين" },
+    due_at_pickup: { title: "يُدفع عند الاستلام", note: "الدفع عند الاستلام · غير مدفوع" },
+    online_unpaid: { title: "يُدفع أونلاين", note: "الدفع أونلاين · غير مدفوع" },
+  },
   backToOrders: "رجوع إلى طلباتي",
   myOrders: "شوف طلباتك",
   orderNotYoursBody: "هذا الطلب مو على هذا الحساب. طلباتك موجودة في «طلباتي».",
@@ -1268,6 +1332,25 @@ export function truckCuisine(truck: { id: string; cuisine: string }, locale: Loc
 
 export function truckBlurb(truck: { id: string; blurb: string }, locale: Locale): string {
   return truckText(truck.id, "blurb", truck.blurb, locale);
+}
+
+// Arabic names for the menu's categories as they are in seed/menu_items.csv.
+// A category a vendor has renamed is shown as saved.
+const arCategories: Record<string, string> = {
+  Burgers: "برجر",
+  Desserts: "حلويات",
+  Drinks: "مشروبات",
+  Food: "أكل",
+  Noodles: "نودلز",
+  Sides: "جانبيات",
+  "Sweet wraps": "لفائف حلوة",
+  Sweets: "حلا",
+  Tacos: "تاكو",
+  Wraps: "لفائف",
+};
+
+export function categoryName(category: string, locale: Locale): string {
+  return locale === "ar" ? (arCategories[category] ?? category) : category;
 }
 
 export function itemName(item: { id: string; name: string }, locale: Locale): string {
