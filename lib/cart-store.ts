@@ -16,7 +16,7 @@ export type Cart = {
   items: Record<string, number>;
   /** The pickup slot chosen at checkout, e.g. "19:15:00". */
   slot: string | null;
-  /** How the customer chose to pay at checkout. Pay at pickup when not set. */
+  /** How the customer explicitly chose to pay. Unset means no choice yet. */
   payment?: "pay_at_pickup" | "online";
   /**
    * The ID of the checkout attempt for exactly these dishes and this time.

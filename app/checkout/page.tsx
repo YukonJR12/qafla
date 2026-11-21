@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { truckLogo } from "@/lib/images";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -64,7 +66,9 @@ export default function CheckoutPage() {
   const { locale, t } = useLocale();
   const { cart, count, setSlot, setPayment, forgetRequest, clear } = useCart();
   // The payment choice is kept with the cart, so it survives a refresh and a language switch.
-  const payment = cart?.payment === "online" ? "online" : "pay_at_pickup";
+  const payment = cart?.payment === "online" || cart?.payment === "pay_at_pickup" ? cart.payment : null;
+  const [showAllSlots, setShowAllSlots] = useState(false);
+  const paymentSection = useRef<HTMLFieldSetElement>(null);
   const cartLines = useCartLines();
   const { loading: sessionLoading, session } = useSession();
   const { signOut } = useAccount();
@@ -283,7 +287,7 @@ export default function CheckoutPage() {
   }
 
   async function placeOrder() {
-    if (!cart || !selected || !orderable || placing || !userId) return;
+    if (!cart || !selected || !payment || !orderable || placing || !userId || closed) return;
     setPlacing(true);
     setProblem(null);
     setReconciled({ userId, check, result: "none" });
@@ -460,15 +464,15 @@ export default function CheckoutPage() {
       )}
 
       {/* The ticket: truck, time and total readable at a glance. */}
-      <section aria-label={t.checkout} className="rounded-panel border border-divider p-4">
+      <section aria-label={t.checkout} className="rounded-panel bg-ink p-4 text-snowy-white">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-muted">{t.orderingFrom}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            {truckLogo(truck.id) && <Image src={truckLogo(truck.id)!} alt="" width={56} height={56} className="size-14 shrink-0 rounded-control bg-white p-1 object-contain" />}
             <p className="text-xl leading-tight font-extrabold">{name}</p>
           </div>
           <div className="shrink-0 text-end">
-            <p className="text-sm font-semibold text-muted">{t.pickupTime}</p>
-            <p aria-live="polite" className="text-xl leading-tight font-extrabold">
+            <p className="text-sm font-semibold text-snowy-white">{t.pickupTime}</p>
+            <p aria-live="polite" className="text-xl leading-tight font-extrabold text-yellow-punk">
               {selected ? (
                 <Isolate>{formatSlot(selected, locale)}</Isolate>
               ) : (
@@ -491,7 +495,7 @@ export default function CheckoutPage() {
 
         <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-divider pt-3">
           <p>
-            <span className="font-bold">{t.total}</span> <span className="text-sm text-muted">· {t.itemCount(count)}</span>
+            <span className="font-bold">{t.total}</span> <span className="text-sm">· {t.itemCount(count)}</span>
           </p>
           <Money amount={total} locale={locale} className="text-2xl font-extrabold" />
         </div>
@@ -507,7 +511,7 @@ export default function CheckoutPage() {
             <p className="mt-3 rounded-control bg-subtle p-3 font-semibold">{t.noSlotsToday}</p>
           ) : (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              {upcoming.map((slot) => {
+              {upcoming.filter((slot, index) => showAllSlots || index < 4 || slot.slot_start === saved).map((slot) => {
                 const full = isFull(slot);
                 const isSelected = slot.slot_start === selected;
                 const left = slot.capacity - slot.booked;
@@ -555,10 +559,17 @@ export default function CheckoutPage() {
         </fieldset>
       )}
 
-      {/* Payment: pay online (test mode) or at the counter. One choice, like the pickup time. */}
+      {!closed && upcoming.length > 4 && (
+        <button type="button" aria-expanded={showAllSlots} onClick={() => setShowAllSlots(!showAllSlots)} className={`${secondaryButton} mt-3`}>
+          {showAllSlots ? t.fewerTimes : t.laterTimes}
+        </button>
+      )}
+
+      {/* Payment requires an explicit choice; an absent saved value never implies pickup. */}
       {!closed && (
-        <fieldset className="mt-6">
+        <fieldset ref={paymentSection} tabIndex={-1} className="mt-6 scroll-mt-4">
           <legend className="text-lg font-bold">{t.payment}</legend>
+          {!payment && <p className="text-sm text-muted">{t.choosePayment}</p>}
           <div className="mt-2 grid gap-2">
             {(["online", "pay_at_pickup"] as const).map((option) => {
               const chosen = payment === option;
@@ -567,7 +578,7 @@ export default function CheckoutPage() {
                 <label
                   key={option}
                   className={`relative flex min-h-14 cursor-pointer items-center gap-3 rounded-control border-2 p-3 transition-colors duration-[120ms] ease-out has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${
-                    chosen ? "border-ink bg-ink text-snowy-white" : "border-outline bg-snowy-white hover:border-ink"
+                    chosen ? "border-ink bg-yellow-punk text-ink" : "border-outline bg-snowy-white hover:border-ink"
                   }`}
                 >
                   <input
@@ -586,7 +597,7 @@ export default function CheckoutPage() {
                       {option === "online" ? t.payOnlineHint : t.payAtPickupHint(name)}
                     </span>
                   </span>
-                  {chosen && <CheckIcon className="size-5" />}
+                  {chosen ? <CheckIcon className="size-5 shrink-0" /> : <span aria-hidden className="size-5 shrink-0 rounded-full border-2 border-outline" />}
                 </label>
               );
             })}
@@ -631,14 +642,21 @@ export default function CheckoutPage() {
             <button
               ref={placeButton}
               type="button"
-              onClick={placeOrder}
-              disabled={!selected}
+              onClick={() => {
+                if (!payment) {
+                  paymentSection.current?.scrollIntoView({ block: "center", behavior: "instant" });
+                  paymentSection.current?.querySelector("input")?.focus();
+                } else void placeOrder();
+              }}
+              disabled={!selected || placing}
               aria-busy={placing}
               className={primaryButtonSplit}
             >
               <span aria-live="polite">
                 {placing ? (
                   t.placing
+                ) : !payment ? (
+                  t.choosePayment
                 ) : selected ? (
                   <>
                     {payment === "online" ? t.placeAndPay : t.placeOrder} · <Isolate>{formatSlot(selected, locale)}</Isolate>
