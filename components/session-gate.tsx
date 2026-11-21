@@ -36,6 +36,8 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const { view } = route(whoIs(account), path);
+  const launching = view === "splash" || account.status === "restoring";
+  const launch = <Splash label={t.restoring} active={launching} />;
 
   useEffect(() => {
     // The address's query is only known in the browser, so the redirect is
@@ -44,15 +46,16 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     if (redirect) router.replace(redirect);
   }, [account, path, router]);
 
-  if (view === "failed") return <AccountProblem />;
-  if (view === "unassigned") return <UnassignedVendor />;
-  if (view === "splash" || account.status === "restoring") return <Splash label={t.restoring} />;
+  if (view === "failed") return <>{launch}<AccountProblem /></>;
+  if (view === "unassigned") return <>{launch}<UnassignedVendor /></>;
+  if (launching) return <>{launch}</>;
 
   // The sign-in screen stands alone: no navigation until someone is signed in.
-  if (account.status !== "signed-in" || path === SIGN_IN) return <div className="paper min-h-dvh">{children}</div>;
+  if (account.status !== "signed-in" || path === SIGN_IN) return <>{launch}<div className="paper min-h-dvh">{children}</div></>;
 
   const bottomBar = !hidesBottomBar(path);
   return (
+    <>{launch}
     <Fragment key={account.userId}>
       {/* Customers get the warm paper surface; the kitchen and the park overview stay on Snowy White. */}
       <div className={account.role === "customer" ? "paper min-h-dvh" : ""}>
@@ -78,6 +81,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
       </Suspense>
       </div>
     </Fragment>
+    </>
   );
 }
 

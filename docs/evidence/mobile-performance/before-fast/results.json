@@ -1,0 +1,33 @@
+{
+  "base": "https://qafla-rjqd.vercel.app",
+  "browser": "159.0.8154.6",
+  "viewport": "390x844",
+  "profile": "Unthrottled diagnostic, CPU 1x",
+  "cache": "Cold: new context and cleared HTTP cache; warm: same context HTTP cache. No Map visit. Server/CDN cache uncontrolled.",
+  "runs": [
+    {
+      "id": "fresh-1-cold",
+      "launchMs": 1300,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-1-warm",
+      "launchMs": 656,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-1-cold",
+      "launchMs": 3800,
+      "menuMs": 1881,
+      "addMs": 32.400000005960464
+    },
+    {
+      "id": "returning-1-warm",
+      "launchMs": 2697,
+      "menuMs": 2385,
+      "addMs": 32.5
+    }
+  ]
+}

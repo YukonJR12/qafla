@@ -7,7 +7,7 @@ import { MenuList } from "@/components/menu-list";
 import { SavedCartNotice } from "@/components/saved-cart-notice";
 import { TruckLogo } from "@/components/truck-logo";
 import { ArrowBack, Isolate } from "@/components/ui";
-import { fetchClosedBy, fetchMenu, fetchSlots, fetchTruck, nextBookable } from "@/lib/data";
+import { fetchTruckMenu, nextBookable } from "@/lib/data";
 import { dictionary, truckBlurb, truckCuisine, truckName } from "@/lib/i18n";
 import { truckDishPhotos } from "@/lib/images";
 import { getLocale } from "@/lib/locale-server";
@@ -27,10 +27,8 @@ export default async function TruckMenu({ params }: { params: Promise<{ id: stri
   const t = dictionary[locale];
   const db = supabasePublic();
 
-  const truck = await fetchTruck(db, id);
+  const { truck, items, slots, why } = await fetchTruckMenu(db, id);
   if (!truck) notFound();
-
-  const [items, slots, why] = await Promise.all([fetchMenu(db, id), fetchSlots(db, id), fetchClosedBy(db, id)]);
   const closed = why !== null;
   const paused = why === "vendor"; // the vendor's own pause, not the park's closure for tonight
   const next = closed ? null : nextBookable(slots);

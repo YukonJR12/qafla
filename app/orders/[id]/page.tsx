@@ -114,11 +114,13 @@ export default function OrderPage() {
               {order.status === "ready" && (
                 // Drawn attention to once, and only when it turns ready while the ticket
                 // is open. Reopening a ready ticket shows the notice already in place.
-                <p
-                  className={`mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3 ${
+                <section
+                  aria-label={t.statusHelp.ready}
+                  className={`mb-4 rounded-control border border-ink bg-yellow-punk p-3 ${
                     state.opened !== "ready" ? "ready-arrive" : ""
                   }`}
                 >
+                  <div className="flex items-center gap-3">
                   <CheckIcon className="size-7" />
                   <span className="min-w-0">
                     <span className="block text-lg leading-snug font-extrabold">{t.statusHelp.ready}</span>
@@ -126,13 +128,13 @@ export default function OrderPage() {
                       {t.readyCounter(truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale))}
                     </span>
                   </span>
-                </p>
+                  </div>
+                  {parkTruck(order.truck_id) && (
+                    <Link href={`/map?truck=${encodeURIComponent(order.truck_id)}`} prefetch={false} className={`${secondaryButton} mt-3 w-full`}>{parkWords[locale].find}</Link>
+                  )}
+                </section>
               )}
             </div>
-
-            {order.status === "ready" && parkTruck(order.truck_id) && (
-              <Link href={`/map?truck=${encodeURIComponent(order.truck_id)}`} prefetch={false} className={`${secondaryButton} mb-4 w-full`}>{parkWords[locale].find}</Link>
-            )}
 
             {/* The black ticket: truck, status, the pickup time above all, and the reference on the stub. */}
             <TicketCard truck={truck} slot={order.slot_start} status={order.status}>

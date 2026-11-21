@@ -115,9 +115,12 @@ dialog::backdrop {
  */
 @keyframes launch-roll {
   from {
-    transform: translateX(-22px);
+    transform: translateX(-32px);
   }
+  to { transform: translateX(0); }
 }
+@keyframes launch-handoff { to { opacity: 0; } }
+.launch-handoff { animation: launch-handoff 180ms ease-out forwards; }
 /* If launching takes longer than 0.7 s, a small bar appears under the logo. */
 .launch-wait {
   width: 88px;
@@ -153,8 +156,9 @@ dialog::backdrop {
 @media (prefers-reduced-motion: no-preference) {
   /* Always left to right: the truck faces right in both languages. */
   .launch-roll {
-    animation: launch-roll 700ms cubic-bezier(0.16, 0.85, 0.25, 1) both;
+    animation: launch-roll 560ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
   }
+  .launch-pending { transform: translateX(-32px); }
   .launch-wait::after {
     animation: launch-slide 1100ms ease-in-out 700ms infinite;
   }
@@ -174,17 +178,18 @@ dialog::backdrop {
 @keyframes ready-arrive {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.96);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(0) scale(1.03);
+    transform: translateY(6px);
   }
 }
 /* "Ready for pickup" arriving on a live ticket: it lands, swells once and settles. */
 .ready-arrive {
-  animation: ready-arrive 420ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: ready-arrive 260ms ease-out both;
 }
+
+.tap-ack { transition: transform 100ms ease-out, background-color 100ms ease-out; }
+.tap-ack:active:not(:disabled) { background-color: var(--color-yellow-punk); transform: scale(0.94); }
+@keyframes quantity-ack { from { background-color: var(--color-yellow-punk); } }
+.quantity-ack { animation: quantity-ack 220ms ease-out; }
 
 @keyframes bump {
   40% {
@@ -197,6 +202,7 @@ dialog::backdrop {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tap-ack:active:not(:disabled) { transform: none; }
   *,
   *::before,
   *::after {

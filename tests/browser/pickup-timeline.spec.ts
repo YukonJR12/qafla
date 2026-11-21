@@ -1,6 +1,7 @@
 import { expect, test, type Page, type WebSocketRoute } from "@playwright/test";
 import { dictionary, truckName, type Locale } from "../../lib/i18n";
 import { STAGES } from "../../lib/ticket";
+import { parkWords } from "../../lib/park-map";
 
 const orderId = "00000000-0000-4000-8000-000000000053";
 
@@ -150,6 +151,10 @@ for (const width of [320, 390]) for (const locale of ["en", "ar"] as const) {
         childList: true, subtree: true, characterData: true,
       });
     });
+    await page.evaluate(() => {
+      Reflect.set(window, "readyEntrances", 0);
+      document.addEventListener("animationstart", e => { if (e.animationName === "ready-arrive") Reflect.set(window, "readyEntrances", Reflect.get(window, "readyEntrances") + 1); });
+    });
     await fixture.advance("ready");
     await expect(caption).toHaveText(t.timelineCaption.ready(truck));
     await expect(back).toHaveCount(0);
@@ -158,11 +163,18 @@ for (const width of [320, 390]) for (const locale of ["en", "ar"] as const) {
     for (let i = 0; i < 3; i++) await expect(buttons.nth(i)).toHaveAccessibleName(t.stageDone(t.statusName[STAGES[i]]));
     await expect(page.getByRole("button", { name: t.cancelOrder, exact: true })).toHaveCount(0);
     await expect(page.getByText(t.statusHelp.ready, { exact: true })).toBeVisible();
+    const findTruck = page.getByRole("region", { name: t.statusHelp.ready }).getByRole("link", { name: parkWords[locale].find });
+    await expect(findTruck).toHaveAttribute("href", "/map?truck=T01");
+    const findBox = await findTruck.boundingBox();
+    expect(findBox!.height).toBeGreaterThanOrEqual(44);
+    expect(findBox!.x).toBeGreaterThanOrEqual(0);
+    expect(findBox!.x + findBox!.width).toBeLessThanOrEqual(width);
     await expect(page.locator("main .rounded-full").filter({ hasText: t.statusName.ready })).toBeVisible();
     await fixture.advance("ready");
     // Wait for that read to render before counting notifications.
     await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     expect(await page.evaluate(() => Reflect.get(window, "stageAnnouncements"))).toEqual([t.timelineCaption.ready(truck)]);
+    expect(await page.evaluate(() => Reflect.get(window, "readyEntrances"))).toBe(1);
     await expect(page.getByText(t.statusHelp.ready, { exact: true }).locator("xpath=ancestor::*[@role='status']")).toHaveCount(0);
     expect(fixture.writes).toEqual([]);
     expect(errors).toEqual([]);
