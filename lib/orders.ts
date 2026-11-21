@@ -28,3 +28,17 @@ export function splitOrders<T extends Listed>(orders: T[], today: string): { act
     .sort((a, b) => b.service_date.localeCompare(a.service_date) || b.placed_at.localeCompare(a.placed_at));
   return { active, past };
 }
+
+/**
+ * Past orders grouped under their service date, keeping the order they
+ * arrive in (newest first), so each date is one heading with its rows.
+ */
+export function groupByDate<T extends { service_date: string }>(orders: T[]): { date: string; orders: T[] }[] {
+  const groups: { date: string; orders: T[] }[] = [];
+  for (const order of orders) {
+    const last = groups[groups.length - 1];
+    if (last && last.date === order.service_date) last.orders.push(order);
+    else groups.push({ date: order.service_date, orders: [order] });
+  }
+  return groups;
+}

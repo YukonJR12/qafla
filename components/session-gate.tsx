@@ -49,11 +49,13 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   if (view === "splash" || account.status === "restoring") return <Splash label={t.restoring} />;
 
   // The sign-in screen stands alone: no navigation until someone is signed in.
-  if (account.status !== "signed-in" || path === SIGN_IN) return <>{children}</>;
+  if (account.status !== "signed-in" || path === SIGN_IN) return <div className="paper min-h-dvh">{children}</div>;
 
   const bottomBar = !hidesBottomBar(path);
   return (
     <Fragment key={account.userId}>
+      {/* Customers get the warm paper surface; the kitchen and the park overview stay on Snowy White. */}
+      <div className={account.role === "customer" ? "paper min-h-dvh" : ""}>
       {/* The bars read the address's query (Slot details), which needs a Suspense boundary. */}
       <Suspense>
         <TopBar role={account.role} />
@@ -74,6 +76,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
       <Suspense>
         <BottomBar role={account.role} />
       </Suspense>
+      </div>
     </Fragment>
   );
 }

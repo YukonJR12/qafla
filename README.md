@@ -78,11 +78,34 @@ On a phone the navigation is a bar across the bottom. From 768 px it moves to a 
 
 **Several people on one phone.** Each account has its own cart (`qafla.cart.v2.<account id>`) and its own unconfirmed checkout attempt (`lib/pending-order.ts`), and both also name their owner. Signing out ends the session in this browser only and returns to a clean sign-in screen. The next person starts from their own home with their own cart and orders, and every screen is rebuilt from nothing for them. A cart is not deleted on sign-out, so it is there when its owner signs in again. It holds dish IDs and quantities only. The cart that every visitor used to share (`qafla.cart.v1`) had no owner, so it is removed instead of being handed to whoever signs in next.
 
-**Pictures.** The Qafla logo is the app's identity on the launch screen, sign-in, Explore, Account and the desktop bar. Each truck's own logo is on Explore, on its menu and in Orders, and each dish has its supplied photo. The originals were resized to WebP (`public/trucks/logos/`, `public/dishes/`, under 1 MB in total). Dune Burgers has no logo or dish photos in the pack yet, so it keeps its burger photo and plain menu rows.
+**Pictures.** The Qafla logo is the app's identity on the launch screen, sign-in, Explore, Account and the desktop bar. Each truck's own logo is on Explore, on its menu and in Orders, and each dish has its supplied photo. The originals were resized to WebP (`public/trucks/logos/`, `public/dishes/`, under 1 MB in total). Dune Burgers' logo was supplied on a cream background, which was cut away to match the others; its Classic smash photo is also the picture on the Explore poster.
 
 **Motion.** Three short animations, 180 ms each: the logo arriving, the cart count when a dish is added, and the status when an order moves on. With "reduce motion" switched on they do not play.
 
 Screenshots are in `docs/screenshots/sign-in-first/`.
+
+## Launch and the customer screens
+
+**Launch.** `components/splash.tsx` is the one launch screen. The server renders it, so it is the first frame: the whole viewport in Snowy White with the complete Qafla logo in the centre. It is shown only while the app works out who is signed in and where they belong (`components/session-gate.tsx`, `lib/routes.ts`), and leaves the moment that is known. There is no timer. The logo itself is the loading animation: it starts a little left of centre, rolls forward and eases to a stop, once per page load. If the wait passes 0.7 s, a small bar appears under it. With reduced motion the logo is static. Moving between screens inside the app never plays it again.
+
+**Where each role lands.** Unchanged rules, from the database profile: a customer on Explore, an assigned vendor on Kitchen, the manager on Park overview, an unassigned vendor on a screen that says so with Check again and Sign out. A page that was asked for before signing in (a pickup ticket, a staff screen) is opened afterwards if that role may open it.
+
+| Screen | What is on it, and where it comes from |
+| --- | --- |
+| Sign in / Create account (`app/sign-in/page.tsx`) | The logo once, a black banner naming the screen, labelled fields, a show/hide button on the password. Create account offers Customer and Truck vendor as two cards; the manager's account is still only ever set in the database. |
+| Explore (`app/explore/page.tsx`, `components/truck-list.tsx`) | The park's banner, then one photo-led row for each of the six trucks: its lead dish, its logo, cuisine, and the next pickup time that can still be booked (the same slot logic as checkout) or why it is not taking orders. |
+| Explore's search and filters (`lib/truck-search.ts`) | The search looks in every truck's name, cuisine and description and in the names of the dishes on its menu, in English and Arabic. The filters are the cuisines the trucks have saved. There is no prep-time estimate, because nothing in the project is a source for one. |
+| A truck's menu (`app/trucks/[id]/page.tsx`, `components/menu-list.tsx`) | A compact header, tabs for the menu's own categories, and rows that keep a dish's photo, name, price and its control together: a round "+" that becomes a quantity stepper. |
+| Orders (`app/orders/page.tsx`) | Each active pickup as a black ticket ending in "Open live ticket" (there can be several). Past orders grouped under their date. |
+| Live ticket (`app/orders/[id]/page.tsx`, `components/ticket-card.tsx`, `components/pickup-timeline.tsx`) | The black ticket with the pickup time as its largest element, then five labelled stages driven by the live order, or a clear final state for a cancelled or rejected order. The lines show the prices saved with the order. |
+| The ticket's money line (`moneyLine` in `lib/payments.ts`) | One of: Due at pickup, To pay online, Paid, Refund due, Nothing to pay. A cancelled or rejected order that was never paid says "Nothing to pay" and shows no payment reminder. |
+| Account (`app/account/page.tsx`) | A black card with the account's initials, name, email and role, then four rows that each open something that works: Personal details (change the name on the card; `set_my_name` in the database changes that one field on the caller's own profile), Language (English or Arabic), Help (three short answers) and Sign out (asks first). There is no Notifications row, because the app sends none. |
+
+**The paper surface.** The sign-in screen and the customer screens sit on a warm paper tone; the launch screen and the staff screens stay on Snowy White. One class, `.paper` in `app/globals.css`, swaps the light surface, its dividers and its quiet text for everything inside it, and the launch gate puts that class around sign-in and around a customer's screens. Components are written once and do not know which surface they are on.
+
+`components/scroll-memory.tsx` puts a customer back where they were on Explore when they return from a menu. It remembers in memory only, so a fresh launch starts at the top. On a live ticket, "Ready for pickup" draws attention once, only if it turns ready while the ticket is open. The phone's bottom bar marks the current destination with a Red Orange icon, a bold label and a Red Orange line.
+
+**Pictures by ID.** Every truck's logo is `public/trucks/logos/<truck id>.webp` and every dish's photo is `public/dishes/<dish id>.webp`; a truck's lead photo is its first dish (`lib/images.ts`). Dune Burgers (T02) uses the same mapping as the other five. Screenshots and a recording are in `docs/screenshots/app-ux-polish/`.
 
 ## Customer ordering
 
@@ -301,6 +324,7 @@ The data rules live in Postgres, in `supabase/`, so they hold no matter what a b
 | `supabase/migrations/…_abandon_order_attempt.sql` | `abandon_order_attempt` and the shared lock that settles "place" against "give up". |
 | `supabase/migrations/…_orders_realtime.sql` | Adds `orders` to the Realtime publication so the board and the ticket update live. Access rules are unchanged. |
 | `supabase/migrations/…_order_ratings.sql` | `order_ratings` (one rating per order) and `rate_order`. Adds only; nothing existing is changed. |
+| `supabase/migrations/…_profile_name.sql` | `set_my_name`: a signed-in user changes their own display name and nothing else. There is still no UPDATE right on `profiles`, so the role stays out of reach. |
 | `supabase/migrations/…_vendor_controls.sql` | Check constraints for what a vendor can now type: a truck's name (1 to 40 characters), cuisine (1 to 30) and description (up to 120), each on one line, and a dish price above 0 and below 1000 KWD. Adds only. |
 | `supabase/migrations/…_online_payments.sql` | `orders.payment_status`, `order_payments`, the server-secret check, `place_order_paying`, `begin_online_payment`, `record_payment_page`, `settle_payment`, and the rule that an unpaid online order cannot be accepted. Adds only; existing orders stay pay-at-pickup and unpaid. |
 | `supabase/migrations/…_menu_ai.sql` | `menu_items.allergens`, the photo-suggestion request log, `begin_ai_suggestion` (ownership and the 20-per-hour limit) and `save_menu_copy` (description and allergens only). Adds only. |

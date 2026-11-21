@@ -36,6 +36,8 @@ type AccountApi = {
   signOut: () => Promise<void>;
   /** Reads the profile again (after a failure, or to check for a newly assigned truck). */
   retry: () => void;
+  /** The account saved a new display name: show it everywhere without reading the profile again. */
+  nameSaved: (name: string | null) => void;
   /** The vendor saved new truck details: show them everywhere without reading the profile again. */
   truckSaved: (truck: Truck) => void;
 };
@@ -116,7 +118,12 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const api = useMemo(() => ({ account, signOut, retry, truckSaved }), [account, signOut, retry, truckSaved]);
+  const nameSaved = useCallback(
+    (name: string | null) => setProfile((was) => (was?.result ? { ...was, result: { ...was.result, name } } : was)),
+    [],
+  );
+
+  const api = useMemo(() => ({ account, signOut, retry, truckSaved, nameSaved }), [account, signOut, retry, truckSaved, nameSaved]);
   return <AccountContext.Provider value={api}>{children}</AccountContext.Provider>;
 }
 

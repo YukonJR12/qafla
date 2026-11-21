@@ -1,17 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppHeader } from "@/components/app-header";
+import { LanguageSwitch } from "@/components/language-switch";
 import { PickupTimeline } from "@/components/pickup-timeline";
+import { TicketCard } from "@/components/ticket-card";
 import { CancelOrder, OrderRating } from "@/components/ticket-actions";
-import { CheckIcon, Isolate, Money, primaryButton, secondaryButton } from "@/components/ui";
+import { ArrowBack, CheckIcon, Isolate, Money, primaryButton, secondaryButton, XIcon } from "@/components/ui";
 import { fetchOrder, type Order } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import { supabaseBrowser } from "@/lib/supabase";
-import { canPayNow, paymentView } from "@/lib/payments";
+import { dishPhoto } from "@/lib/images";
+import { canPayNow, moneyLine } from "@/lib/payments";
 import { canCancel } from "@/lib/ticket";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
@@ -32,7 +35,9 @@ export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
-  const [state, setState] = useState<{ loaded: boolean; order: Order | null }>({ loaded: false, order: null });
+  // `opened` is the status the ticket had when this screen first read it.
+  // It tells "became ready while I was watching" from "was already ready".
+  const [state, setState] = useState<{ loaded: boolean; order: Order | null; opened?: string }>({ loaded: false, order: null });
   const [checking, setChecking] = useState(false);
   // What happened when the customer tried to cancel, said once in words.
   const [cancelNote, setCancelNote] = useState<"cancelled" | "too_late" | null>(null);
@@ -43,7 +48,7 @@ export default function OrderPage() {
   const reread = useCallback(async () => {
     const mine = ++readNumber.current;
     const order = await fetchOrder(supabaseBrowser(), id);
-    if (mine === readNumber.current) setState({ loaded: true, order });
+    if (mine === readNumber.current) setState((was) => ({ loaded: true, order, opened: was.opened ?? order?.status }));
   }, [id]);
 
   const userId = session?.user.id;
@@ -54,6 +59,8 @@ export default function OrderPage() {
   }, [sessionLoading, userId, reread]);
 
   const { loaded, order } = state;
+  const truck = order?.trucks ?? { id: order?.truck_id ?? "", name: "" };
+  const money = order ? moneyLine(order) : "due_at_pickup";
 
   // Live updates for this one order, plus a fresh read on reconnect and on
   // returning to the tab, so a missed change cannot leave the ticket stale.
@@ -66,7 +73,20 @@ export default function OrderPage() {
 
   return (
     <div className="min-h-dvh">
-      <AppHeader title={t.yourOrder} backHref="/orders" backLabel={t.backToOrders} />
+      {/* The way back and the screen's title, large, with the language switch. */}
+      <header className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 pt-4 md:px-6">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Link
+            href="/orders"
+            aria-label={t.backToOrders}
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-panel border border-divider transition-colors duration-[120ms] ease-out hover:border-ink"
+          >
+            <ArrowBack className="size-5" />
+          </Link>
+          <h1 className="text-[2.1rem] leading-none font-extrabold tracking-tight">{t.yourOrder}</h1>
+        </div>
+        <LanguageSwitch />
+      </header>
 
       <main className="mx-auto max-w-xl px-4 pt-4 pb-10 md:px-6">
         {!loaded ? (
@@ -86,12 +106,18 @@ export default function OrderPage() {
           <>
             {/*
               A persistent Yellow Punk notice for as long as the order is ready.
-              The wrapper is always on the page, so a screen reader announces
-              the notice once, at the moment it appears inside it.
+              The timeline caption announces the live stage once; this notice
+              stays visible without repeating that announcement.
             */}
-            <div role="status">
+            <div>
               {order.status === "ready" && (
-                <p className="reveal-up mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3">
+                // Drawn attention to once, and only when it turns ready while the ticket
+                // is open. Reopening a ready ticket shows the notice already in place.
+                <p
+                  className={`mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3 ${
+                    state.opened !== "ready" ? "ready-arrive" : ""
+                  }`}
+                >
                   <CheckIcon className="size-7" />
                   <span className="min-w-0">
                     <span className="block text-lg leading-snug font-extrabold">{t.statusHelp.ready}</span>
@@ -103,88 +129,101 @@ export default function OrderPage() {
               )}
             </div>
 
-            <article className="rounded-panel border border-ink p-6">
-              {/* Lead with the confirmed time and the truck. */}
-              <p className="text-sm font-semibold text-muted">{t.pickUpAt}</p>
-              <p className="text-5xl leading-none font-extrabold tracking-tight">
-                <Isolate>{formatSlot(order.slot_start, locale)}</Isolate>
+            {/* The black ticket: truck, status, the pickup time above all, and the reference on the stub. */}
+            <TicketCard truck={truck} slot={order.slot_start} status={order.status}>
+              <p className="flex flex-wrap items-baseline justify-between gap-x-3 font-bold">
+                <span className="text-sm font-normal">{t.orderRef}</span>
+                <Isolate className="font-normal">{order.ticket_ref}</Isolate>
               </p>
-              <p className="mt-2 text-2xl leading-tight font-extrabold">
-                {truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale)}
-              </p>
+            </TicketCard>
 
-              {/* Directly below the time and the truck: where the order is now. */}
-              <PickupTimeline
-                status={order.status}
-                truck={truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale)}
-                announce={order.status !== "ready"}
-              />
-              {/* A cancelled or rejected order ends here, with its own message. */}
-              {order.status === "cancelled" && (
-                <div className="mt-5 rounded-control bg-subtle p-3">
-                  <p className="font-extrabold">{t.cancelledTitle}</p>
-                  <p className="mt-1 text-sm text-muted">{(paymentView(order) === "refund_due" ? t.cancelledBodyPaid : t.cancelledBody)(formatSlot(order.slot_start, locale))}</p>
-                </div>
-              )}
-              {order.status === "rejected" && (
-                <div className="mt-5 rounded-control bg-error-surface p-3 text-error">
-                  <p className="font-extrabold">
-                    {t.rejectedTitle(truckName(order.trucks ?? { id: order.truck_id, name: "" }, locale))}
-                  </p>
-                  {order.rejection_reason && (
-                    <p className="mt-1 text-sm">
-                      <span className="font-semibold">{t.rejectedReason}</span> <span className="wrap-anywhere">{order.rejection_reason}</span>
-                    </p>
-                  )}
-                  <p className="mt-1 text-sm">{paymentView(order) === "refund_due" ? t.rejectedBodyPaid : t.rejectedBody}</p>
-                </div>
-              )}
-
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-dashed border-outline pt-4">
-                <dt className="text-sm font-semibold text-muted">{t.orderRef}</dt>
-                <dt className="text-sm font-semibold text-muted">{t.status}</dt>
-                <dd className="text-lg font-bold">
-                  <Isolate>{order.ticket_ref}</Isolate>
-                </dd>
-                {/* The timeline's caption and the ready notice announce changes; this is the plain label. */}
-                <dd className="text-lg font-bold">{t.statusName[order.status] ?? order.status}</dd>
-              </dl>
-
-              <ul className="mt-4 space-y-1.5 border-t border-divider pt-4">
-                {order.order_items.map((line) => (
-                  <li key={line.item_id} className="flex items-baseline justify-between gap-3">
-                    <span>
-                      <Isolate className="font-bold">{line.quantity} ×</Isolate>{" "}
-                      {itemName({ id: line.item_id, name: line.item_name }, locale)}
+            {/* Where the order is now: five labelled stages, or its final state. */}
+            <section aria-labelledby="progress-title" className="mt-6">
+              <h2 id="progress-title" className="text-[1.44rem] font-extrabold tracking-tight">
+                {t.orderProgress}
+              </h2>
+              <div className="mt-3">
+                <PickupTimeline status={order.status} truck={truckName(truck, locale)} />
+                {/* A cancelled or rejected order ends here, with its own message and no stages. */}
+                {order.status === "cancelled" && (
+                  <div className="flex items-start gap-3 rounded-panel border border-ink p-4">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-snowy-white">
+                      <XIcon className="size-5" />
                     </span>
-                    <Money amount={Number(line.unit_price_kwd) * line.quantity} locale={locale} className="font-semibold" />
-                  </li>
-                ))}
+                    <div>
+                      <p className="text-lg leading-snug font-extrabold">{t.cancelledTitle}</p>
+                      <p className="mt-1 text-sm text-muted">
+                        {(money === "refund_due" ? t.cancelledBodyPaid : t.cancelledBody)(formatSlot(order.slot_start, locale))}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {order.status === "rejected" && (
+                  <div className="flex items-start gap-3 rounded-panel bg-error-surface p-4 text-error">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-error text-snowy-white">
+                      <XIcon className="size-5" />
+                    </span>
+                    <div>
+                      <p className="text-lg leading-snug font-extrabold">{t.rejectedTitle(truckName(truck, locale))}</p>
+                      {order.rejection_reason && (
+                        <p className="mt-1 text-sm">
+                          <span className="font-semibold">{t.rejectedReason}</span> <span className="wrap-anywhere">{order.rejection_reason}</span>
+                        </p>
+                      )}
+                      <p className="mt-1 text-sm">{money === "refund_due" ? t.rejectedBodyPaid : t.rejectedBody}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* What was ordered, at the prices saved with the order. */}
+            <section aria-labelledby="details-title" className="mt-6">
+              <h2 id="details-title" className="text-[1.44rem] font-extrabold tracking-tight">
+                {t.orderDetails}
+              </h2>
+              <ul className="mt-2 divide-y divide-divider border-b border-divider">
+                {order.order_items.map((line) => {
+                  const photo = dishPhoto(line.item_id);
+                  return (
+                    <li key={line.item_id} className="flex items-center gap-3 py-2.5">
+                      {photo && (
+                        <Image
+                          src={photo}
+                          alt=""
+                          width={480}
+                          height={480}
+                          sizes="80px"
+                          className="h-[62px] w-[66px] shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10"
+                        />
+                      )}
+                      <span className="min-w-0 flex-1 leading-snug font-bold">
+                        <Isolate>{line.quantity} ×</Isolate> {itemName({ id: line.item_id, name: line.item_name }, locale)}
+                      </span>
+                      <Money amount={Number(line.unit_price_kwd) * line.quantity} locale={locale} className="font-bold" />
+                    </li>
+                  );
+                })}
               </ul>
 
-              <div className="mt-4 border-t border-divider pt-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="font-bold">{paymentView(order) === "pickup" ? t.totalAtCounter : t.totalPlain}</p>
-                  {/* The total the server saved with the order. */}
-                  <Money amount={order.total_kwd} locale={locale} className="text-2xl font-extrabold" />
+              {/* One line about money, from the order's real payment state. */}
+              <div className="mt-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="leading-snug font-bold">{t.moneyLine[money].title}</p>
+                  {/* Re-keyed by the payment state, so a live change gives it a short bump. */}
+                  <p key={order.payment_status} className="bump text-sm text-muted">
+                    {t.moneyLine[money].note}
+                  </p>
                 </div>
-                {/* Payment has its own line and its own words; it is not a kitchen status. */}
-                <p
-                  key={order.payment_status}
-                  className={`bump mt-2 inline-flex items-center gap-1.5 rounded-control px-2.5 py-1 text-sm font-bold ${
-                    paymentView(order) === "paid"
-                      ? "bg-ink text-snowy-white"
-                      : paymentView(order) === "refund_due"
-                        ? "bg-warning-surface text-warning"
-                        : "bg-subtle text-ink"
-                  }`}
-                >
-                  {paymentView(order) === "paid" && <CheckIcon className="size-4" />}
-                  {t.paymentLabel[paymentView(order)]}
-                </p>
-                {paymentView(order) === "refund_due" && <p className="mt-1 text-sm text-muted">{t.refundDueBody}</p>}
+                {/* The total the server saved with the order. Struck through when nothing is owed. */}
+                <Money
+                  amount={order.total_kwd}
+                  locale={locale}
+                  className={`font-bold ${money === "nothing_to_pay" ? "text-muted line-through" : ""}`}
+                />
               </div>
-            </article>
+              {money === "refund_due" && <p className="mt-1 text-sm text-muted">{t.refundDueBody}</p>}
+            </section>
 
             {/* An online order that is not paid yet: say so plainly, and offer the way to pay. */}
             {canPayNow(order) && (
@@ -205,7 +244,8 @@ export default function OrderPage() {
             {/* Once collected, the customer can rate this order, one time. */}
             {order.status === "collected" && <OrderRating orderId={order.id} />}
 
-            <div className="mt-4 space-y-2">
+            {/* Check status first, then the quieter way out: cancelling, while that is still allowed. */}
+            <div className="mt-4 flex flex-col gap-2">
               <p role="status">
                 {cancelNote && (
                   <span
@@ -223,6 +263,7 @@ export default function OrderPage() {
                 )}
               </p>
               {canCancel(order.status) && (
+                <div className="order-last text-center">
                 <CancelOrder
                   order={order}
                   time={formatSlot(order.slot_start, locale)}
@@ -240,12 +281,13 @@ export default function OrderPage() {
                     setCancelNote("too_late");
                   }}
                 />
+                </div>
               )}
               <button
                 type="button"
                 disabled={checking}
                 aria-busy={checking}
-                className={secondaryButton}
+                className={primaryButton}
                 onClick={async () => {
                   setChecking(true);
                   await reread().catch(() => {});
@@ -260,9 +302,6 @@ export default function OrderPage() {
                   {t.reconnecting}
                 </p>
               )}
-              <Link href="/orders" className={primaryButton}>
-                {t.backToOrders}
-              </Link>
             </div>
           </>
         )}

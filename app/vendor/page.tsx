@@ -155,16 +155,10 @@ export default function VendorBoardPage() {
                 <span>{t.capacityNow(truck.slot_capacity)}</span>
                 <span className="font-bold underline underline-offset-4">{t.change}</span>
               </Link>
+              {/* Sign out lives on Account, one tap away in the bar, so the board's header stays about the truck. */}
               <Link href="/vendor/truck" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">
                 {t.editDetails}
               </Link>
-              <button
-                type="button"
-                onClick={() => signOut()}
-                className="ms-auto min-h-11 font-bold underline underline-offset-4"
-              >
-                {t.signOut}
-              </button>
             </div>
           )}
         </div>

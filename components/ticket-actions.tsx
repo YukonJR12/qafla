@@ -70,7 +70,7 @@ export function CancelOrder({
           dialog.current?.showModal();
           keep.current?.focus(); // focus starts on the safe choice
         }}
-        className="inline-flex min-h-12 w-full items-center justify-center rounded-control border border-error px-4 py-3 font-bold text-error transition-colors duration-[120ms] ease-out hover:bg-error-surface"
+        className="inline-flex min-h-11 items-center justify-center rounded-control px-4 font-bold text-danger underline-offset-4 hover:underline"
       >
         {t.cancelOrder}
       </button>

@@ -212,6 +212,129 @@ export function PlusIcon({ className = "" }: IconProps) {
   );
 }
 
+/** Points onward at the end of a row; flips in Arabic. */
+export function ChevronForward({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 rtl:-scale-x-100 ${className}`}>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+export function MailIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3.5 7l8.5 6 8.5-6" />
+    </svg>
+  );
+}
+
+/** An eye: show what was typed. With `off`, struck through: hide it. */
+export function EyeIcon({ className = "", off = false }: IconProps & { off?: boolean }) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+      {off && <path d="M4 4l16 16" />}
+    </svg>
+  );
+}
+
+/** A door with an arrow leaving it. The arrow flips in Arabic. */
+export function SignOutIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 rtl:-scale-x-100 ${className}`}>
+      <path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4" />
+      <path d="M10 12h10M16 8l4 4-4 4" />
+    </svg>
+  );
+}
+
+export function SearchIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </svg>
+  );
+}
+
+/** A small food truck, for "Truck vendor". Always faces right, like the logo. */
+export function TruckIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M3 17V7h11v10M14 10h4l3 3.5V17h-2" />
+      <path d="M5 7l1-2.5h6L13 7M9 17h6" />
+      <circle cx="7" cy="17.5" r="2" />
+      <circle cx="17" cy="17.5" r="2" />
+    </svg>
+  );
+}
+
+/** The five stages of a pickup, one drawing each. */
+export function StageIcon({ stage, className = "" }: IconProps & { stage: string }) {
+  const paths: Record<string, React.ReactNode> = {
+    // A receipt: the order was placed.
+    placed: <path d="M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21V3zM9 8h6M9 12h6" />,
+    // A clipboard with a check: the truck accepted it.
+    accepted: (
+      <>
+        <rect x="5" y="5" width="14" height="16" rx="2" />
+        <path d="M9 5V3.5h6V5M9 13.5l2 2 4-4.5" />
+      </>
+    ),
+    // A pot with steam: it is being cooked.
+    preparing: (
+      <>
+        <path d="M5 12h14v5a3 3 0 01-3 3H8a3 3 0 01-3-3v-5zM3 12h18" />
+        <path d="M9 4c-1 1.5 1 2.5 0 4M12 4c-1 1.5 1 2.5 0 4M15 4c-1 1.5 1 2.5 0 4" />
+      </>
+    ),
+    // A bag: packed and waiting at the counter.
+    ready: <path d="M5 9h14l-1 12H6L5 9zM9 9V7a3 3 0 016 0v2" />,
+    // A bag on an open hand: handed over.
+    collected: (
+      <>
+        <path d="M8 6h8l-.7 7H8.7L8 6zM10 6V5a2 2 0 014 0v1" />
+        <path d="M3 17l4-2h5l3 1.5 4-1.5 2 1-6 4H8l-5-1z" />
+      </>
+    ),
+  };
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      {paths[stage] ?? paths.placed}
+    </svg>
+  );
+}
+
+/** A pencil: edit. */
+export function EditIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M4 16L16 4l4 4L8 20l-5 1 1-5zM14 6l4 4" />
+    </svg>
+  );
+}
+
+/** A question mark in a circle: help. */
+export function HelpIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="M9.3 9.2a2.8 2.8 0 115 1.8c-.9.9-2.3 1.4-2.3 3M12 17.5v.01" />
+    </svg>
+  );
+}
+
+export function XIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 /**
  * The Yellow Punk pickup-time sticker: a pill with an ink edge and a crisp
  * 3 px offset shadow (DESIGN.md, Elevation & Depth).

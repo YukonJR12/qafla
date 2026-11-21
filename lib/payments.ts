@@ -143,3 +143,23 @@ export type PaymentOutcome =
   | "not_found"
   /** Payments are not set up, or the gateway could not be reached. */
   | "unavailable";
+
+/**
+ * What the ticket's summary says about money, in one word.
+ *
+ * - nothing_to_pay: the order was cancelled or rejected before any money
+ *   moved. There is nothing to pay, so no payment reminder is shown.
+ * - refund_due:     it was paid online and then cancelled or rejected.
+ * - paid:           paid online, confirmed by the server with the gateway.
+ * - due_at_pickup:  to be paid at the truck's counter.
+ * - online_unpaid:  to be paid online, not paid yet.
+ */
+export type MoneyLine = "nothing_to_pay" | "refund_due" | "paid" | "due_at_pickup" | "online_unpaid";
+
+export function moneyLine(order: { status: string; payment_method: string; payment_status: string }): MoneyLine {
+  if (order.payment_status === "refund_due") return "refund_due";
+  const over = order.status === "cancelled" || order.status === "rejected";
+  if (over && order.payment_status !== "paid") return "nothing_to_pay";
+  if (order.payment_status === "paid") return "paid";
+  return order.payment_method === "online" ? "online_unpaid" : "due_at_pickup";
+}

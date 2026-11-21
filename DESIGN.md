@@ -28,8 +28,9 @@ The park logo pairs a right-facing Red Orange truck with a rooftop burger and Ye
 
 | Placement | How to use the logo |
 | --- | --- |
-| Welcome screen | Center the logo on Snowy White. Use a 224 px square on phones and 288 px from 640 px up. The Arabic park name, قافلة, can sit underneath as live text. |
-| Explore | Place the logo in the park masthead when at least 96 px of width is available. Keep the featured poster for the individual truck and its pickup time. |
+| Launch screen | Fill the whole viewport, including a phone's safe areas, with Snowy White from the first rendered frame. Center the complete logo directly on the white, truck and wordmark together, at a 224 px square on phones (never wider than 56% of the screen) and 256 px from 640 px up. Nothing else is on the screen. |
+| Sign-in and Create account | Place the complete logo once, at 96 px, at the start of the header with the language switch at the end. It carries the QAFLA wordmark, so no second name sits beside it. The logo is simply present here; its entrance belongs to the launch screen. A black banner below names the screen. |
+| Explore | Center the logo in the masthead on phones at 96 px. A black banner beneath it carries the park's name and tonight's pickup hours. Every truck then has the same kind of row. |
 | Checkout, vendor and manager screens | Use the localized park name as text in compact headers. Give pickup times, order states and counts the visual priority. |
 
 Keep the PNG square and scale both dimensions together. Its transparent margins provide the clear space. Keep adjacent controls, text and borders outside that square. On a dark, orange or photographic surface, give the complete logo a solid Snowy White backing so its ink strokes and wordmark stay legible. Preserve the original lettering, colors and right-facing orientation in both English and Arabic.
@@ -139,6 +140,12 @@ motion:
   feedback: {duration: 120ms, timingFunction: ease-out}
   reveal: {duration: 180ms, timingFunction: ease-out}
 ```
+
+**Launch.** The app has one authored moment, and the logo itself is the loading animation. The complete logo starts about 22 px left of centre, rolls forward and eases to a stop (700 ms, `cubic-bezier(0.16, 0.85, 0.25, 1)`), once per page load. It always travels left to right, because the truck faces right in both languages. The screen leaves the instant the destination is known: no timer holds it up, and moving between screens inside the app never plays it again. If the wait passes 0.7 s, a small 88 px bar appears beneath the settled logo with a Red Orange segment moving along it. With reduced motion the logo is static and the bar does not move; the status is announced to assistive technology either way.
+
+**Paper.** The sign-in screen and every customer screen sit on a warm paper surface, `#FCF7F1`, with dividers `#DCD4CA`, quiet fills `#EEE7DF` and quiet text `#615D57` (6.1:1 on paper). It is applied by one class, `.paper`, which swaps those tones for everything inside it, so components are written once. Snowy White remains the brand's white: it is the launch screen, the staff screens (Kitchen, Menu, Capacity, Park overview) and the text on ink. Warm red `#AE2B11` (6.2:1 on paper) is the text colour for the two quiet destructive actions, "Cancel order" and "Sign out"; Red Orange stays for marks, lines and icons, where 3:1 is enough.
+
+**Black banners and tickets.** Ink is used as a surface for the screens' banners (sign-in, Explore, the Account card) and for the pickup ticket, with Snowy White text. On a ticket the pickup time is the largest element and is set in Yellow Punk. Banners may carry the park's line art (the Kuwait Towers and a food truck) in a thin stroke; it is decoration and hidden from assistive technology.
 
 Buttons respond immediately on press. Keep the button width stable while an order is being placed and announce progress. A new vendor ticket appears within its time group without stealing keyboard focus. When an order becomes ready, reveal a persistent Yellow Punk header with a check, the ready message and the truck name. Announce the change once to assistive technology. Reopening the order shows its current state. Keep poster artwork static and respect reduced motion by making transitions immediate.
 

@@ -87,6 +87,16 @@ export async function fetchMenu(db: SupabaseClient, truckId: string): Promise<Me
   return data;
 }
 
+/**
+ * Every dish's ID, truck and name: what Explore's search looks through, so
+ * "karak" finds the truck that serves it. Menus are public to read.
+ */
+export async function fetchDishNames(db: SupabaseClient): Promise<{ id: string; truck_id: string; name: string }[]> {
+  const { data, error } = await db.from("menu_items").select("id,truck_id,name").order("id");
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 /** Every truck with tonight's closure state and its next bookable time. */
 export async function fetchTrucksTonight(db: SupabaseClient): Promise<TruckTonight[]> {
   const today = kuwaitNow().date;
@@ -417,6 +427,17 @@ export async function fetchMyProfile(
   const { data, error } = await db.from("profiles").select("role,display_name").eq("id", userId).maybeSingle();
   if (error) throw new Error(error.message);
   return data;
+}
+
+/**
+ * Saves the signed-in account's own display name (set_my_name). The
+ * database changes that one field on the caller's own profile and answers
+ * with the tidied name it saved, or null when the name was cleared.
+ */
+export async function saveMyName(db: SupabaseClient, name: string): Promise<string | null> {
+  const { data, error } = await db.rpc("set_my_name", { p_name: name });
+  if (error) throw new Error(error.message);
+  return (data as string | null) ?? null;
 }
 
 /** An order as the customer's Orders list shows it. */

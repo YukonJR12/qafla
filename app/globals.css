@@ -19,6 +19,8 @@
   --color-warning-surface: #fff0ce;
   --color-error: #8b1830;
   --color-error-surface: #ffe8ec;
+  /* A warm red that is dark enough for text: "Cancel order", "Sign out". */
+  --color-danger: #ae2b11;
 
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
   --font-display: var(--font-archivo-black), system-ui, sans-serif;
@@ -35,6 +37,24 @@ body {
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * The warm paper surface of the sign-in and customer screens (DESIGN.md,
+ * Surfaces). Inside `.paper` the light surface, its dividers and its quiet
+ * text take the paper's tones, so every component keeps working unchanged:
+ * a "white" field or a ticket's notch simply becomes paper. The launch
+ * screen and the staff screens stay on Snowy White.
+ */
+.paper {
+  --color-snowy-white: #fcf7f1;
+  --color-subtle: #eee7df;
+  --color-divider: #dcd4ca;
+  --color-muted: #615d57;
+  background-color: var(--color-snowy-white);
+}
+html:has(.paper) body {
+  background-color: #fcf7f1;
 }
 
 /* Arabic uses Alexandria everywhere, with more line height and no tracking. */
@@ -88,15 +108,56 @@ dialog::backdrop {
  * Each animation ends in the element's normal state, so with reduced motion
  * (below) the change is simply immediate.
  */
-@keyframes logo-enter {
+/*
+ * The launch screen (components/splash.tsx): the logo on Snowy White.
+ * The logo itself is the loading animation. It starts a little left of
+ * centre, rolls forward and eases to a stop.
+ */
+@keyframes launch-roll {
   from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.96);
+    transform: translateX(-22px);
   }
 }
-/* The Qafla logo arriving on the launch screen. */
-.logo-enter {
-  animation: logo-enter 180ms ease-out both;
+/* If launching takes longer than 0.7 s, a small bar appears under the logo. */
+.launch-wait {
+  width: 88px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--color-divider);
+  opacity: 0;
+  animation: launch-wait 200ms ease-out 700ms forwards;
+}
+.launch-wait::after {
+  content: "";
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--color-red-orange);
+}
+@keyframes launch-wait {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes launch-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+/* Movement is opt-in: with reduced motion the logo is simply there and the bar does not move. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Always left to right: the truck faces right in both languages. */
+  .launch-roll {
+    animation: launch-roll 700ms cubic-bezier(0.16, 0.85, 0.25, 1) both;
+  }
+  .launch-wait::after {
+    animation: launch-slide 1100ms ease-in-out 700ms infinite;
+  }
 }
 
 @keyframes reveal-up {
@@ -108,6 +169,21 @@ dialog::backdrop {
 /* Something new arriving: the cart bar, the ready notice. */
 .reveal-up {
   animation: reveal-up 180ms ease-out both;
+}
+
+@keyframes ready-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.03);
+  }
+}
+/* "Ready for pickup" arriving on a live ticket: it lands, swells once and settles. */
+.ready-arrive {
+  animation: ready-arrive 420ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 @keyframes bump {
@@ -126,5 +202,9 @@ dialog::backdrop {
   *::after {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
+  }
+  /* The launch bar still arrives after its wait; it just does not fade in. */
+  .launch-wait {
+    animation-duration: 1ms !important;
   }
 }
