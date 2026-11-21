@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-11-21T22:27:14.918Z",
+  "environment": "Production shared Supabase project",
+  "vendors": [
+    {
+      "id": "T01",
+      "name": "Karak Corner",
+      "email": "qafla.panel.t01.20261122@example.com",
+      "role": "vendor"
+    },
+    {
+      "id": "T02",
+      "name": "Dune Burgers",
+      "email": "qafla.vendor.mwng8ynl@example.com",
+      "role": "vendor"
+    },
+    {
+      "id": "T03",
+      "name": "Taco Saha",
+      "email": "qafla.panel.t03.20261122@example.com",
+      "role": "vendor"
+    },
+    {
+      "id": "T04",
+      "name": "Noodle Wagon",
+      "email": "qafla.panel.t04.20261122@example.com",
+      "role": "vendor"
+    },
+    {
+      "id": "T05",
+      "name": "Saj Station",
+      "email": "qafla.panel.t05.20261122@example.com",
+      "role": "vendor"
+    },
+    {
+      "id": "T06",
+      "name": "Lugaimat & Co",
+      "email": "qafla.panel.t06.20261122@example.com",
+      "role": "vendor"
+    }
+  ]
+}
