@@ -161,7 +161,7 @@ export default function SignInPage() {
             {t.password}
           </label>
           {/* The field and its show/hide button share one outlined box. */}
-          <div className="relative mt-1.5">
+          <div dir="ltr" className="relative mt-1.5">
             <input
               id="signin-password"
               name="password"

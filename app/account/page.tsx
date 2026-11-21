@@ -32,6 +32,7 @@ export default function AccountPage() {
   const { account, signOut, nameSaved } = useAccount();
   const id = useId();
   const details = useRef<HTMLDialogElement>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
   const language = useRef<HTMLDialogElement>(null);
   const help = useRef<HTMLDialogElement>(null);
   const leave = useRef<HTMLDialogElement>(null);
@@ -51,10 +52,20 @@ export default function AccountPage() {
     details.current?.showModal();
   }
 
+  function showProblem(next: "long" | "failed") {
+    setProblem(next);
+    if (next === "long") {
+      // Focus after the linked error renders, including a repeated invalid submission.
+      requestAnimationFrame(() => {
+        if (details.current?.open) nameInput.current?.focus();
+      });
+    }
+  }
+
   async function saveName(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
-    if (Array.from(draft.trim()).length > NAME_MAX) return setProblem("long");
+    if (Array.from(draft.trim()).length > NAME_MAX) return showProblem("long");
     setSaving(true);
     setProblem(null);
     try {
@@ -64,7 +75,7 @@ export default function AccountPage() {
       setSavedNote(true);
       details.current?.close();
     } catch (error) {
-      setProblem(error instanceof Error && error.message === "name_too_long" ? "long" : "failed");
+      showProblem(error instanceof Error && error.message === "name_too_long" ? "long" : "failed");
     } finally {
       setSaving(false);
     }
@@ -162,6 +173,7 @@ export default function AccountPage() {
             {t.nameOnly}
           </label>
           <input
+            ref={nameInput}
             id={`${id}-name`}
             type="text"
             dir="auto"
@@ -171,13 +183,13 @@ export default function AccountPage() {
               setDraft(event.target.value);
               setProblem(null);
             }}
-            aria-invalid={problem ? true : undefined}
+            aria-invalid={problem === "long" ? true : undefined}
             aria-describedby={`${id}-name-help`}
-            className={`mt-1 block min-h-12 w-full rounded-control border bg-white px-3 text-base ${problem ? "border-error" : "border-outline"}`}
+            className={`mt-1 block min-h-12 w-full rounded-control border bg-white px-3 text-base ${problem === "long" ? "border-error" : "border-outline"}`}
           />
           <p id={`${id}-name-help`} className="mt-1 text-sm">
-            {problem ? (
-              <span className="font-semibold text-error">{problem === "long" ? t.nameTooLong : t.saveCopyFailed}</span>
+            {problem === "long" ? (
+              <span className="font-semibold text-error">{t.nameTooLong}</span>
             ) : (
               <span className="text-muted">{t.nameHelp}</span>
             )}
@@ -187,8 +199,11 @@ export default function AccountPage() {
             {account.email}
           </p>
           <p className="mt-1 text-sm text-muted">{t.emailFixed}</p>
+          <p role="alert" aria-atomic="true" className={problem === "failed" ? "mt-3 text-sm font-semibold text-error" : undefined}>
+            {problem === "failed" && t.saveCopyFailed}
+          </p>
           <div className="mt-5 space-y-2">
-            <button type="submit" disabled={saving} aria-busy={saving} className={primaryButton}>
+            <button type="submit" aria-disabled={saving} aria-busy={saving} className={`${primaryButton} aria-disabled:cursor-not-allowed aria-disabled:bg-subtle aria-disabled:text-muted`}>
               <span aria-live="polite">{saving ? t.saving : t.saveChanges}</span>
             </button>
             <button type="button" className={secondaryButton} onClick={() => details.current?.close()}>
