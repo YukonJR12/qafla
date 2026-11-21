@@ -28,7 +28,8 @@ The park logo pairs a right-facing Red Orange truck with a rooftop burger and Ye
 
 | Placement | How to use the logo |
 | --- | --- |
-| Welcome screen | Center the logo on Snowy White. Use a 224 px square on phones and 288 px from 640 px up. The Arabic park name, قافلة, can sit underneath as live text. |
+| Launch screen | Fill the whole viewport, including a phone's safe areas, with Red Orange from the first rendered frame. Center the complete logo on a compact Snowy White tile with poster corners and 12 px of padding: the truck is Red Orange too and would disappear without it. Use a 168 px logo on phones and 208 px from 640 px up. Nothing else is on the screen. |
+| Sign-in | Center the logo on Snowy White at 160 px on phones and 208 px from 640 px up. The Arabic park name, قافلة, can sit underneath as live text. The logo is simply present here; its entrance belongs to the launch screen. |
 | Explore | Place the logo in the park masthead when at least 96 px of width is available. Keep the featured poster for the individual truck and its pickup time. |
 | Checkout, vendor and manager screens | Use the localized park name as text in compact headers. Give pickup times, order states and counts the visual priority. |
 
@@ -139,6 +140,8 @@ motion:
   feedback: {duration: 120ms, timingFunction: ease-out}
   reveal: {duration: 180ms, timingFunction: ease-out}
 ```
+
+**Launch.** The app has one authored moment. On the launch screen the truck rolls forward about 14 px and settles (520 ms, `cubic-bezier(0.2, 0, 0, 1)`), once per page load; the wordmark stays still, and the truck always travels left to right because it faces right in both languages. The screen leaves the instant the destination is known: no timer holds it up, and moving between screens inside the app never shows it again with motion. If the wait passes 0.7 s, three small Snowy White dots appear beneath the logo. With reduced motion the logo is static and the dots do not pulse; the status is announced to assistive technology either way.
 
 Buttons respond immediately on press. Keep the button width stable while an order is being placed and announce progress. A new vendor ticket appears within its time group without stealing keyboard focus. When an order becomes ready, reveal a persistent Yellow Punk header with a check, the ready message and the truck name. Announce the change once to assistive technology. Reopening the order shows its current state. Keep poster artwork static and respect reduced motion by making transitions immediate.
 

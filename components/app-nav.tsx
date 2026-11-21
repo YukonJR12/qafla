@@ -30,8 +30,8 @@ export function hidesBottomBar(path: string): boolean {
  * and Account; the manager Overview, Slot details and Account.
  *
  * It sits on an opaque surface above the phone's safe area. The current
- * destination is marked with an ink bar, bold text and aria-current, so it
- * does not rely on colour.
+ * destination has its icon on an ink pill, bold text and aria-current, so
+ * it does not rely on colour alone.
  */
 export function BottomBar({ role }: { role: Role }) {
   const { t } = useLocale();
@@ -54,12 +54,17 @@ export function BottomBar({ role }: { role: Role }) {
               <Link
                 href={item.href}
                 aria-current={here ? "page" : undefined}
-                className={`relative flex h-16 flex-col items-center justify-center gap-0.5 px-1 text-xs leading-tight transition-colors duration-[120ms] ease-out ${
+                className={`flex h-16 flex-col items-center justify-center gap-0.5 px-1 text-xs leading-tight transition-colors duration-[120ms] ease-out ${
                   here ? "font-extrabold text-ink" : "font-semibold text-muted hover:text-ink"
                 }`}
               >
-                {here && <span aria-hidden className="absolute inset-x-4 top-0 h-[3px] rounded-b-full bg-ink" />}
-                <Icon className="size-6" />
+                <span
+                  className={`inline-flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-[120ms] ease-out ${
+                    here ? "bg-ink text-snowy-white" : ""
+                  }`}
+                >
+                  <Icon className="size-6" />
+                </span>
                 <span className="max-w-full truncate">{t.nav[item.key]}</span>
               </Link>
             </li>

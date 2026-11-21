@@ -2,11 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { CartBar } from "@/components/cart-bar";
 import { LanguageSwitch } from "@/components/language-switch";
+import { ScrollMemory } from "@/components/scroll-memory";
 import { TruckLogo } from "@/components/truck-logo";
 import { ArrowForward, Isolate, PickupSticker, StateLabel } from "@/components/ui";
 import { fetchTrucksTonight, type TruckTonight } from "@/lib/data";
 import { dictionary, truckBlurb, truckCuisine, truckName, type Locale } from "@/lib/i18n";
-import { truckPhoto } from "@/lib/images";
+import { truckDishPhotos, truckPhoto } from "@/lib/images";
 import { getLocale } from "@/lib/locale-server";
 import { supabasePublic } from "@/lib/supabase";
 import { formatSlot } from "@/lib/time";
@@ -18,7 +19,8 @@ export const dynamic = "force-dynamic";
 const FEATURED_TRUCK = "T02"; // Dune Burgers carries the poster (DESIGN.md)
 
 // Explore: the customer's home. One truck on the Red Orange poster, the
-// others listed with their own logos and next pickup time.
+// others listed with their own logo, three of their dishes, whether they
+// are taking orders and the next pickup time. The whole row opens the menu.
 export default async function Explore() {
   const locale = await getLocale();
   const t = dictionary[locale];
@@ -57,6 +59,8 @@ export default async function Explore() {
       </header>
 
       <main className="px-4 pt-4 md:px-6">
+        {/* Coming back from a menu returns to the same place in the list. */}
+        <ScrollMemory id="explore" />
         <h1 className="text-[1.75rem] leading-tight font-extrabold md:hidden">{t.chooseTruck}</h1>
 
         {/* One column on a phone. From 1024 px the poster keeps 5/12 and the other trucks take the rest, two across. */}
@@ -169,31 +173,61 @@ function Poster({ truck, locale }: { truck: TruckTonight; locale: Locale }) {
 }
 
 /**
- * Every other truck: its own logo, name, cuisine and next pickup. A plain
- * row on a phone; from 1024 px a bordered card, two or three across.
+ * Every other truck. Reading order: who they are (logo, name, cuisine),
+ * what they cook (three dishes), then whether and when you can pick up,
+ * with "See menu" as the way in. The whole row is one link, so any part of
+ * it can be tapped. A truck that is not taking orders shows no dishes, so
+ * open trucks stand out.
  */
 function TruckRow({ truck, locale }: { truck: TruckTonight; locale: Locale }) {
+  const t = dictionary[locale];
+  const name = truckName(truck, locale);
+  const dishes = truck.closed ? [] : truckDishPhotos(truck.id);
+  const bookable = truck.nextSlot !== null && !truck.closed;
   return (
     <li>
       <Link
         href={`/trucks/${truck.id}`}
-        className="flex h-full items-center gap-3 py-3 transition-colors duration-[120ms] ease-out hover:bg-subtle lg:rounded-panel lg:border lg:border-divider lg:p-3 lg:hover:border-ink"
+        aria-label={t.orderFromLabel(name, availability(truck, locale))}
+        className="block h-full py-4 transition-colors duration-[120ms] ease-out hover:bg-subtle lg:rounded-panel lg:border lg:border-divider lg:p-3 lg:hover:border-ink"
       >
-        <TruckLogo truck={truck} className="size-16 lg:size-20" sizes="80px" />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-lg leading-snug font-bold">{truckName(truck, locale)}</h2>
-          <p className="text-sm text-muted">
-            {truckCuisine(truck, locale)} · {truckBlurb(truck, locale)}
-          </p>
-          <p className="mt-1.5 flex items-center gap-1.5 text-sm font-bold">
-            {truck.nextSlot && !truck.closed ? (
-              <Isolate className="rounded-full border border-outline px-2.5 py-0.5">{availability(truck, locale)}</Isolate>
-            ) : (
-              <span className="text-muted">{availability(truck, locale)}</span>
-            )}
-          </p>
+        <div className="flex items-center gap-3">
+          <TruckLogo truck={truck} className="size-14 lg:size-16" sizes="64px" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg leading-snug font-bold text-balance">{name}</h2>
+            <p className="text-sm text-muted">
+              {truckCuisine(truck, locale)} · {truckBlurb(truck, locale)}
+            </p>
+          </div>
         </div>
-        <ArrowForward className="size-4 text-muted" />
+
+        {dishes.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {dishes.map((src) => (
+              <Image
+                key={src}
+                src={src}
+                alt=""
+                width={480}
+                height={480}
+                sizes="(min-width: 1024px) 120px, 30vw"
+                className="aspect-[4/3] w-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10"
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm font-bold">
+          {bookable ? (
+            <Isolate className="rounded-full border border-ink bg-yellow-punk px-2.5 py-0.5">{availability(truck, locale)}</Isolate>
+          ) : (
+            <span className="text-muted">{availability(truck, locale)}</span>
+          )}
+          <span className="ms-auto inline-flex items-center gap-1.5">
+            {t.seeMenu}
+            <ArrowForward className="size-4" />
+          </span>
+        </div>
       </Link>
     </li>
   );

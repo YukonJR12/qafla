@@ -32,7 +32,9 @@ export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
-  const [state, setState] = useState<{ loaded: boolean; order: Order | null }>({ loaded: false, order: null });
+  // `opened` is the status the ticket had when this screen first read it.
+  // It tells "became ready while I was watching" from "was already ready".
+  const [state, setState] = useState<{ loaded: boolean; order: Order | null; opened?: string }>({ loaded: false, order: null });
   const [checking, setChecking] = useState(false);
   // What happened when the customer tried to cancel, said once in words.
   const [cancelNote, setCancelNote] = useState<"cancelled" | "too_late" | null>(null);
@@ -43,7 +45,7 @@ export default function OrderPage() {
   const reread = useCallback(async () => {
     const mine = ++readNumber.current;
     const order = await fetchOrder(supabaseBrowser(), id);
-    if (mine === readNumber.current) setState({ loaded: true, order });
+    if (mine === readNumber.current) setState((was) => ({ loaded: true, order, opened: was.opened ?? order?.status }));
   }, [id]);
 
   const userId = session?.user.id;
@@ -91,7 +93,13 @@ export default function OrderPage() {
             */}
             <div role="status">
               {order.status === "ready" && (
-                <p className="reveal-up mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3">
+                // Drawn attention to once, and only when it turns ready while the ticket
+                // is open. Reopening a ready ticket shows the notice already in place.
+                <p
+                  className={`mb-4 flex items-center gap-3 rounded-control border border-ink bg-yellow-punk p-3 ${
+                    state.opened !== "ready" ? "ready-arrive" : ""
+                  }`}
+                >
                   <CheckIcon className="size-7" />
                   <span className="min-w-0">
                     <span className="block text-lg leading-snug font-extrabold">{t.statusHelp.ready}</span>

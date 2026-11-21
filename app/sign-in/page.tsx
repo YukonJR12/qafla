@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { LanguageSwitch } from "@/components/language-switch";
-import { CheckIcon, primaryButton } from "@/components/ui";
+import { CheckIcon, primaryButton, secondaryButton } from "@/components/ui";
 import { useLocale } from "@/lib/locale";
 import { signupRole, type SignupRole } from "@/lib/routes";
 import { supabaseBrowser } from "@/lib/supabase";
@@ -184,11 +184,11 @@ export default function SignInPage() {
             setMode(mode === "sign-in" ? "sign-up" : "sign-in");
             setProblem(null);
           }}
-          className="mt-4 min-h-11 w-full text-center font-bold underline underline-offset-4"
+          className={`${secondaryButton} mt-3`}
         >
           {mode === "sign-in" ? t.toSignUp : t.toSignIn}
         </button>
-        {mode === "sign-up" && <p className="mt-1 text-center text-sm text-muted">{t.staffHint}</p>}
+        {mode === "sign-up" && <p className="mt-2 text-center text-sm text-muted">{t.staffHint}</p>}
       </div>
     </main>
   );

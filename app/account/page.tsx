@@ -34,15 +34,17 @@ export default function AccountPage() {
       </header>
 
       <main className="mx-auto max-w-[640px] px-4 pt-5 pb-10 md:px-6">
+        {/* Who is signed in: the name leads, and the email gets the full width so it rarely has to break. */}
         <div className="flex items-center gap-4">
-          <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="96px" className="size-24 shrink-0 md:hidden" />
-          <div className="min-w-0">
-            {account.name && <p className="text-2xl leading-tight font-extrabold wrap-anywhere">{account.name}</p>}
-            <p className={`break-all ${account.name ? "text-muted" : "text-xl leading-tight font-extrabold"}`} dir="ltr">
-              {account.email}
-            </p>
-          </div>
+          <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="72px" className="size-18 shrink-0 md:hidden" />
+          {account.name && <p className="min-w-0 text-2xl leading-tight font-extrabold wrap-anywhere">{account.name}</p>}
         </div>
+        <p
+          className={`mt-2 text-start wrap-anywhere ${account.name ? "text-sm text-muted" : "text-xl leading-tight font-extrabold"}`}
+          dir="ltr"
+        >
+          {account.email}
+        </p>
 
         <dl className="mt-6 divide-y divide-divider border-y border-divider">
           <div className="flex items-center justify-between gap-3 py-3">

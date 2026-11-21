@@ -169,8 +169,9 @@ function ActiveOrder({ order }: { order: MyOrder }) {
           <Money amount={order.total_kwd} locale={locale} />
         </span>
       </div>
-      <span className="mt-3 flex items-center justify-end gap-1.5 text-sm font-bold">
-        {t.openTicket}
+      {/* The whole card is the link; this is its visible call to action. */}
+      <span className={`${primaryButton} mt-3`}>
+        {t.openLiveTicket}
         <ArrowForward className="size-4" />
       </span>
     </Link>

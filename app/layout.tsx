@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Alexandria, Archivo_Black, DM_Sans } from "next/font/google";
 import { SessionGate } from "@/components/session-gate";
 import { AccountProvider } from "@/lib/account";
@@ -30,6 +30,14 @@ const alexandria = Alexandria({
 export const metadata: Metadata = {
   title: "Qafla Pickup · قافلة",
   description: "Order ahead from Qafla's food trucks and collect your food hot.",
+};
+
+// `cover` lets the launch screen paint under a phone's notch and home
+// indicator. The colour of the browser's own bars is not set here: the launch
+// screen and the session gate each render the <meta name="theme-color"> that
+// fits what is on screen (Red Orange at launch, Snowy White after).
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({

@@ -84,6 +84,18 @@ On a phone the navigation is a bar across the bottom. From 768 px it moves to a 
 
 Screenshots are in `docs/screenshots/sign-in-first/`.
 
+## Launch, navigation and everyday screens
+
+**Launch.** `components/splash.tsx` is the one launch screen. The server renders it, so it is the first frame: the whole viewport in Red Orange with the complete Qafla logo on a white tile. It is shown only while the app works out who is signed in and where they belong (`components/session-gate.tsx`, `lib/routes.ts`), and leaves the moment that is known. There is no timer. The truck rolls forward and settles once per page load; the logo image is drawn twice and each copy is clipped to its part, so the truck moves and the wordmark stays still without editing the artwork. If the wait passes 0.7 s, three dots appear. With reduced motion the logo is static. Moving between screens inside the app never plays it again.
+
+**Where each role lands.** Unchanged rules, from the database profile: a customer on Explore, an assigned vendor on Kitchen, the manager on Park overview, an unassigned vendor on a screen that says so with Check again and Sign out. A page that was asked for before signing in (a pickup ticket, a staff screen) is opened afterwards if that role may open it.
+
+**Explore.** Each truck row reads: logo, name and cuisine; three of its dishes; whether it is taking orders and the next pickup; "See menu". The whole row is one link. The photos come from `truckDishPhotos` in `lib/images.ts`, which uses the dish IDs (T03's dishes are M301 to M305), so there is no second list to keep in step. `components/scroll-memory.tsx` puts a customer back where they were in the list when they return from a menu. It remembers in memory only, so a fresh launch starts at the top.
+
+**Orders, Account, bottom bar.** The active pickup's card ends in an "Open live ticket" button. On Account the email has the full width. The phone's bottom bar marks the current destination with its icon on an ink pill and a bold label. On a live ticket, "Ready for pickup" draws attention once, only if it turns ready while the ticket is open; reopening a ready ticket shows the notice already in place.
+
+Dune Burgers now has its logo and five dish photos like the other trucks (`public/trucks/logos/T02.webp`, `public/dishes/M201.webp` to `M205.webp`). Screenshots and a recording are in `docs/screenshots/app-ux-polish/`.
+
 ## Customer ordering
 
 One customer journey works end to end against Supabase:

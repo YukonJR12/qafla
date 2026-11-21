@@ -31,6 +31,19 @@ export function truckPhoto(truckId: string): string | null {
   return TRUCK_PHOTOS[truckId] ?? null;
 }
 
+/**
+ * Up to three dish photos to introduce a truck on Explore. Dish IDs carry
+ * their truck's number (T03's dishes are M301 to M305), so no second list
+ * is kept: the first three of that truck's photos are used.
+ */
+export function truckDishPhotos(truckId: string): string[] {
+  const prefix = `M${Number(truckId.slice(1))}`;
+  return [...DISH_PHOTOS]
+    .filter((id) => id.startsWith(prefix))
+    .slice(0, 3)
+    .map((id) => `/dishes/${id}.webp`);
+}
+
 export function dishPhoto(itemId: string): string | null {
   return DISH_PHOTOS.has(itemId) ? `/dishes/${itemId}.webp` : null;
 }
