@@ -360,6 +360,15 @@ const en = {
   stageDone: (stage: string) => `${stage}: done`,
   stageCurrent: (stage: string) => `${stage}: now`,
   stageTodo: (stage: string) => `${stage}: not yet`,
+  stagePreview: (stage: string) => `Stage preview · ${stage}`,
+  backToCurrentStage: "Back to current stage",
+  stageExplanation: {
+    placed: "After you place your order, the truck receives it for confirmation.",
+    accepted: "When the truck accepts your order, the kitchen will prepare it for your pickup time.",
+    preparing: "At this stage, the kitchen is making your food.",
+    ready: "When the kitchen marks your order ready, you can collect it at the truck.",
+    collected: "After you collect your food, the truck marks your order collected.",
+  } as Record<string, string>,
   timelineCaption: {
     placed: (truck: string) => `Waiting for ${truck} to accept your order.`,
     accepted: (truck: string) => `${truck} has accepted your order.`,
@@ -977,6 +986,15 @@ const ar: Dict = {
   stageDone: (stage) => `${stage}: تمّت`,
   stageCurrent: (stage) => `${stage}: الحين`,
   stageTodo: (stage) => `${stage}: لسه`,
+  stagePreview: (stage) => `معاينة المرحلة · ${stage}`,
+  backToCurrentStage: "الرجوع للمرحلة الحالية",
+  stageExplanation: {
+    placed: "بعد ما ترسل طلبك، يوصل للعربة عشان تأكّده.",
+    accepted: "لما تقبل العربة طلبك، المطبخ يجهّزه لوقت استلامك.",
+    preparing: "في هالمرحلة، المطبخ يحضّر أكلك.",
+    ready: "لما يحدّد المطبخ إن طلبك جاهز، تقدر تستلمه من العربة.",
+    collected: "بعد ما تستلم أكلك، العربة تحدّد إن الطلب تم استلامه.",
+  },
   timelineCaption: {
     placed: (truck) => `ننتظر ${truck} تقبل طلبك.`,
     accepted: (truck) => `${truck} قبلت طلبك.`,

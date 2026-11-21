@@ -33,6 +33,8 @@ desktop.ini
 *.tsbuildinfo
 next-env.d.ts
 .pnpm-debug.log*
+test-results/
+playwright-report/
 
 # Supabase CLI local state
 supabase/.temp/

@@ -106,10 +106,10 @@ export default function OrderPage() {
           <>
             {/*
               A persistent Yellow Punk notice for as long as the order is ready.
-              The wrapper is always on the page, so a screen reader announces
-              the notice once, at the moment it appears inside it.
+              The timeline caption announces the live stage once; this notice
+              stays visible without repeating that announcement.
             */}
-            <div role="status">
+            <div>
               {order.status === "ready" && (
                 // Drawn attention to once, and only when it turns ready while the ticket
                 // is open. Reopening a ready ticket shows the notice already in place.
@@ -143,7 +143,7 @@ export default function OrderPage() {
                 {t.orderProgress}
               </h2>
               <div className="mt-3">
-                <PickupTimeline status={order.status} truck={truckName(truck, locale)} announce={order.status !== "ready"} />
+                <PickupTimeline status={order.status} truck={truckName(truck, locale)} />
                 {/* A cancelled or rejected order ends here, with its own message and no stages. */}
                 {order.status === "cancelled" && (
                   <div className="flex items-start gap-3 rounded-panel border border-ink p-4">
