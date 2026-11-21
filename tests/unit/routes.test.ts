@@ -108,7 +108,7 @@ test("a profile that could not be read shows a problem, never a guessed workspac
 });
 
 test("the navigation offers each role its own destinations", () => {
-  assert.deepEqual(navFor("customer").map((item) => item.key), ["explore", "orders", "account"]);
+  assert.deepEqual(navFor("customer").map((item) => item.key), ["explore", "map", "orders", "account"]);
   assert.deepEqual(navFor("vendor").map((item) => item.key), ["kitchen", "menu", "capacity", "account"]);
   assert.deepEqual(navFor("manager").map((item) => item.key), ["overview", "slot", "account"]);
   // Every destination is one that role may open.
