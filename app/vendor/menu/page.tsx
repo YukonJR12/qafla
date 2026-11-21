@@ -7,7 +7,7 @@ import { LoadError } from "@/components/cart-states";
 import { LanguageSwitch } from "@/components/language-switch";
 import { ArrowForward, Money } from "@/components/ui";
 import { useAccount } from "@/lib/account";
-import { fetchMenu, type MenuItem } from "@/lib/data";
+import { fetchMenu, setDishSoldOut, type MenuItem } from "@/lib/data";
 import { itemDescription, itemName, truckName } from "@/lib/i18n";
 import { dishPhoto } from "@/lib/images";
 import { useLocale } from "@/lib/locale";
@@ -15,7 +15,8 @@ import { supabaseBrowser } from "@/lib/supabase";
 
 // The vendor's Menu: every dish on their own truck, with what customers
 // currently read about it. Choosing a dish opens its editor, where the
-// description and allergens can be written by hand or drafted from a photo.
+// price, description and allergens are edited. The sold-out switch is also
+// here on every row, because that is the one a busy kitchen needs quickly.
 //
 // Which truck this is comes from the signed-in account's database profile
 // (the launch gate only shows this page to a vendor with a truck).
@@ -39,6 +40,24 @@ export default function VendorMenuPage() {
     };
   }, [truckId, attempt]);
   const shown = menu && menu.truckId === truckId ? menu : null;
+
+  // One dish's sold-out switch. The row shows what the database answered.
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [note, setNote] = useState<{ id: string; kind: "out" | "back" | "failed" } | null>(null);
+  async function toggleSoldOut(item: MenuItem) {
+    if (busyId) return;
+    setBusyId(item.id);
+    setNote(null);
+    try {
+      const saved = await setDishSoldOut(supabaseBrowser(), item.id, !item.sold_out);
+      setMenu((was) => was && was.items && { ...was, items: was.items.map((dish) => (dish.id === saved.id ? saved : dish)) });
+      setNote({ id: item.id, kind: saved.sold_out ? "out" : "back" });
+    } catch {
+      setNote({ id: item.id, kind: "failed" });
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <div className="min-h-dvh">
@@ -75,11 +94,11 @@ export default function VendorMenuPage() {
               const description = itemDescription(item, locale);
               const photo = dishPhoto(item.id);
               return (
-                <li key={item.id} className="lg:border-b lg:border-divider">
+                <li key={item.id} className="py-3 lg:border-b lg:border-divider">
                   <Link
                     href={`/vendor/menu/${item.id}`}
                     aria-label={t.menuEdit(name)}
-                    className="flex min-h-16 items-center gap-3 py-3 transition-colors duration-[120ms] ease-out hover:bg-subtle"
+                    className="flex min-h-16 items-center gap-3 transition-colors duration-[120ms] ease-out hover:bg-subtle"
                   >
                     {photo && (
                       <Image
@@ -88,14 +107,14 @@ export default function VendorMenuPage() {
                         width={480}
                         height={480}
                         sizes="56px"
-                        className="size-14 shrink-0 rounded-control border border-divider object-cover"
+                        className={`size-14 shrink-0 rounded-control border border-divider object-cover ${item.sold_out ? "opacity-60 grayscale" : ""}`}
                       />
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-baseline gap-x-2">
                         <span className="text-lg leading-snug font-semibold">{name}</span>
                         <Money amount={item.price_kwd} locale={locale} className="text-sm text-muted" />
-                        {item.sold_out && <span className="text-sm font-semibold text-muted">· {t.soldOut}</span>}
+                        {item.sold_out && <span className="rounded-control bg-ink px-2 py-0.5 text-sm font-semibold text-snowy-white">{t.soldOut}</span>}
                       </span>
                       {description ? (
                         <span className="block text-sm text-muted">{description}</span>
@@ -113,12 +132,33 @@ export default function VendorMenuPage() {
                     </span>
                     <ArrowForward className="size-4 text-muted" />
                   </Link>
+                  {/* Availability: its own labelled button, apart from the link that opens the editor. */}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleSoldOut(item)}
+                      disabled={busyId !== null}
+                      aria-busy={busyId === item.id}
+                      aria-label={item.sold_out ? t.markAvailableLabel(name) : t.markSoldOutLabel(name)}
+                      className="inline-flex min-h-11 items-center rounded-control border border-outline bg-snowy-white px-3 text-sm font-bold transition-colors duration-[120ms] ease-out hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {busyId === item.id ? t.saving : item.sold_out ? t.markAvailable : t.markSoldOut}
+                    </button>
+                    <span role="status" className="text-sm font-semibold">
+                      {note?.id === item.id && note.kind === "out" && t.markedSoldOut}
+                      {note?.id === item.id && note.kind === "back" && t.markedAvailable}
+                    </span>
+                    {note?.id === item.id && note.kind === "failed" && (
+                      <span role="alert" className="text-sm font-semibold text-error">
+                        {t.availabilityFailed}
+                      </span>
+                    )}
+                  </div>
                 </li>
               );
             })}
           </ul>
         )}
-        <p className="mt-4 text-sm text-muted">{t.priceUntouched}</p>
       </main>
     </div>
   );

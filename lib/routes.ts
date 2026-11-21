@@ -150,7 +150,8 @@ export function activeNav(role: Role, path: string, search = ""): NavItem["key"]
   if (clean === "/account") return "account";
   if (role === "vendor") {
     if (clean === "/vendor/menu" || clean.startsWith("/vendor/menu/")) return "menu";
-    return clean === "/vendor/capacity" ? "capacity" : clean === "/vendor" ? "kitchen" : null;
+    // Truck details is reached from the Kitchen board, so it stays under Kitchen.
+    return clean === "/vendor/capacity" ? "capacity" : clean === "/vendor" || clean === "/vendor/truck" ? "kitchen" : null;
   }
   if (role === "manager") {
     if (clean !== "/manager") return null;

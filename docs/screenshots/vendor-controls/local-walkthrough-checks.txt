@@ -1,0 +1,61 @@
+START: {"m205":{"p":"2.400","s":false},"m202":{"p":"2.100","s":false},"truck":{"name":"Dune Burgers","cuisine":"Burgers","blurb":"Smash burgers cooked to order.","is_open":true,"closed":0},"orders":56}
+PASS Kitchen: 'Taking orders' switch is on and usable {"on":"true","text":"Taking orders On","h":44,"disabled":false}
+PASS Kitchen: 'Edit details' link is there 
+PASS Kitchen 390: no sideways scroll, no small controls {"dir":"ltr","w":390,"overflow":0,"small":[]}
+PASS earlier order: Mushroom swiss at 2.400 {"ticket_ref":"T02-000057","status":"placed","total":"2.400","slot":"17:00:00","lines":"M205 x1 @2.400"}
+PASS dish editor: price field shows the saved price 
+PASS price "2.6505" is refused with a reason Price in KWD | Save price | Use three decimals at most, for example 1.950. | Availability | Available | Sold out | Suggest from a ph
+PASS price "0" is refused with a reason Price in KWD | Save price | The price must be more than 0. | Availability | Available | Sold out | Suggest from a photo | Take or ch
+PASS price "abc" is refused with a reason Price in KWD | Save price | Enter the price as a number, for example 1.950. | Availability | Available | Sold out | Suggest from a p
+PASS price "1000" is refused with a reason Price in KWD | Save price | The price must be less than 1000 KWD. | Availability | Available | Sold out | Suggest from a photo | Tak
+PASS price saved: 2.65 typed, 2.650 stored, screen says so Saved. New orders pay 2.650 KWD. Orders already placed keep their price. | Availability | Availa
+PASS dish editor 390: no sideways scroll, no small controls {"dir":"ltr","w":390,"overflow":0,"small":[]}
+PASS customer menu shows the new price Mushroom swiss | 2.650 KWD | Add
+PASS earlier ticket still reads 2.400 for Dune Burgers to accept your order. | Order reference | Status | T02-000057 | Placed | 1 × Mushroom swiss | 2.400 KWD | Total to pay at the counter | 2.400 KWD | Pay at pickup · not paid yet | Cancel order | You can cancel until the truck accepts your order. | Check 
+PASS checkout preview uses the new price: 2.650 + 2.100 = 4.750 
+PASS Menu list: sold out saved from the row Spicy chicken burger | 2.100 KWD | Sold out | No description yet | Back on sale | Marked sold out. Customers can’t add it. | Truffle smash |
+PASS Menu list 390: no sideways scroll, no small controls {"dir":"ltr","w":390,"overflow":0,"small":[]}
+PASS checkout names the dish that needs attention, and nothing was ordered Your cart needs a change before you can order. | Spicy chicken burger has sold out. | Review cart | Ordering from | Dune Burgers | Pickup time | 5:00 PM | 1 × Spicy chicken burger | 2.100 KWD | 1 × Mushroom swiss | 2.650 KWD | Total · 2 items | 4.750 KWD | Cho
+PASS checkout does not also show the general 'a dish in your cart' line 
+PASS checkout has no Place order button while the cart needs attention 
+PASS checkout 390: no sideways scroll {"dir":"ltr","w":390,"overflow":0,"small":[]}
+PASS checkout, Arabic 320: names the dish, no sideways scroll سلتك تحتاج تعديل قبل ما تطلب. | برجر دجاج حار خلصت كميته. | راجع السلة | الطلب من | ديون برجر | وقت الاستلام | 5:00 م | 1 × برجر دجاج حار | 2.100 د.ك. | 1 × مشروم سويس | 2.650 د.ك. | المجموع · صنفين |{"dir":"rtl","w":320,"overflow":0,"small":[]}
+PASS new order: Mushroom swiss at 2.650 {"ticket_ref":"T02-000058","status":"placed","total":"2.650","slot":"17:00:00","lines":"M205 x1 @2.650"}
+PASS earlier order unchanged in the database: 2.400 {"ticket_ref":"T02-000057","status":"placed","total":"2.400","slot":"17:00:00","lines":"M205 x1 @2.400"}
+PASS customer menu: Spicy chicken burger reads Sold out and cannot be added 
+PASS dish editor: Available saved 
+PASS Kitchen shows both tickets T02-000057, T02-000058
+PASS switch off: saved, labelled Paused, says tickets stay Paused · Not taking orders | You switched new orders off. Customers can’t order until you switch them back on. 2 orders still to finish. | Next pickup | 5:00 PM | 2 to cook | 5:00 PM | · Due next | 2 orders · 3/6 | 5:00 PM | T02-000057 | Placed | 1 | Mushroom swiss | 2.400 KWD | Pay at pickup · not 
+PASS paused: both tickets are still on the board with their buttons 
+PASS Kitchen paused 390: no sideways scroll, no small controls {"dir":"ltr","w":390,"overflow":0,"small":[]}
+PASS customer: the truck reads closed and nothing can be added Closed for tonight. You can still read the menu. | Menu | One truck per order | Classic smash | Two smashed beef patties, cheese and house sauce. | 1.950 KWD | Add | Spicy chicken burger | 2.100 KWD | Add | Truffle smash | Smashed beef patty with melted cheese, shredded lettuce, red onion and pickle
+PASS paused: the kitchen still accepted a ticket 
+PASS park closure: label and reason shown, switch locked Closed for tonight by the park | The park manager closed your truck for tonight, so your switch is locked until tomorrow. 2 orders still to finish. | Next pickup | 5:00 PM | 2 to cook | 5:00 PM | · Due next | 2 orders · 3/6 | 5:00 PM | T02-000057 | Accepted | {"disabled":true,"on":"false"}
+PASS park closure: pressing the locked switch changes nothing 
+PASS park closure: tickets are still on the board 
+PASS park closure: the kitchen still moved a ticket on (accepted -> preparing) 
+PASS Kitchen closed by park, Arabic 320: label, rtl, no sideways scroll, no small controls مغلقة الليلة من إدارة الساحة | مديرة الساحة سكّرت عربتك الليلة، وزرّك مقفول لين باچر. طلبين باقية تخلص. | الاستلام القادم | 5:00 م | طلبين للتحضير | 5:00 م | · {"dir":"rtl","w":320,"overflow":0,"small":[]}
+PASS switch on again: saved, and the screen says so 
+PASS details: a blank name is refused next to the field 
+PASS details saved {"name":"Dune Burgers & Fries","cuisine":"Smash burgers","blurb":"Smashed to order, with fries.","is_open":true,"closed":0}
+PASS Truck details 390: no sideways scroll, no small controls {"dir":"ltr","w":390,"overflow":0,"small":[]}
+PASS customer Explore shows the new name and cuisine Choose a truck | Smash burgers | DUNE | BURGERS | & | FRIES | Next pickup · 5:00 PM | See menu | Karak Corner | Tea and snacks · Karak, toasties and quick bites. | Next pickup · 5:00 PM | Taco Saha | Tacos · Street tacos with Gulf twists. | Next pickup · 5:00 
+PASS customer menu shows the new name and description 
+PASS Arabic customer sees the vendor's own words once edited 
+PASS with the seeded text back, the Arabic label returns 
+PASS another truck's dish cannot be opened in the editor 
+PASS sent directly as the Dune vendor: another truck's price, sold-out, name and switch change nothing {"tacoPrice":"200 []","tacoSoldOut":"200 []","tacoName":"200 []","tacoClosed":"200 []","ownVendorId":"403 {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT UPDATE ON public.trucks TO authenticated;\",\"message\":\"permi","ownZeroPrice":"400 {\"code\":\"23514\",\"details\":null,\"hint\":null,\"message\":\"new row for relation \\\"menu_items\\\" violates check constraint \\\"menu_items_price_real\\\
+PASS sent directly: own vendor_id is refused, and a zero price is refused 403 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT UPDATE ON public.trucks TO authenticated;","message":"permi || 400 {"code":"23514","details":null,"hint":null,"message":"new row for relation \"menu_items\" violates check constraint \"menu_items_price_real\""}
+PASS kitchen en 1280: direction right, no sideways scroll, no small controls {"dir":"ltr","w":1280,"overflow":0,"small":[]}
+PASS kitchen ar 1280: direction right, no sideways scroll, no small controls {"dir":"rtl","w":1280,"overflow":0,"small":[]}
+PASS menu-list en 1280: direction right, no sideways scroll, no small controls {"dir":"ltr","w":1280,"overflow":0,"small":[]}
+PASS menu-list ar 1280: direction right, no sideways scroll, no small controls {"dir":"rtl","w":1280,"overflow":0,"small":[]}
+PASS dish-editor en 1280: direction right, no sideways scroll, no small controls {"dir":"ltr","w":1280,"overflow":0,"small":[]}
+PASS dish-editor ar 1280: direction right, no sideways scroll, no small controls {"dir":"rtl","w":1280,"overflow":0,"small":[]}
+PASS truck-details en 1280: direction right, no sideways scroll, no small controls {"dir":"ltr","w":1280,"overflow":0,"small":[]}
+PASS truck-details ar 1280: direction right, no sideways scroll, no small controls {"dir":"rtl","w":1280,"overflow":0,"small":[]}
+PASS menu-list Arabic 320: rtl, no sideways scroll, no small controls {"dir":"rtl","w":320,"overflow":0,"small":[]}
+PASS dish-editor Arabic 320: rtl, no sideways scroll, no small controls {"dir":"rtl","w":320,"overflow":0,"small":[]}
+PASS truck-details Arabic 320: rtl, no sideways scroll, no small controls {"dir":"rtl","w":320,"overflow":0,"small":[]}
+END: {"m205":{"p":"2.400","s":false},"m202":{"p":"2.100","s":false},"truck":{"name":"Dune Burgers","cuisine":"Burgers","blurb":"Smash burgers cooked to order.","is_open":true,"closed":0},"orders":58,"earlier":{"ticket_ref":"T02-000057","status":"collected","total":"2.400","slot":"17:00:00","lines":"M205 x1 @2.400"},"later":{"ticket_ref":"T02-000058","status":"cancelled","total":"2.650","slot":"17:00:00","lines":"M205 x1 @2.650"}}
+PASSES: 58

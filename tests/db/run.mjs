@@ -1790,6 +1790,182 @@ try {
   });
 
   // -------------------------------------------------------------------------
+  section("The vendor's controls: details, open or closed, price and sold out, on their own truck only");
+
+  // Karak Corner (T01) is still open at this point in the story and its menu
+  // is as seeded. Its vendor is new. A pickup time nobody has used is chosen.
+  await setClock("18:00");
+  const karakVendor = await signUp("karak.vendor@qafla.test", { role: "vendor" });
+  await admin.query("update public.trucks set vendor_id = $1 where id = 'T01'", [karakVendor]);
+  const KARAK_SLOT = (
+    await admin.query(
+      `select to_char(s, 'HH24:MI') as slot
+       from (select time '19:00' + n * interval '15 minutes' as s from generate_series(0, 15) as n) as slots
+       where not exists (select 1 from public.orders o where o.truck_id = 'T01' and o.service_date = $1 and o.slot_start = s)
+       order by s limit 1`,
+      [today],
+    )
+  ).rows[0].slot;
+  const toasties = [{ item_id: "M103", quantity: 2 }]; // Cheese and zaatar toastie, 0.750 KWD each as seeded
+  const truckRow = async (id) => (await admin.query("select name, cuisine, blurb, is_open, slot_capacity from public.trucks where id = $1", [id])).rows[0];
+  const dishRow = async (id) => (await admin.query("select price_kwd::text as price, sold_out, name, description from public.menu_items where id = $1", [id])).rows[0];
+  const editTruck = (user, id, set, value) =>
+    asUser(c1, user, async (c) => (await c.query(`update public.trucks set ${set} = $2 where id = $1 returning id`, [id, value])).rows.length);
+  const editDish = (user, id, set, value) =>
+    asUser(c1, user, async (c) => (await c.query(`update public.menu_items set ${set} = $2 where id = $1 returning id`, [id, value])).rows.length);
+  const linesOf = async (orderId) =>
+    (await admin.query("select item_id, quantity, unit_price_kwd::text as unit from public.order_items where order_id = $1 order by item_id", [orderId])).rows;
+  const totalOf = async (orderId) => (await admin.query("select total_kwd::text as total from public.orders where id = $1", [orderId])).rows[0].total;
+
+  await check("a vendor edits their own truck's details; everyone else changes nothing", async () => {
+    const before = await truckRow("T01");
+    assert.equal(await editTruck(karakVendor, "T01", "name", "Karak Corner Express"), 1);
+    assert.equal(await editTruck(karakVendor, "T01", "cuisine", "Karak and bites"), 1);
+    assert.equal(await editTruck(karakVendor, "T01", "blurb", "Hot karak, poured to order."), 1);
+    assert.deepEqual(await truckRow("T01"), { ...before, name: "Karak Corner Express", cuisine: "Karak and bites", blurb: "Hot karak, poured to order." });
+    // Another truck's vendor, the manager and a customer: the update matches no row they may change.
+    for (const outsider of [tacoVendor, duneVendor, dana, badr]) {
+      assert.equal(await editTruck(outsider, "T01", "name", "Taken over"), 0);
+      assert.equal(await editTruck(outsider, "T01", "is_open", false), 0);
+    }
+    // And this vendor on somebody else's truck.
+    const taco = await truckRow("T03");
+    assert.equal(await editTruck(karakVendor, "T03", "name", "Karak Two"), 0);
+    assert.equal(await editTruck(karakVendor, "T03", "is_open", false), 0);
+    assert.deepEqual(await truckRow("T03"), taco);
+    assert.equal((await truckRow("T01")).name, "Karak Corner Express");
+    // The columns that decide whose truck it is cannot be written at all.
+    await rejects(editTruck(karakVendor, "T01", "vendor_id", tacoVendor), "42501");
+    await rejects(editTruck(karakVendor, "T01", "id", "T99"), "42501");
+    return "name, cuisine and description saved; 4 outsiders changed nothing; this vendor changed nothing on T03; vendor_id and id are refused (42501)";
+  });
+
+  await check("truck details must be short, single-line and not blank", async () => {
+    const before = await truckRow("T01");
+    for (const bad of ["", "   ", " Karak", "Karak ", "x".repeat(41), "Karak\nCorner", "Karak\tCorner"]) await rejects(editTruck(karakVendor, "T01", "name", bad), "23514");
+    for (const bad of ["", "x".repeat(31), "Tea\nand snacks"]) await rejects(editTruck(karakVendor, "T01", "cuisine", bad), "23514");
+    for (const bad of ["x".repeat(121), "line one\nline two", " padded "]) await rejects(editTruck(karakVendor, "T01", "blurb", bad), "23514");
+    // The edges are allowed: 40, 30 and 120 characters, an empty description, Arabic text.
+    assert.equal(await editTruck(karakVendor, "T01", "name", "x".repeat(40)), 1);
+    assert.equal(await editTruck(karakVendor, "T01", "cuisine", "x".repeat(30)), 1);
+    assert.equal(await editTruck(karakVendor, "T01", "blurb", "x".repeat(120)), 1);
+    assert.equal(await editTruck(karakVendor, "T01", "blurb", ""), 1);
+    // (Arabic is checked in the unit tests and the browser: this throwaway
+    // database on Windows is not a UTF-8 one, unlike Supabase.)
+    assert.equal(await editTruck(karakVendor, "T01", "name", "Karak Café & Co"), 1);
+    // Back to the seeded details for the rest of the story.
+    await admin.query("update public.trucks set name = 'Karak Corner', cuisine = 'Tea and snacks', blurb = 'Karak, toasties and quick bites.' where id = 'T01'");
+    assert.equal((await truckRow("T01")).is_open, before.is_open);
+    return "blank, padded, too long and multi-line are refused (23514); 40 / 30 / 120 characters, an empty description and an accented name are saved";
+  });
+
+  let earlier; // the order placed before the price change
+  await check("a vendor changes the price of their own dish only, and it must be a real price", async () => {
+    assert.deepEqual(await dishRow("M103"), { price: "0.750", sold_out: false, name: "Cheese and zaatar toastie", description: null });
+    earlier = await asUser(c1, aisha, (c) => place(c, "T01", KARAK_SLOT, toasties));
+    assert.equal(earlier.total_kwd, "1.500");
+    // Nobody else, and not on another truck's dish.
+    for (const outsider of [tacoVendor, duneVendor, dana, badr]) assert.equal(await editDish(outsider, "M103", "price_kwd", "0.001"), 0);
+    const tacoBefore = (await dishRow("M301")).price;
+    assert.equal(await editDish(karakVendor, "M301", "price_kwd", "0.001"), 0);
+    assert.equal((await dishRow("M103")).price, "0.750");
+    assert.equal((await dishRow("M301")).price, tacoBefore);
+    // Not free, not negative, not 1000 or more.
+    for (const bad of ["0", "0.000", "-0.750", "1000", "1000.000"]) await rejects(editDish(karakVendor, "M103", "price_kwd", bad), "23514");
+    // A fourth decimal is not kept: the column holds exactly three.
+    assert.equal(await editDish(karakVendor, "M103", "price_kwd", "0.8004"), 1);
+    assert.equal((await dishRow("M103")).price, "0.800");
+    assert.equal(await editDish(karakVendor, "M103", "price_kwd", "999.999"), 1);
+    assert.equal(await editDish(karakVendor, "M103", "price_kwd", "0.900"), 1);
+    assert.deepEqual(await dishRow("M103"), { price: "0.900", sold_out: false, name: "Cheese and zaatar toastie", description: null });
+    return "0.750 -> 0.900 by its own vendor; 4 outsiders and another truck's dish unchanged; 0, a negative price and 1000 refused (23514); 0.8004 is stored as 0.800";
+  });
+
+  await check("a new order uses the new price; the earlier ticket keeps the price it was placed at", async () => {
+    const later = await asUser(c1, badr, (c) => place(c, "T01", KARAK_SLOT, toasties));
+    assert.equal(later.total_kwd, "1.800"); // 2 x 0.900
+    assert.deepEqual(await linesOf(later.id), [{ item_id: "M103", quantity: 2, unit: "0.900" }]);
+    // The earlier order: same lines, same total, although the menu now says 0.900.
+    assert.deepEqual(await linesOf(earlier.id), [{ item_id: "M103", quantity: 2, unit: "0.750" }]);
+    assert.equal(await totalOf(earlier.id), "1.500");
+    // A price sent by the browser is still ignored.
+    const cheeky = await asUser(c1, others[0], (c) => place(c, "T01", KARAK_SLOT, [{ item_id: "M103", quantity: 1, price: 0.001, unit_price_kwd: 0.001 }]));
+    assert.equal(cheeky.total_kwd, "0.900");
+    return `${earlier.ticket_ref} stays 2 x 0.750 = 1.500; ${later.ticket_ref} is 2 x 0.900 = 1.800; a price sent by the browser is ignored (0.900)`;
+  });
+
+  await check("sold out: the order is refused and nothing is saved; back on sale, it is accepted", async () => {
+    const before = await totals();
+    const booked = await slotCount("T01", KARAK_SLOT);
+    for (const outsider of [tacoVendor, dana, badr]) assert.equal(await editDish(outsider, "M102", "sold_out", true), 0);
+    assert.equal((await dishRow("M102")).sold_out, false);
+    assert.equal(await editDish(karakVendor, "M102", "sold_out", true), 1);
+    // A cart with one sold-out dish among others is refused whole.
+    const mixed = [
+      { item_id: "M104", quantity: 1 },
+      { item_id: "M102", quantity: 1 },
+    ];
+    await rejects(asUser(c1, others[1], (c) => place(c, "T01", KARAK_SLOT, mixed)), "item_sold_out");
+    assert.deepEqual(await totals(), before);
+    assert.equal(await slotCount("T01", KARAK_SLOT), booked);
+    // The price and everything else about the dish is untouched by the switch.
+    assert.deepEqual(await dishRow("M102"), { price: "0.350", sold_out: true, name: "Saffron karak", description: null });
+    assert.equal(await editDish(karakVendor, "M102", "sold_out", false), 1);
+    const ok = await asUser(c1, others[1], (c) => place(c, "T01", KARAK_SLOT, mixed));
+    assert.equal(ok.total_kwd, "0.850"); // 0.500 + 0.350
+    assert.equal(await slotCount("T01", KARAK_SLOT), booked + 1);
+    return "outsiders cannot switch it; sold out -> item_sold_out, no order and no place taken; back on sale -> placed at 0.850";
+  });
+
+  await check("the vendor switches the truck off: no new orders, and every existing ticket can still be finished", async () => {
+    const before = await totals();
+    const booked = await slotCount("T01", KARAK_SLOT);
+    assert.equal(await editTruck(karakVendor, "T01", "is_open", false), 1);
+    await rejects(asUser(c1, others[2], (c) => place(c, "T01", KARAK_SLOT, toasties)), "truck_closed");
+    assert.deepEqual(await totals(), before);
+    assert.equal(await slotCount("T01", KARAK_SLOT), booked);
+    // Nothing happened to the tickets, and the kitchen works through one from start to finish.
+    assert.equal((await admin.query("select count(*)::int as n from public.orders where truck_id = 'T01' and slot_start = $1::time and status = 'placed'", [KARAK_SLOT])).rows[0].n, booked);
+    for (const next of ["accepted", "preparing", "ready", "collected"]) {
+      assert.equal((await asUser(c1, karakVendor, (c) => move(c, earlier.id, next))).status, next);
+    }
+    // The customer of another ticket can still cancel it, and that frees its place.
+    const mine = (await admin.query("select id from public.orders where truck_id = 'T01' and slot_start = $2::time and customer_id = $1 and status = 'placed'", [badr, KARAK_SLOT])).rows[0].id;
+    assert.equal((await asUser(c1, badr, (c) => move(c, mine, "cancelled"))).status, "cancelled");
+    assert.equal(await slotCount("T01", KARAK_SLOT), booked - 1);
+    // Switched back on: orders are taken again.
+    assert.equal(await editTruck(karakVendor, "T01", "is_open", true), 1);
+    const again = await asUser(c1, others[2], (c) => place(c, "T01", KARAK_SLOT, toasties));
+    assert.equal(again.status, "placed");
+    return `off -> truck_closed and nothing saved; ${earlier.ticket_ref} still went placed -> collected; a customer still cancelled; on again -> ${again.ticket_ref} placed`;
+  });
+
+  await check("Dana's Close for tonight wins over the vendor's switch, and is not the vendor's to undo", async () => {
+    await asUser(c1, dana, (c) => c.query(closeSql, ["T01"]));
+    // The two are stored apart: the vendor's switch still says open.
+    assert.equal((await truckRow("T01")).is_open, true);
+    await rejects(asUser(c1, others[3], (c) => place(c, "T01", KARAK_SLOT, toasties)), "truck_closed");
+    // Switching off and on again changes nothing about tonight.
+    assert.equal(await editTruck(karakVendor, "T01", "is_open", false), 1);
+    assert.equal(await editTruck(karakVendor, "T01", "is_open", true), 1);
+    await rejects(asUser(c1, others[3], (c) => place(c, "T01", KARAK_SLOT, toasties)), "truck_closed");
+    // The vendor cannot remove, change or add a closure, and cannot call the manager's function.
+    await rejects(asUser(c1, karakVendor, (c) => c.query("delete from public.truck_closures where truck_id = 'T01'")), "42501");
+    await rejects(asUser(c1, karakVendor, (c) => c.query("update public.truck_closures set service_date = service_date - 1 where truck_id = 'T01'")), "42501");
+    await rejects(asUser(c1, karakVendor, (c) => c.query(closeSql, ["T03"])), "not_a_manager");
+    assert.equal((await admin.query("select count(*)::int as n from public.truck_closures where truck_id = 'T01' and service_date = $1", [today])).rows[0].n, 1);
+    // Tonight's tickets are still the kitchen's to finish.
+    const open = (await admin.query("select id from public.orders where truck_id = 'T01' and slot_start = $1::time and status = 'placed' order by placed_at limit 1", [KARAK_SLOT])).rows[0].id;
+    for (const next of ["accepted", "preparing", "ready", "collected"]) {
+      assert.equal((await asUser(c1, karakVendor, (c) => move(c, open, next))).status, next);
+    }
+    // The vendor can still edit the menu while closed.
+    assert.equal(await editDish(karakVendor, "M103", "price_kwd", "0.750"), 1);
+    assert.deepEqual(await dishRow("M103"), { price: "0.750", sold_out: false, name: "Cheese and zaatar toastie", description: null });
+    return "closed by the manager with the vendor's switch still on: orders refused; the vendor cannot touch the closure (42501, not_a_manager); a ticket still went placed -> collected";
+  });
+
+  // -------------------------------------------------------------------------
   section("Dana's dashboard: every count is explained by tickets she can read");
 
   await check("for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count", async () => {

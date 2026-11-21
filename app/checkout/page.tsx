@@ -446,7 +446,8 @@ export default function CheckoutPage() {
         </section>
       )}
 
-      {problem && !closed && (
+      {/* When the dish is named in the list above, the general line would only repeat it. */}
+      {problem && !closed && !(problem === "itemUnavailable" && !orderable) && (
         <div role="alert" className="mb-4 rounded-panel bg-error-surface p-4 text-sm font-semibold text-error">
           <p>{t[problem]}</p>
         </div>

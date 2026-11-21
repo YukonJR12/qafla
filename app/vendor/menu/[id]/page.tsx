@@ -6,15 +6,20 @@ import { AppHeader } from "@/components/app-header";
 import { LoadError } from "@/components/cart-states";
 import { CameraIcon, CheckIcon, Money, primaryButton, secondaryButton } from "@/components/ui";
 import { useAccount } from "@/lib/account";
-import { fetchMenu, saveMenuCopy, type MenuItem } from "@/lib/data";
+import { fetchMenu, saveMenuCopy, setDishPrice, setDishSoldOut, type MenuItem } from "@/lib/data";
 import { itemName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import { ALLERGENS, MAX_DESCRIPTION, PHOTO_TYPES, tidyText, type Suggestion } from "@/lib/menu-ai";
 import { requestSuggestion, shrinkPhoto, type SuggestResult } from "@/lib/suggest-client";
+import { formatKwd } from "@/lib/money";
 import { supabaseBrowser } from "@/lib/supabase";
 import { formatKuwaitTime } from "@/lib/time";
+import { parsePrice, priceText } from "@/lib/vendor-edits";
 
-// One dish's description and allergens.
+// One dish: its price, whether it is available, and its description and
+// allergens. Price, availability and description are three separate fields
+// with three separate saves (DESIGN.md, Menu editor), so changing one can
+// never change another by accident.
 //
 // Three things are kept apart on this screen:
 //   - what customers see now: the saved dish, read from the database;
@@ -36,6 +41,13 @@ export default function DishEditorPage() {
   const [attempt, setAttempt] = useState(0);
   const key = `${truckId}/${id}`;
 
+  // Price and availability. Each has its own save and its own message.
+  const [priceDraft, setPriceDraft] = useState("");
+  const [priceBusy, setPriceBusy] = useState(false);
+  const [priceNote, setPriceNote] = useState<{ kind: "saved"; price: string } | { kind: "problem"; problem: string } | { kind: "failed" } | { kind: "not_yours" } | null>(null);
+  const [stockBusy, setStockBusy] = useState(false);
+  const [stockNote, setStockNote] = useState<"out" | "back" | "failed" | "not_yours" | null>(null);
+
   // The draft.
   const [description, setDescription] = useState("");
   const [allergens, setAllergens] = useState<string[]>([]);
@@ -51,6 +63,7 @@ export default function DishEditorPage() {
         setLoaded({ key, dish, failed: false });
         setDescription(dish?.description ?? "");
         setAllergens(dish?.allergens ?? []);
+        setPriceDraft(dish ? priceText(dish.price_kwd) : "");
       },
       () => current && setLoaded({ key, dish: null, failed: true }),
     );
@@ -97,6 +110,49 @@ export default function DishEditorPage() {
     setAsking(false);
   }
 
+  // Only the fields that changed are replaced on screen, so a description
+  // being typed is not lost when the price or availability is saved.
+  function keepSaved(dish: MenuItem) {
+    setLoaded({ key, dish, failed: false });
+  }
+
+  async function savePrice(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!saved || priceBusy) return;
+    const parsed = parsePrice(priceDraft);
+    if (!parsed.ok) return setPriceNote({ kind: "problem", problem: parsed.problem });
+    if (parsed.price === priceText(saved.price_kwd)) return setPriceDraft(parsed.price);
+    setPriceBusy(true);
+    setPriceNote(null);
+    try {
+      // The database checks the dish is on this vendor's truck and that the
+      // price is more than zero. Its answer is the price the screen shows.
+      const dish = await setDishPrice(supabaseBrowser(), saved.id, parsed.price);
+      keepSaved(dish);
+      setPriceDraft(priceText(dish.price_kwd));
+      setPriceNote({ kind: "saved", price: priceText(dish.price_kwd) });
+    } catch (error) {
+      setPriceNote({ kind: error instanceof Error && error.message === "not_your_dish" ? "not_yours" : "failed" });
+    } finally {
+      setPriceBusy(false);
+    }
+  }
+
+  async function setSoldOut(soldOut: boolean) {
+    if (!saved || stockBusy || saved.sold_out === soldOut) return;
+    setStockBusy(true);
+    setStockNote(null);
+    try {
+      const dish = await setDishSoldOut(supabaseBrowser(), saved.id, soldOut);
+      keepSaved(dish);
+      setStockNote(dish.sold_out ? "out" : "back");
+    } catch (error) {
+      setStockNote(error instanceof Error && error.message === "not_your_dish" ? "not_yours" : "failed");
+    } finally {
+      setStockBusy(false);
+    }
+  }
+
   /** Copies a suggestion into the draft. Still nothing is saved. */
   function copyDraft(suggestion: Suggestion) {
     setDescription(suggestion.description);
@@ -141,6 +197,8 @@ export default function DishEditorPage() {
   const name = saved ? itemName(saved, locale) : t.menuEditorTitle;
   const list = (codes: string[]) => codes.map((code) => t.allergenName[code] ?? code).join(locale === "ar" ? "، " : ", ");
   const left = MAX_DESCRIPTION - description.length;
+  const typedPrice = parsePrice(priceDraft);
+  const priceChanged = saved !== null && (!typedPrice.ok || typedPrice.price !== priceText(saved.price_kwd));
 
   return (
     <div className="min-h-dvh">
@@ -168,15 +226,113 @@ export default function DishEditorPage() {
               </h2>
               <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3">
                 <p className="text-lg leading-snug font-semibold">{name}</p>
-                <p className="text-sm text-muted">
-                  <Money amount={saved.price_kwd} locale={locale} />
-                  {saved.sold_out && ` · ${t.soldOut}`}
+                <p className="flex items-center gap-2 text-sm text-muted">
+                  <Money amount={saved.price_kwd} locale={locale} className="font-bold text-ink" />
+                  {saved.sold_out && <span className="rounded-control bg-ink px-2 py-0.5 font-semibold text-snowy-white">{t.soldOut}</span>}
                 </p>
               </div>
               <p className={saved.description ? "mt-1" : "mt-1 text-muted"}>{saved.description ?? t.menuNoDescription}</p>
               <p className="mt-1 text-sm text-muted">
                 {saved.allergens.length > 0 ? t.mayContain(list(saved.allergens)) : t.noAllergensListed}
               </p>
+            </section>
+
+            {/* Price and availability: two labelled fields, each saved by itself. */}
+            <section aria-labelledby={`${formId}-money`} className="mt-6">
+              <h2 id={`${formId}-money`} className="text-lg font-extrabold">
+                {t.priceAndAvailability}
+              </h2>
+
+              <form onSubmit={savePrice} noValidate className="mt-3">
+                <label htmlFor={`${formId}-price`} className="block text-sm font-semibold">
+                  {t.priceLabel}
+                </label>
+                <div className="mt-1 flex flex-wrap items-start gap-2">
+                  <input
+                    id={`${formId}-price`}
+                    type="text"
+                    inputMode="decimal"
+                    dir="ltr"
+                    autoComplete="off"
+                    value={priceDraft}
+                    onChange={(event) => {
+                      setPriceDraft(event.target.value);
+                      setPriceNote(null);
+                    }}
+                    aria-invalid={priceNote?.kind === "problem" ? true : undefined}
+                    aria-describedby={`${formId}-price-help`}
+                    className={`block min-h-12 w-36 rounded-control border bg-snowy-white px-3 py-2 text-lg font-bold text-ink tabular-nums ${
+                      priceNote?.kind === "problem" ? "border-error" : "border-outline"
+                    }`}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!priceChanged || priceBusy}
+                    aria-busy={priceBusy}
+                    className={`${primaryButton} w-auto! min-w-32 flex-1 sm:flex-none`}
+                  >
+                    <span aria-live="polite">{priceBusy ? t.saving : t.savePrice}</span>
+                  </button>
+                </div>
+                <p id={`${formId}-price-help`} className="mt-1 text-sm">
+                  {priceNote?.kind === "problem" ? (
+                    <span className="font-semibold text-error">{t.priceProblem[priceNote.problem]}</span>
+                  ) : (
+                    <span className="text-muted">{t.priceHint}</span>
+                  )}
+                </p>
+                <div role="status">
+                  {priceNote?.kind === "saved" && (
+                    <p className="reveal-up mt-2 flex items-start gap-2 rounded-control bg-ink p-3 font-semibold text-snowy-white">
+                      <CheckIcon className="mt-0.5 size-5" />
+                      <span>{t.priceSaved(formatKwd(priceNote.price, locale))}</span>
+                    </p>
+                  )}
+                </div>
+                {(priceNote?.kind === "failed" || priceNote?.kind === "not_yours") && (
+                  <p role="alert" className="mt-2 rounded-control bg-error-surface p-3 text-sm font-semibold text-error">
+                    {priceNote.kind === "not_yours" ? t.dishNotYoursBody : t.priceFailed}
+                  </p>
+                )}
+              </form>
+
+              <fieldset className="mt-5" disabled={stockBusy} aria-busy={stockBusy}>
+                <legend className="text-sm font-semibold">{t.availabilityLegend}</legend>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {[false, true].map((soldOut) => {
+                    const chosen = saved.sold_out === soldOut;
+                    return (
+                      // Chosen: ink fill, light text and a check, so it does not rely on colour.
+                      <label
+                        key={String(soldOut)}
+                        className={`relative flex min-h-12 cursor-pointer items-center gap-2 rounded-control border px-3 py-2 font-bold transition-colors duration-[120ms] ease-out has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${
+                          chosen ? "border-ink bg-ink text-snowy-white" : "border-outline bg-snowy-white hover:border-ink"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`${formId}-stock`}
+                          checked={chosen}
+                          onChange={() => setSoldOut(soldOut)}
+                          className="absolute inset-0 cursor-pointer opacity-0"
+                        />
+                        <span className="min-w-0 flex-1">{soldOut ? t.soldOut : t.available}</span>
+                        {chosen && <CheckIcon className="size-4" />}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p role="status" className="mt-1 min-h-5 text-sm font-semibold">
+                  {stockBusy && t.saving}
+                  {!stockBusy && stockNote === "out" && t.markedSoldOut}
+                  {!stockBusy && stockNote === "back" && t.markedAvailable}
+                </p>
+                {(stockNote === "failed" || stockNote === "not_yours") && (
+                  <p role="alert" className="mt-1 rounded-control bg-error-surface p-3 text-sm font-semibold text-error">
+                    {stockNote === "not_yours" ? t.dishNotYoursBody : t.availabilityFailed}
+                  </p>
+                )}
+              </fieldset>
             </section>
 
             {/* The photo, its suggestion and the allergens stay together (DESIGN.md, Menu editor). */}
