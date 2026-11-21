@@ -6,8 +6,8 @@ import { parkWords } from "../../lib/park-map";
 const orderId = "00000000-0000-4000-8000-000000000053";
 
 /** The real ticket page with a fake session, REST reads and Realtime transport. */
-async function ticketFixture(page: Page, locale: Locale) {
-  let status = "placed";
+async function ticketFixture(page: Page, locale: Locale, initialStatus = "placed") {
+  let status = initialStatus;
   let socket: WebSocketRoute;
   let topic = "";
   let reads = 0;
@@ -72,6 +72,32 @@ async function ticketFixture(page: Page, locale: Locale) {
     },
   };
 }
+
+test("320 Arabic reduced motion: confirmed Ready is steady and Find my truck stays reachable", async ({ page }, info) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const fixture = await ticketFixture(page, "ar");
+  await fixture.advance("ready");
+  const notice = page.getByRole("region", { name: dictionary.ar.statusHelp.ready });
+  await expect(notice).toBeVisible();
+  expect(await notice.evaluate(el => getComputedStyle(el).animationDuration)).toBe("0s");
+  const link = notice.getByRole("link", { name: parkWords.ar.find });
+  const box = await link.boundingBox();
+  expect(box!.y + box!.height).toBeLessThan(844 - 64);
+  await fixture.advance("ready");
+  await expect(link).toHaveAttribute("href", "/map?truck=T01");
+  expect(fixture.writes).toEqual([]);
+  await page.screenshot({ path: info.outputPath("ready-ar-320-reduced.png") });
+});
+
+test("reopening a confirmed Ready ticket does not replay its entrance", async ({ page }) => {
+  const fixture = await ticketFixture(page, "en", "ready");
+  const notice = page.getByRole("region", { name: dictionary.en.statusHelp.ready });
+  await expect(notice).toBeVisible();
+  expect(await notice.evaluate(el => getComputedStyle(el).animationName)).toBe("none");
+  await fixture.advance("ready");
+  expect(await notice.evaluate(el => getComputedStyle(el).animationName)).toBe("none");
+});
 
 for (const width of [320, 390]) for (const locale of ["en", "ar"] as const) {
   test(`${width}px ${locale}: preview is local; live Ready resets and announces once`, async ({ page }, testInfo) => {
