@@ -1,7 +1,81 @@
 import { writeFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
-import { parkWords, PARK_TRUCKS } from "../../lib/park-map";
+import { BILLBOARD_URL, parkWords, PARK_TRUCKS } from "../../lib/park-map";
 import { dictionary, truckName, type Locale } from "../../lib/i18n";
+
+for (const width of [320, 390]) for (const locale of ["en", "ar"] as const) {
+  test(`billboard and smooth full orbit ${width} ${locale}`, async ({ page }, info) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width, height: 844 });
+    await fixture(page, locale);
+    const target = BILLBOARD_URL;
+    // Verify navigation without requesting anything from the third-party site.
+    await page.route(target, (route) => route.fulfill({ body: "<h1>CODED destination fixture</h1>", contentType: "text/html" }));
+    await page.goto("/map");
+    const canvas = page.locator("canvas[data-usable=true]");
+    await expect(canvas).toBeVisible();
+    const link = page.getByRole("link", { name: parkWords[locale].billboard, exact: true });
+    await expect(link).toHaveAttribute("href", target);
+    await expect(link).toHaveAccessibleName(parkWords[locale].billboard);
+    await page.screenshot({ path: info.outputPath(`billboard-${width}-${locale}.png`) });
+    const gl = (await canvas.boundingBox())!;
+    const cd = await page.context().newCDPSession(page);
+    const x = gl.x + gl.width / 2, y = gl.y + gl.height * 0.92;
+    const angle = async () => Number(await canvas.getAttribute("data-azimuth"));
+    const zoom = async () => Number(await canvas.getAttribute("data-zoom"));
+    const initialAngle = await angle(), initialZoom = await zoom();
+    if (width === 390 && locale === "en") {
+      // A drag starting on the advert rotates the map without following the link.
+      await cd.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 230, y: 176 }] });
+      await cd.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 290, y: 176 }] });
+      await cd.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await page.waitForTimeout(550);
+      await expect(page).toHaveURL(/\/map$/);
+      expect(Math.abs(await angle() - initialAngle)).toBeGreaterThan(0.1);
+      await page.getByRole("button", { name: parkWords[locale].reset }).press("Enter");
+      await expect.poll(angle).toBeCloseTo(initialAngle, 2);
+    }
+    let travelled = 0, previous = initialAngle;
+    for (let turn = 0; turn < 10; turn++) {
+      await cd.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x - width * 0.3, y }] });
+      for (let step = 1; step <= 12; step++) {
+        await cd.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x - width * 0.3 + width * 0.6 * step / 12, y }] });
+      }
+      await cd.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await page.waitForTimeout(550);
+      const next = await angle();
+      travelled += Math.atan2(Math.sin(next - previous), Math.cos(next - previous));
+      previous = next;
+      expect(await zoom()).toBeCloseTo(initialZoom, 2);
+      if (turn === 2) await page.screenshot({ path: info.outputPath(`reverse-${width}-${locale}.png`) });
+    }
+    expect(Math.abs(travelled)).toBeGreaterThan(2 * Math.PI);
+    await expect(page.getByTestId("park")).toHaveAttribute("data-selected", "");
+    // Pinch zoom is independent of rotation.
+    const centerY = gl.y + gl.height * 0.6;
+    await cd.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x - 30, y: centerY }, { x: x + 30, y: centerY }] });
+    for (let d = 34; d <= 70; d += 4) await cd.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x - d, y: centerY }, { x: x + d, y: centerY }] });
+    await cd.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForTimeout(800);
+    expect(await zoom()).toBeGreaterThan(initialZoom);
+    await page.getByRole("button", { name: parkWords[locale].reset }).tap();
+    await expect.poll(angle).toBeCloseTo(initialAngle, 2);
+    await expect.poll(zoom).toBeCloseTo(initialZoom, 2);
+    await page.waitForTimeout(1000);
+    const draws = () => page.evaluate(() => (window as unknown as { parkDraws: number }).parkDraws);
+    const count = await draws(); await page.waitForTimeout(400); expect(await draws()).toBe(count);
+    await writeFile(info.outputPath("orbit-metrics.json"), JSON.stringify({ width, locale, radians: travelled, stableOrbitZoom: initialZoom }, null, 2));
+    if (width === 390 && locale === "en") {
+      // Tap the artwork itself (390 px reference).
+      await page.touchscreen.tap(230, 176);
+    } else {
+      await link.focus();
+      await expect(link).toBeVisible();
+      await link.press("Enter");
+    }
+    await expect(page).toHaveURL(target);
+  });
+}
 
 const names = ["Karak Corner", "Dune Burgers", "Taco Saha", "Noodle Wagon", "Saj Station", "Lugaimat & Co"];
 const order = "00000000-0000-4000-8000-000000000054";

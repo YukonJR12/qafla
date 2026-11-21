@@ -9,7 +9,7 @@ type Controls = ComponentRef<typeof OrbitControls>;
 import type { TruckTonight } from "@/lib/data";
 import { truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
-import { PARK_TRUCKS, parkTruck, parkWords } from "@/lib/park-map";
+import { BILLBOARD_URL, PARK_TRUCKS, parkTruck, parkWords } from "@/lib/park-map";
 
 // Allocated only when this lazy chunk loads; shared by every miniature.
 const box = new THREE.BoxGeometry(1, 1, 1);
@@ -77,34 +77,58 @@ function Table({ x, z }: { x: number; z: number }) {
 type Props = { trucks: TruckTonight[]; selected: string | null; reset: number; onSelect: (id: string) => void; onReady: () => void; fallback: ReactNode };
 function World({ trucks, selected, reset, onSelect, onReady }: Omit<Props, "fallback">) {
   const { locale } = useLocale();
-  const textures = useTexture([...PARK_TRUCKS.map((t) => `/trucks/logos/${t.id}.webp`), "/brand/qafla-logo.png"]);
+  const textures = useTexture([...PARK_TRUCKS.map((t) => `/trucks/logos/${t.id}.webp`), "/brand/qafla-logo.png", "/park/coded-bootcamp.png"]);
   textures.forEach((texture) => { texture.colorSpace = THREE.SRGBColorSpace; });
-  const { size, invalidate } = useThree();
+  const { size, invalidate, gl } = useThree();
   const controls = useRef<Controls>(null);
   const movement = useRef<{ target: THREE.Vector3; position: THREE.Vector3; zoom: number } | null>(null);
   const announced = useRef(false);
-  const lastAngle = useRef(0);
+  const [reducedMotion, setReducedMotion] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
+  useEffect(() => {
+    const preference = matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => { setReducedMotion(preference.matches); invalidate(); };
+    preference.addEventListener("change", change);
+    return () => preference.removeEventListener("change", change);
+  }, [invalidate]);
   const readyCallback = useRef(onReady);
   useEffect(() => { readyCallback.current = onReady; }, [onReady]);
   useEffect(() => {
     const truck = parkTruck(selected);
     const target = new THREE.Vector3(truck?.x ?? 0, 0.7, truck?.z ?? 0.5);
     const zoom = truck ? Math.min(size.width / 10, size.height / 10) : Math.min(size.width / 14, size.height / 23);
+    // Flush orbit inertia once before a deliberate selection/reset move.
+    if (controls.current) { controls.current.enableDamping = false; controls.current.update(); }
     movement.current = { target, position: target.clone().add(new THREE.Vector3(3, 24, 22)), zoom };
     invalidate();
   }, [selected, reset, size.width, size.height, invalidate]);
-  useFrame(({ camera, gl, invalidate }) => {
+  useFrame(({ camera, gl, invalidate }, delta) => {
     if (movement.current && controls.current) {
       const goal = movement.current;
-      const direct = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const factor = direct || !announced.current ? 1 : 0.16;
-      camera.position.lerp(goal.position, factor);
+      const factor = reducedMotion || !announced.current ? 1 : 1 - Math.exp(-12 * Math.min(delta, 0.05));
+      const orbit = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.current.target));
+      const destination = new THREE.Spherical().setFromVector3(goal.position.clone().sub(goal.target));
+      const turn = Math.atan2(Math.sin(destination.theta - orbit.theta), Math.cos(destination.theta - orbit.theta));
+      orbit.theta += turn * factor;
+      orbit.phi = THREE.MathUtils.lerp(orbit.phi, destination.phi, factor);
+      orbit.radius = THREE.MathUtils.lerp(orbit.radius, destination.radius, factor);
       controls.current.target.lerp(goal.target, factor);
+      camera.position.setFromSpherical(orbit).add(controls.current.target);
       camera.zoom = THREE.MathUtils.lerp(camera.zoom, goal.zoom, factor);
       camera.updateProjectionMatrix();
       controls.current.update();
-      if (camera.position.distanceTo(goal.position) < 0.01 && Math.abs(camera.zoom - goal.zoom) < 0.01) movement.current = null;
-      else invalidate();
+      if (camera.position.distanceTo(goal.position) < 0.01 && Math.abs(camera.zoom - goal.zoom) < 0.01) {
+        camera.position.copy(goal.position);
+        controls.current.target.copy(goal.target);
+        camera.zoom = goal.zoom;
+        camera.updateProjectionMatrix();
+        controls.current.update();
+        movement.current = null;
+        controls.current.enableDamping = !reducedMotion;
+      } else invalidate();
+    }
+    if (controls.current) {
+      gl.domElement.dataset.azimuth = controls.current.getAzimuthalAngle().toFixed(5);
+      gl.domElement.dataset.zoom = camera.zoom.toFixed(5);
     }
     if (!announced.current) {
       announced.current = true;
@@ -116,17 +140,10 @@ function World({ trucks, selected, reset, onSelect, onReady }: Omit<Props, "fall
     <color attach="background" args={["#fcf7f1"]} />
     <hemisphereLight args={["#fff8e9", "#a5b5a8", 2.8]} />
     <directionalLight position={[-5, 12, 8]} intensity={2.2} />
-    <OrbitControls ref={controls} enablePan={false} enableDamping={false} minAzimuthAngle={-0.65} maxAzimuthAngle={0.75} minPolarAngle={0.55} maxPolarAngle={1.05} minZoom={Math.min(size.width / 20, size.height / 21)} maxZoom={Math.min(size.width / 7, size.height / 7)} onStart={() => { movement.current = null; lastAngle.current = controls.current?.getAzimuthalAngle() ?? 0; }} onChange={() => {
-      const control = controls.current;
-      if (!control || movement.current || selected) return;
-      const angle = control.getAzimuthalAngle();
-      if (Math.abs(angle - lastAngle.current) > 0.001) {
-        // Orbiting a long plaza increases its projected width; keep its ends in view.
-        control.object.zoom = Math.min(control.object.zoom, size.width / (14 + Math.abs(Math.sin(angle)) * 16));
-        control.object.updateProjectionMatrix();
-        lastAngle.current = angle;
-      }
-    }} />
+    <OrbitControls ref={controls} enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.12}
+      rotateSpeed={0.6} zoomSpeed={0.65} minPolarAngle={0.5} maxPolarAngle={1.15}
+      minZoom={Math.min(size.width / 34, size.height / 34)} maxZoom={Math.min(size.width / 7, size.height / 7)}
+      onStart={() => { movement.current = null; if (controls.current) controls.current.enableDamping = !reducedMotion; }} />
     <Part at={[0, -0.3, 0]} size={[12.3, 0.6, 23.8]} color="#c8b99f" />
     <Part at={[0, 0.01, 0]} size={[11.7, 0.04, 23]} color="#e3d5ba" />
     <Part at={[0, 0.05, 0]} size={[2.5, 0.05, 22.5]} color="#f4eade" />
@@ -138,6 +155,18 @@ function World({ trucks, selected, reset, onSelect, onReady }: Omit<Props, "fall
       <mesh position={[0, 0.75, 0]} scale={[0.13, 0.15, 0.13]} geometry={sphere}><meshStandardMaterial color="#ffebae" emissive="#ffd070" emissiveIntensity={1.2} /></mesh>
       <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.42, 16]} /><meshBasicMaterial color="#ffe4a1" transparent opacity={0.3} depthWrite={false} /></mesh>
     </group>))}
+    <group position={[0, 0, -10.3]}>
+      {[-3.3, 3.3].map((x) => <group key={x}>
+        <Part at={[x, 1.35, 0]} size={[0.15, 2.7, 0.15]} shape={cylinder} color="#404542" />
+        <Part at={[x, 0.12, 0]} size={[0.38, 0.12, 0.38]} shape={cylinder} color="#404542" />
+      </group>)}
+      <Part at={[0, 3.75, 0]} size={[9.4, 3.2, 0.22]} color="#444b4c" />
+      {[0, Math.PI].map((turn) => <mesh key={turn} geometry={plane} position={[0, 3.75, turn ? -0.12 : 0.12]} rotation={[0, turn, 0]} scale={[9, 3, 1]}
+        onPointerOver={() => { gl.domElement.style.cursor = "pointer"; }} onPointerOut={() => { gl.domElement.style.cursor = ""; }}
+        onClick={(event) => { event.stopPropagation(); if (event.delta < 6) window.location.assign(BILLBOARD_URL); }}>
+        <meshBasicMaterial map={textures[7]} toneMapped={false} />
+      </mesh>)}
+    </group>
     <group position={[0, 0, 10.2]}>
       {[-2, 2].map((x) => <Part key={x} at={[x, 1.4, 0]} size={[0.3, 2.8, 0.3]} color="#f42902" />)}
       <Part at={[0, 2.75, 0]} size={[4.3, 0.65, 0.38]} color="#101010" />
@@ -182,7 +211,10 @@ function World({ trucks, selected, reset, onSelect, onReady }: Omit<Props, "fall
 }
 export default function ParkScene(props: Props) {
   const [lost, setLost] = useState(false);
-  return lost ? props.fallback : <div className="size-full" dir="ltr">
+  const { locale } = useLocale();
+  return lost ? props.fallback : <div className="relative size-full" dir="ltr">
+    <a href={BILLBOARD_URL} dir={locale === "ar" ? "rtl" : "ltr"} aria-label={parkWords[locale].billboard}
+      className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-10 focus:inline-flex focus:min-h-11 focus:items-center focus:whitespace-nowrap focus:rounded-control focus:border focus:border-divider focus:bg-snowy-white focus:px-3 focus:text-xs focus:font-bold focus:shadow-sm">{parkWords[locale].billboard} ↗</a>
     <Canvas orthographic frameloop="demand" dpr={[1, 1.5]} camera={{ position: [3, 24.7, 22.5], zoom: 16, near: 0.1, far: 100 }} gl={{ antialias: true, powerPreference: "low-power" }}
       fallback={props.fallback} onCreated={({ gl }) => { gl.domElement.addEventListener("webglcontextlost", () => setLost(true), { once: true }); }}>
       <Suspense fallback={null}><World {...props} /></Suspense>
