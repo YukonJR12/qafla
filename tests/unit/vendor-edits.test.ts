@@ -110,6 +110,8 @@ test("customers are told which closure it is, and the park's closure comes first
   assert.equal(closedBy({ isOpen: true, closedByPark: true }), "park");
   // Paused by the vendor AND closed by the park: it is closed for tonight.
   assert.equal(closedBy({ isOpen: false, closedByPark: true }), "park");
+  assert.equal(dictionary.en.pausedNow, "Not taking orders right now");
+  assert.equal(dictionary.ar.pausedNow, "ما نستقبل طلبات حاليًا");
   // The two read differently in both languages, on the label and in the checkout message.
   for (const locale of ["en", "ar"] as const) {
     const t = dictionary[locale];
