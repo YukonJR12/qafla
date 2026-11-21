@@ -429,6 +429,17 @@ export async function fetchMyProfile(
   return data;
 }
 
+/**
+ * Saves the signed-in account's own display name (set_my_name). The
+ * database changes that one field on the caller's own profile and answers
+ * with the tidied name it saved, or null when the name was cleared.
+ */
+export async function saveMyName(db: SupabaseClient, name: string): Promise<string | null> {
+  const { data, error } = await db.rpc("set_my_name", { p_name: name });
+  if (error) throw new Error(error.message);
+  return (data as string | null) ?? null;
+}
+
 /** An order as the customer's Orders list shows it. */
 export type MyOrder = {
   id: string;

@@ -19,6 +19,8 @@
   --color-warning-surface: #fff0ce;
   --color-error: #8b1830;
   --color-error-surface: #ffe8ec;
+  /* A warm red that is dark enough for text: "Cancel order", "Sign out". */
+  --color-danger: #ae2b11;
 
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
   --font-display: var(--font-archivo-black), system-ui, sans-serif;
@@ -35,6 +37,24 @@ body {
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * The warm paper surface of the sign-in and customer screens (DESIGN.md,
+ * Surfaces). Inside `.paper` the light surface, its dividers and its quiet
+ * text take the paper's tones, so every component keeps working unchanged:
+ * a "white" field or a ticket's notch simply becomes paper. The launch
+ * screen and the staff screens stay on Snowy White.
+ */
+.paper {
+  --color-snowy-white: #fcf7f1;
+  --color-subtle: #eee7df;
+  --color-divider: #dcd4ca;
+  --color-muted: #615d57;
+  background-color: var(--color-snowy-white);
+}
+html:has(.paper) body {
+  background-color: #fcf7f1;
 }
 
 /* Arabic uses Alexandria everywhere, with more line height and no tracking. */

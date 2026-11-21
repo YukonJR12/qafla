@@ -5,7 +5,7 @@ import { useCart } from "@/lib/cart";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
 import { useCartLines } from "@/lib/use-cart-lines";
-import { ArrowForward, Isolate, Money, primaryButton, primaryButtonSplit, secondaryButton } from "./ui";
+import { ArrowForward, BagIcon, Isolate, Money, primaryButton, primaryButtonSplit, secondaryButton } from "./ui";
 
 /**
  * The cart, kept within thumb's reach on Explore and on a menu: an opaque
@@ -44,14 +44,12 @@ export function CartBar({
       <div className="mx-auto max-w-xl px-4 py-3 md:px-6">
         <Link href="/cart" className={primaryButtonSplit}>
           <span className="flex min-w-0 items-center gap-2.5">
-            <span
-              key={count}
-              className="bump inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-yellow-punk text-sm font-extrabold text-ink tabular-nums"
-            >
-              {count}
-            </span>
+            <BagIcon className="size-5" />
             <span className="min-w-0 text-start leading-tight">
-              <span className="block">{t.viewCart}</span>
+              {/* Re-keyed by the count, so it bumps each time a dish is added or removed. */}
+              <span key={count} className="bump inline-block">
+                {t.viewOrder(count)}
+              </span>
               {showTruck && (
                 <span className="block truncate text-sm font-semibold">
                   {truckName({ id: cart.truckId, name: cart.truckName }, locale)}

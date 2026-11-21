@@ -6,7 +6,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { MenuList } from "@/components/menu-list";
 import { SavedCartNotice } from "@/components/saved-cart-notice";
 import { TruckLogo } from "@/components/truck-logo";
-import { ArrowBack, BagIcon, Isolate } from "@/components/ui";
+import { ArrowBack, Isolate } from "@/components/ui";
 import { fetchClosedBy, fetchMenu, fetchSlots, fetchTruck, nextBookable } from "@/lib/data";
 import { dictionary, truckBlurb, truckCuisine, truckName } from "@/lib/i18n";
 import { truckDishPhotos } from "@/lib/images";
@@ -43,19 +43,20 @@ export default async function TruckMenu({ params }: { params: Promise<{ id: stri
     <div className="mx-auto min-h-dvh max-w-xl pb-28 lg:max-w-[1160px] lg:px-6 lg:pb-12">
       <header className="px-4 pt-3 md:px-6 lg:px-0 lg:pt-4">
         <div className="flex items-center justify-between gap-3">
-          <Link
-            href="/explore"
-            aria-label={t.backToTrucks}
-            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-divider bg-snowy-white ps-2.5 pe-3.5 font-bold transition-colors duration-[120ms] ease-out hover:border-ink"
-          >
-            <ArrowBack className="size-5" />
-            <span aria-hidden>{t.trucks}</span>
+          {/* The way back names where it goes, as the screen's title line. */}
+          <Link href="/explore" aria-label={t.backToTrucks} className="group inline-flex min-h-11 items-center gap-2.5">
+            <span className="inline-flex size-11 items-center justify-center rounded-panel border border-divider transition-colors duration-[120ms] ease-out group-hover:border-ink">
+              <ArrowBack className="size-5" />
+            </span>
+            <span aria-hidden className="text-[2.1rem] leading-none font-extrabold tracking-tight">
+              {t.trucks}
+            </span>
           </Link>
           <LanguageSwitch />
         </div>
 
         <div className="mt-3 flex items-center gap-3">
-          <span className="relative block w-[38%] max-w-52 shrink-0">
+          <span className="relative block h-[88px] w-[34%] max-w-52 shrink-0 lg:h-32">
             {photo ? (
               <Image
                 src={photo}
@@ -64,24 +65,23 @@ export default async function TruckMenu({ params }: { params: Promise<{ id: stri
                 height={480}
                 sizes="(min-width: 1024px) 208px, 38vw"
                 preload
-                className="aspect-[4/3] w-full rounded-panel object-cover outline outline-1 -outline-offset-1 outline-black/10"
+                className="size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10"
               />
             ) : (
-              <span className="block aspect-[4/3] w-full rounded-panel bg-subtle" />
+              <span className="block size-full rounded-control bg-subtle" />
             )}
-            <TruckLogo truck={truck} className="absolute start-1.5 bottom-1.5 size-12 sm:size-14" sizes="56px" preload />
+            <TruckLogo truck={truck} className="absolute start-1.5 bottom-1.5 size-9 border-0!" sizes="36px" preload />
           </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-[clamp(1.5rem,7vw,2.25rem)] leading-tight font-extrabold text-balance">{name}</h1>
-            <p className="mt-0.5 text-muted">
+            <h1 className="text-[1.44rem] leading-tight font-extrabold tracking-tight text-balance">{name}</h1>
+            <p className="mt-0.5 text-sm text-muted">
               {truckCuisine(truck, locale)}
               {blurb && ` · ${blurb}`}
             </p>
             {next ? (
-              <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-semibold">
-                <BagIcon className="size-5 text-red-orange" />
+              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 {t.nextPickupLabel}
-                <Isolate className="rounded-control bg-yellow-punk px-1.5 py-0.5 font-extrabold">{formatSlot(next.slot_start, locale)}</Isolate>
+                <Isolate className="rounded bg-yellow-punk px-1.5 py-px font-bold">{formatSlot(next.slot_start, locale)}</Isolate>
               </p>
             ) : (
               <p className="mt-1.5 inline-flex rounded-control bg-ink px-2.5 py-1 text-sm font-semibold text-snowy-white">

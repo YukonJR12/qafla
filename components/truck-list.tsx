@@ -10,7 +10,7 @@ import { useLocale } from "@/lib/locale";
 import { matchTrucks, type DishName } from "@/lib/truck-search";
 import { formatSlot } from "@/lib/time";
 import { TruckLogo } from "./truck-logo";
-import { BagIcon, Isolate, SearchIcon, XIcon } from "./ui";
+import { Isolate, SearchIcon, XIcon } from "./ui";
 
 /**
  * Explore's list of trucks: a search box, cuisine filters, and one
@@ -48,8 +48,8 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
   );
 
   const chip = (on: boolean) =>
-    `inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-bold transition-colors duration-[120ms] ease-out ${
-      on ? "border-ink bg-ink text-snowy-white" : "border-outline bg-snowy-white text-ink hover:border-ink"
+    `inline-flex min-h-11 shrink-0 items-center rounded-full border px-3.5 text-base transition-colors duration-[120ms] ease-out ${
+      on ? "border-ink bg-ink text-snowy-white" : "border-divider bg-snowy-white text-ink hover:border-ink"
     }`;
 
   return (
@@ -63,7 +63,7 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
           aria-label={t.searchTrucks}
           placeholder={t.searchTrucks}
           enterKeyHint="search"
-          className="block min-h-12 w-full rounded-full border border-outline bg-snowy-white ps-11 pe-12 text-base text-ink placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
+          className="block min-h-12 w-full rounded-control border border-outline bg-white ps-11 pe-12 text-base text-ink placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <button
@@ -113,7 +113,7 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
           </button>
         </div>
       ) : (
-        <ul className="mt-3 divide-y divide-divider md:grid md:grid-cols-2 md:gap-4 md:divide-y-0 xl:grid-cols-3">
+        <ul className="mt-1 divide-y divide-divider border-b border-divider md:grid md:grid-cols-2 md:gap-4 md:divide-y-0 md:border-b-0 xl:grid-cols-3">
           {shown.map(({ truck, dishes: found }) => {
             const name = truckName(truck, locale);
             const photo = truckDishPhotos(truck.id)[0];
@@ -127,7 +127,7 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
                   className="flex h-full items-stretch gap-3 py-3 transition-colors duration-[120ms] ease-out hover:bg-subtle md:rounded-panel md:border md:border-divider md:p-2 md:hover:border-ink"
                 >
                   {/* The lead dish, with the truck's own logo on its corner. */}
-                  <span className="relative block w-[40%] max-w-44 shrink-0 self-start">
+                  <span className="relative block h-[88px] w-[34%] max-w-44 shrink-0 self-center">
                     {photo ? (
                       <Image
                         src={photo}
@@ -135,15 +135,15 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
                         width={480}
                         height={480}
                         sizes="(min-width: 768px) 176px, 40vw"
-                        className={`aspect-[4/3] w-full rounded-panel object-cover outline outline-1 -outline-offset-1 outline-black/10 ${bookable ? "" : "opacity-60 grayscale"}`}
+                        className={`size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10 ${bookable ? "" : "opacity-60 grayscale"}`}
                       />
                     ) : (
-                      <span className="block aspect-[4/3] w-full rounded-panel bg-subtle" />
+                      <span className="block size-full rounded-control bg-subtle" />
                     )}
-                    <TruckLogo truck={truck} className="absolute start-1.5 bottom-1.5 size-11 sm:size-12" sizes="48px" />
+                    <TruckLogo truck={truck} className="absolute start-1.5 bottom-1.5 size-9 border-0!" sizes="36px" />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                    <span className="text-xl leading-tight font-extrabold text-balance">{name}</span>
+                    <span className="text-[1.07rem] leading-snug font-bold text-balance">{name}</span>
                     <span className="text-sm text-muted">{truckCuisine(truck, locale)}</span>
                     {/* Why this truck matched, when it was a dish that did. */}
                     {found.length > 0 && (
@@ -152,10 +152,9 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
                       </span>
                     )}
                     {bookable ? (
-                      <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold">
-                        <BagIcon className="size-4 text-red-orange" />
+                      <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                         {t.nextPickupLabel}
-                        <Isolate className="rounded-control bg-yellow-punk px-1.5 py-0.5 font-extrabold">{formatSlot(truck.nextSlot!, locale)}</Isolate>
+                        <Isolate className="rounded bg-yellow-punk px-1.5 py-px font-bold">{formatSlot(truck.nextSlot!, locale)}</Isolate>
                       </span>
                     ) : (
                       <span className="mt-1 text-sm font-bold text-muted">{state}</span>

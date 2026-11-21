@@ -81,7 +81,7 @@ export default function SignInPage() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 pb-10 md:px-6">
       {/* The complete logo, once. It carries the QAFLA wordmark, so no second name sits beside it. */}
       <div className="flex items-center justify-between gap-3 pt-3">
-        <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="96px" className="size-24" preload />
+        <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="80px" className="size-20" preload />
         <LanguageSwitch />
       </div>
 
@@ -153,7 +153,7 @@ export default function SignInPage() {
             <MailIcon className="size-5" />
             {t.email}
           </label>
-          <input id="signin-email" name="email" type="email" required autoComplete="email" dir="ltr" className={`${input} mt-1.5`} />
+          <input id="signin-email" name="email" type="email" required autoComplete="email" placeholder="customer@example.com" dir="ltr" className={`${input} mt-1.5`} />
         </div>
         <div>
           <label htmlFor="signin-password" className={label}>
@@ -209,10 +209,9 @@ export default function SignInPage() {
             setMode(mode === "sign-in" ? "sign-up" : "sign-in");
             setProblem(null);
           }}
-          className="inline-flex min-h-11 items-center gap-1.5 px-2"
+          className="inline-flex min-h-11 items-center px-2 font-bold underline underline-offset-4"
         >
-          <span>{mode === "sign-in" ? t.newHere : t.haveAccount}</span>
-          <span className="font-bold underline underline-offset-4">{mode === "sign-in" ? t.createAnAccount : t.signIn}</span>
+          {mode === "sign-in" ? t.newHere : t.haveAccount} {mode === "sign-in" ? t.createAnAccount : t.signIn}
         </button>
       </p>
       {mode === "sign-up" && <p className="mt-1 text-center text-sm text-muted">{t.staffHint}</p>}

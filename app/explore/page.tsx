@@ -32,12 +32,9 @@ export default async function Explore() {
     // pb leaves room for the last truck above the cart bar.
     <div className="mx-auto min-h-dvh max-w-[1160px] overflow-x-clip pb-28 md:pb-12">
       {/* On a phone the masthead carries the logo; from 768 px the logo is in the bar across the top. */}
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 pt-2 md:flex md:justify-end md:px-6 md:pt-4">
-        <span className="md:hidden" />
-        <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="96px" className="size-24 md:hidden" preload />
-        <span className="justify-self-end">
-          <LanguageSwitch />
-        </span>
+      <header className="flex items-center justify-between gap-3 px-4 pt-2 md:justify-end md:px-6 md:pt-4">
+        <Image src="/brand/qafla-logo.png" alt="" width={1254} height={1254} sizes="80px" className="size-20 md:hidden" preload />
+        <LanguageSwitch />
       </header>
 
       <main className="px-4 pt-1 md:px-6 md:pt-2">
@@ -45,16 +42,16 @@ export default async function Explore() {
         <ScrollMemory id="explore" />
 
         {/* The park's banner: its name and tonight's pickup hours. The line art is decoration. */}
-        <div className="relative flex min-h-24 items-center overflow-hidden rounded-poster bg-ink px-5 py-4 text-snowy-white">
+        <div className="relative flex min-h-[110px] items-center overflow-hidden rounded-poster bg-ink p-5 text-snowy-white">
           <ParkLineArt className="pointer-events-none absolute end-2 bottom-0 h-[5.5rem] w-auto text-red-orange" />
           <div className="relative max-w-[62%]">
-            <p className="text-xl leading-tight font-extrabold text-balance sm:text-2xl">{t.parkName}</p>
-            <p className="mt-1 text-sm font-semibold">{t.parkHours}</p>
+            <p className="text-[1.7rem] leading-[1.05] font-extrabold tracking-tight text-balance">{t.parkName}</p>
+            <p className="mt-1.5">{t.parkHoursShort}</p>
           </div>
         </div>
 
         <div className="mt-4 flex items-baseline justify-between gap-3">
-          <h1 className="text-[1.75rem] leading-tight font-extrabold">{t.exploreTrucksTitle}</h1>
+          <h1 className="text-[1.44rem] leading-tight font-extrabold tracking-tight">{t.exploreTrucksTitle}</h1>
           <p className="flex shrink-0 items-center gap-1.5 font-bold">
             <span aria-hidden className="size-2.5 rounded-full border border-ink bg-yellow-punk" />
             {t.openCount(open.length)}

@@ -2045,6 +2045,32 @@ try {
     return "one closure row for T03, same closed_at both times; a vendor is refused; orders untouched";
   });
 
+  // -------------------------------------------------------------------------
+  section("Account: a user changes their own display name, and nothing else");
+
+  await check("set_my_name changes the caller's own name only; the role stays out of reach", async () => {
+    const profile = async (id) => (await admin.query("select role::text as role, display_name from public.profiles where id = $1", [id])).rows[0];
+    const setName = (user, value) => asUser(c1, user, async (c) => (await c.query("select public.set_my_name($1) as name", [value])).rows[0].name);
+    const danaBefore = await profile(dana);
+    assert.equal(await setName(aisha, "  Aisha   Al-Sabah \n"), "Aisha Al-Sabah"); // tidied to one line
+    assert.deepEqual(await profile(aisha), { role: "customer", display_name: "Aisha Al-Sabah" });
+    assert.deepEqual(await profile(dana), danaBefore); // nobody else's row moved
+    assert.equal(await setName(aisha, "x".repeat(60)), "x".repeat(60));
+    await rejects(setName(aisha, "x".repeat(61)), "name_too_long");
+    assert.equal(await setName(aisha, "   "), null); // an empty name clears it
+    assert.equal((await profile(aisha)).display_name, null);
+    // The direct routes are still closed: no UPDATE on profiles at all, so no role change.
+    await rejects(asUser(c1, aisha, (c) => c.query("update public.profiles set display_name = 'x' where id = $1", [aisha])), "42501");
+    await rejects(asUser(c1, aisha, (c) => c.query("update public.profiles set role = 'manager' where id = $1", [aisha])), "42501");
+    // Not signed in: refused.
+    await c1.query("begin");
+    await c1.query("set local role anon");
+    await rejects(c1.query("select public.set_my_name('x')"), "42501");
+    await c1.query("rollback");
+    assert.equal((await profile(aisha)).role, "customer");
+    return "own name tidied and saved, 61 characters refused, empty clears it; direct updates of name or role are still refused (42501); anon is refused";
+  });
+
   console.log(`\n${passedCount()} checks passed.`);
 } catch (error) {
   failed = true;

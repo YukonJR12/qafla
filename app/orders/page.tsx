@@ -66,7 +66,7 @@ export default function OrdersPage() {
     <div className="min-h-dvh">
       <header>
         <div className="mx-auto flex max-w-[1160px] items-center gap-3 px-4 pt-5 md:px-6">
-          <h1 className="min-w-0 flex-1 text-[2rem] leading-tight font-extrabold">{t.ordersTitle}</h1>
+          <h1 className="min-w-0 flex-1 text-[2.1rem] leading-tight font-extrabold tracking-tight">{t.ordersTitle}</h1>
           <LanguageSwitch />
         </div>
       </header>
@@ -123,8 +123,8 @@ export default function OrdersPage() {
                 {/* One group per service date, newest first, each under its date. */}
                 {groupByDate(past).map((group) => (
                   <div key={group.date} className="mt-3">
-                    <h3 className="inline-block rounded-control bg-subtle px-2.5 py-1 text-sm font-bold">
-                      <Isolate>{formatDay(group.date, locale)}</Isolate>
+                    <h3 className="inline-block rounded-full bg-subtle px-3 py-1.5 text-sm font-semibold">
+                      <Isolate>{formatDay(group.date, locale, "long")}</Isolate>
                     </h3>
                     <ul className="mt-1 divide-y divide-divider border-b border-divider lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0 lg:border-b-0">
                       {group.orders.map((order) => (
@@ -175,20 +175,17 @@ function PastOrder({ order }: { order: MyOrder }) {
       href={`/orders/${order.id}`}
       className="flex items-center gap-3 py-3 transition-colors duration-[120ms] ease-out hover:bg-subtle"
     >
-      <TruckLogo truck={truck} className="size-14 text-sm" sizes="56px" />
+      <TruckLogo truck={truck} className="size-11 border-0! text-sm" sizes="44px" />
       <span className="min-w-0 flex-1">
         <span className="block leading-snug font-bold">{truckName(truck, locale)}</span>
         <span className="block text-sm text-muted">
-          <Isolate>{formatSlot(order.slot_start, locale)}</Isolate>
-        </span>
-        <span className="block text-sm text-muted">
-          <Isolate>{order.ticket_ref}</Isolate>
+          <Isolate>{formatSlot(order.slot_start, locale)}</Isolate> · <Isolate>{order.ticket_ref}</Isolate>
         </span>
       </span>
-      <span className="flex shrink-0 flex-col items-end gap-1">
-        <Money amount={order.total_kwd} locale={locale} className="font-extrabold" />
+      <span className="flex shrink-0 flex-col items-end">
+        <Money amount={order.total_kwd} locale={locale} className="font-bold" />
         {/* The final state in words, with a mark, so it does not rely on colour. */}
-        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold ${over ? "bg-error-surface text-error" : "bg-subtle text-ink"}`}>
+        <span className={`inline-flex items-center gap-1 text-sm ${over ? "text-danger" : "text-muted"}`}>
           {over ? <XIcon className="size-3.5" /> : order.status === "collected" ? <CheckIcon className="size-3.5" /> : null}
           {t.statusName[order.status] ?? order.status}
         </span>

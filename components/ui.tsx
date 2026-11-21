@@ -308,6 +308,25 @@ export function StageIcon({ stage, className = "" }: IconProps & { stage: string
   );
 }
 
+/** A pencil: edit. */
+export function EditIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <path d="M4 16L16 4l4 4L8 20l-5 1 1-5zM14 6l4 4" />
+    </svg>
+  );
+}
+
+/** A question mark in a circle: help. */
+export function HelpIcon({ className = "" }: IconProps) {
+  return (
+    <svg {...base} className={`shrink-0 ${className}`}>
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="M9.3 9.2a2.8 2.8 0 115 1.8c-.9.9-2.3 1.4-2.3 3M12 17.5v.01" />
+    </svg>
+  );
+}
+
 export function XIcon({ className = "" }: IconProps) {
   return (
     <svg {...base} className={`shrink-0 ${className}`}>

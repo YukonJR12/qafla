@@ -73,7 +73,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
 
       {groups.map((group) => (
       <section key={group.name} aria-labelledby={`category-${group.name}`}>
-      <h2 id={`category-${group.name}`} className="mt-4 text-2xl leading-tight font-extrabold">
+      <h2 id={`category-${group.name}`} className="mt-5 mb-1 text-[1.44rem] leading-tight font-extrabold tracking-tight">
         {categoryName(group.name, locale)}
       </h2>
       <ul className="divide-y divide-divider">
@@ -93,7 +93,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
               disabled={closed}
               aria-label={t.addItem(name)}
               onClick={() => add(item)}
-              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-outline bg-snowy-white transition-colors duration-[120ms] ease-out hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:border-divider disabled:text-muted"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-divider bg-snowy-white transition-colors duration-[120ms] ease-out hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:border-divider disabled:text-muted"
             >
               <PlusIcon className="size-5" />
             </button>
@@ -105,8 +105,8 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
                 {t.mayContain(item.allergens.map((code) => t.allergenName[code] ?? code).join(locale === "ar" ? "، " : ", "))}
               </p>
             ) : null;
-          const title = <h3 className={`text-lg leading-snug font-extrabold ${item.sold_out ? "text-muted" : ""}`}>{name}</h3>;
-          const price = <Money amount={item.price_kwd} locale={locale} className="text-base" />;
+          const title = <h3 className={`leading-snug font-bold ${item.sold_out ? "text-muted" : ""}`}>{name}</h3>;
+          const price = <Money amount={item.price_kwd} locale={locale} className="text-sm" />;
 
           // With a photo: the photo, then the name and description at full
           // width, then the price and the control on one line. This keeps the
@@ -121,7 +121,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
                   width={480}
                   height={480}
                   sizes="(min-width: 640px) 96px, 72px"
-                  className={`h-16 w-20 shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10 min-[360px]:h-[4.5rem] min-[360px]:w-24 sm:h-24 sm:w-32 ${
+                  className={`h-[62px] w-[66px] shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10 sm:h-20 sm:w-24 ${
                     item.sold_out ? "opacity-60 grayscale" : ""
                   }`}
                 />
@@ -129,7 +129,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
                   {title}
                   {description && <p className="text-sm text-muted">{description}</p>}
                   {mayContain}
-                  <p className="mt-1 font-extrabold">{price}</p>
+                  <p className="mt-0.5 font-semibold">{price}</p>
                 </div>
                 {control}
               </li>

@@ -23,7 +23,7 @@ export function QuantityStepper({
     "inline-flex size-11 items-center justify-center rounded-full transition-colors duration-[120ms] ease-out hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
-    <div role="group" aria-label={t.quantityOf(name, quantity)} className="flex shrink-0 items-center rounded-full border border-ink bg-snowy-white">
+    <div role="group" aria-label={t.quantityOf(name, quantity)} className="flex shrink-0 items-center rounded-full border border-divider bg-snowy-white">
       <button
         type="button"
         aria-label={quantity === 1 ? t.remove(name) : t.decrease(name)}

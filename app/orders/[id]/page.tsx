@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppHeader } from "@/components/app-header";
+import { LanguageSwitch } from "@/components/language-switch";
 import { PickupTimeline } from "@/components/pickup-timeline";
 import { TicketCard } from "@/components/ticket-card";
 import { CancelOrder, OrderRating } from "@/components/ticket-actions";
-import { CheckIcon, Isolate, Money, primaryButton, secondaryButton, XIcon } from "@/components/ui";
+import { ArrowBack, CheckIcon, Isolate, Money, primaryButton, secondaryButton, XIcon } from "@/components/ui";
 import { fetchOrder, type Order } from "@/lib/data";
 import { itemName, truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
@@ -73,7 +73,20 @@ export default function OrderPage() {
 
   return (
     <div className="min-h-dvh">
-      <AppHeader title={t.yourOrder} backHref="/orders" backLabel={t.backToOrders} />
+      {/* The way back and the screen's title, large, with the language switch. */}
+      <header className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 pt-4 md:px-6">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Link
+            href="/orders"
+            aria-label={t.backToOrders}
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-panel border border-divider transition-colors duration-[120ms] ease-out hover:border-ink"
+          >
+            <ArrowBack className="size-5" />
+          </Link>
+          <h1 className="text-[2.1rem] leading-none font-extrabold tracking-tight">{t.yourOrder}</h1>
+        </div>
+        <LanguageSwitch />
+      </header>
 
       <main className="mx-auto max-w-xl px-4 pt-4 pb-10 md:px-6">
         {!loaded ? (
@@ -119,14 +132,14 @@ export default function OrderPage() {
             {/* The black ticket: truck, status, the pickup time above all, and the reference on the stub. */}
             <TicketCard truck={truck} slot={order.slot_start} status={order.status}>
               <p className="flex flex-wrap items-baseline justify-between gap-x-3 font-bold">
-                <span>{t.orderRef}</span>
-                <Isolate className="text-lg">{order.ticket_ref}</Isolate>
+                <span className="text-sm font-normal">{t.orderRef}</span>
+                <Isolate className="font-normal">{order.ticket_ref}</Isolate>
               </p>
             </TicketCard>
 
             {/* Where the order is now: five labelled stages, or its final state. */}
             <section aria-labelledby="progress-title" className="mt-6">
-              <h2 id="progress-title" className="text-xl font-extrabold">
+              <h2 id="progress-title" className="text-[1.44rem] font-extrabold tracking-tight">
                 {t.orderProgress}
               </h2>
               <div className="mt-3">
@@ -166,7 +179,7 @@ export default function OrderPage() {
 
             {/* What was ordered, at the prices saved with the order. */}
             <section aria-labelledby="details-title" className="mt-6">
-              <h2 id="details-title" className="text-xl font-extrabold">
+              <h2 id="details-title" className="text-[1.44rem] font-extrabold tracking-tight">
                 {t.orderDetails}
               </h2>
               <ul className="mt-2 divide-y divide-divider border-b border-divider">
@@ -181,7 +194,7 @@ export default function OrderPage() {
                           width={480}
                           height={480}
                           sizes="80px"
-                          className="h-14 w-20 shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10"
+                          className="h-[62px] w-[66px] shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10"
                         />
                       )}
                       <span className="min-w-0 flex-1 leading-snug font-bold">
@@ -196,7 +209,7 @@ export default function OrderPage() {
               {/* One line about money, from the order's real payment state. */}
               <div className="mt-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xl leading-snug font-extrabold">{t.moneyLine[money].title}</p>
+                  <p className="leading-snug font-bold">{t.moneyLine[money].title}</p>
                   {/* Re-keyed by the payment state, so a live change gives it a short bump. */}
                   <p key={order.payment_status} className="bump text-sm text-muted">
                     {t.moneyLine[money].note}
@@ -206,7 +219,7 @@ export default function OrderPage() {
                 <Money
                   amount={order.total_kwd}
                   locale={locale}
-                  className={`text-2xl font-extrabold ${money === "nothing_to_pay" ? "text-muted line-through" : ""}`}
+                  className={`font-bold ${money === "nothing_to_pay" ? "text-muted line-through" : ""}`}
                 />
               </div>
               {money === "refund_due" && <p className="mt-1 text-sm text-muted">{t.refundDueBody}</p>}
@@ -231,7 +244,8 @@ export default function OrderPage() {
             {/* Once collected, the customer can rate this order, one time. */}
             {order.status === "collected" && <OrderRating orderId={order.id} />}
 
-            <div className="mt-4 space-y-2">
+            {/* Check status first, then the quieter way out: cancelling, while that is still allowed. */}
+            <div className="mt-4 flex flex-col gap-2">
               <p role="status">
                 {cancelNote && (
                   <span
@@ -249,6 +263,7 @@ export default function OrderPage() {
                 )}
               </p>
               {canCancel(order.status) && (
+                <div className="order-last text-center">
                 <CancelOrder
                   order={order}
                   time={formatSlot(order.slot_start, locale)}
@@ -266,12 +281,13 @@ export default function OrderPage() {
                     setCancelNote("too_late");
                   }}
                 />
+                </div>
               )}
               <button
                 type="button"
                 disabled={checking}
                 aria-busy={checking}
-                className={secondaryButton}
+                className={primaryButton}
                 onClick={async () => {
                   setChecking(true);
                   await reread().catch(() => {});
@@ -286,9 +302,6 @@ export default function OrderPage() {
                   {t.reconnecting}
                 </p>
               )}
-              <Link href="/orders" className={primaryButton}>
-                {t.backToOrders}
-              </Link>
             </div>
           </>
         )}

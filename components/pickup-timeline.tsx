@@ -39,15 +39,15 @@ export function PickupTimeline({ status, truck, announce }: { status: string; tr
                 aria-hidden
                 // Re-keyed when a stage becomes the current one, so it bumps once per status change.
                 key={state}
-                className={`relative flex aspect-square w-full max-w-20 items-center justify-center rounded-panel border transition-colors duration-[180ms] ease-out ${
+                className={`relative flex h-12 w-full items-center justify-center rounded-panel border transition-colors duration-[180ms] ease-out ${
                   state === "current"
                     ? "bump border-ink bg-ink text-yellow-punk"
                     : state === "done"
                       ? "border-ink bg-snowy-white text-ink"
-                      : "border-divider bg-snowy-white text-muted"
+                      : "border-outline bg-snowy-white text-ink"
                 }`}
               >
-                <StageIcon stage={stage} className="size-[52%]" />
+                <StageIcon stage={stage} className="size-6" />
                 {state === "done" && (
                   <span className="absolute -end-1 -top-1 flex size-4.5 items-center justify-center rounded-full bg-ink text-snowy-white">
                     <CheckIcon className="size-3" />
@@ -59,8 +59,8 @@ export function PickupTimeline({ status, truck, announce }: { status: string; tr
               </span>
               <span
                 aria-hidden
-                className={`mt-1.5 max-w-full text-center text-[clamp(0.625rem,2.9vw,0.875rem)] leading-tight wrap-anywhere ${
-                  state === "current" ? "font-extrabold text-ink" : state === "done" ? "font-semibold text-ink" : "text-muted"
+                className={`mt-1 max-w-full text-center text-[clamp(0.64rem,2.8vw,0.82rem)] leading-tight wrap-anywhere ${
+                  state === "current" ? "font-extrabold text-ink" : "font-semibold text-ink"
                 }`}
               >
                 {label}

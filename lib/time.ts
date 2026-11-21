@@ -50,11 +50,11 @@ export function formatKuwaitTime(moment: string | Date, locale: Locale): string 
 }
 
 /** A service date ("2026-11-20") as a short day: "20 Nov" or "20 نوفمبر". Western digits in both. */
-export function formatDay(date: string, locale: Locale): string {
+export function formatDay(date: string, locale: Locale, style: "short" | "long" = "short"): string {
   const [year, month, day] = date.split("-").map(Number);
   return new Intl.DateTimeFormat(locale === "ar" ? "ar-KW-u-nu-latn" : "en-GB", {
     day: "numeric",
-    month: "short",
+    month: style,
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
