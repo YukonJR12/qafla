@@ -5,7 +5,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { truckBlurb, truckCuisine, truckName } from "../../lib/i18n.ts";
 import { activeNav } from "../../lib/routes.ts";
-import { BLURB_MAX, canSwitch, checkDetails, CUISINE_MAX, NAME_MAX, operating, parsePrice, priceText } from "../../lib/vendor-edits.ts";
+import { dictionary } from "../../lib/i18n.ts";
+import { BLURB_MAX, canSwitch, checkDetails, closedBy, CUISINE_MAX, NAME_MAX, operating, parsePrice, priceText } from "../../lib/vendor-edits.ts";
 
 test("a typed price becomes text with exactly three decimals", () => {
   for (const [typed, price] of [
@@ -101,4 +102,20 @@ test("Truck details sits under the Kitchen tab", () => {
   assert.equal(activeNav("vendor", "/vendor/truck"), "kitchen");
   assert.equal(activeNav("vendor", "/vendor"), "kitchen");
   assert.equal(activeNav("vendor", "/vendor/menu/M201"), "menu");
+});
+
+test("customers are told which closure it is, and the park's closure comes first", () => {
+  assert.equal(closedBy({ isOpen: true, closedByPark: false }), null);
+  assert.equal(closedBy({ isOpen: false, closedByPark: false }), "vendor");
+  assert.equal(closedBy({ isOpen: true, closedByPark: true }), "park");
+  // Paused by the vendor AND closed by the park: it is closed for tonight.
+  assert.equal(closedBy({ isOpen: false, closedByPark: true }), "park");
+  // The two read differently in both languages, on the label and in the checkout message.
+  for (const locale of ["en", "ar"] as const) {
+    const t = dictionary[locale];
+    assert.notEqual(t.pausedNow, t.closedTonight);
+    assert.notEqual(t.pausedMenuNote("Dune Burgers"), t.closedMenuNote);
+    assert.notEqual(t.truckPausedTitle("Dune Burgers"), t.truckClosedTitle("Dune Burgers"));
+    assert.notEqual(t.truckPausedBody, t.truckClosedBody);
+  }
 });

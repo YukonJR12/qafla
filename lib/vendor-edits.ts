@@ -96,6 +96,17 @@ export function operating(truck: { isOpen: boolean; closedByPark: boolean }): Op
   return truck.closedByPark ? "park" : truck.isOpen ? "open" : "paused";
 }
 
+/**
+ * Why a customer cannot order from a truck right now, or null when they can.
+ * The park manager's closure for tonight comes first: a truck that is both
+ * paused by its vendor and closed by the park reads as closed for tonight.
+ */
+export type ClosedBy = "park" | "vendor" | null;
+
+export function closedBy(truck: { isOpen: boolean; closedByPark: boolean }): ClosedBy {
+  return truck.closedByPark ? "park" : truck.isOpen ? null : "vendor";
+}
+
 /** The vendor's switch can be used unless the park manager has closed the truck for tonight. */
 export function canSwitch(state: Operating): boolean {
   return state !== "park";

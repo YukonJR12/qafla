@@ -7,7 +7,7 @@ import { MenuList } from "@/components/menu-list";
 import { SavedCartNotice } from "@/components/saved-cart-notice";
 import { TruckLogo } from "@/components/truck-logo";
 import { ArrowBack, Isolate, PickupSticker, StateLabel } from "@/components/ui";
-import { fetchClosed, fetchMenu, fetchSlots, fetchTruck, nextBookable } from "@/lib/data";
+import { fetchClosedBy, fetchMenu, fetchSlots, fetchTruck, nextBookable } from "@/lib/data";
 import { dictionary, truckBlurb, truckName } from "@/lib/i18n";
 import { truckLogo, truckPhoto } from "@/lib/images";
 import { getLocale } from "@/lib/locale-server";
@@ -28,7 +28,9 @@ export default async function TruckMenu({ params }: { params: Promise<{ id: stri
   const truck = await fetchTruck(db, id);
   if (!truck) notFound();
 
-  const [items, slots, closed] = await Promise.all([fetchMenu(db, id), fetchSlots(db, id), fetchClosed(db, id)]);
+  const [items, slots, why] = await Promise.all([fetchMenu(db, id), fetchSlots(db, id), fetchClosedBy(db, id)]);
+  const closed = why !== null;
+  const paused = why === "vendor"; // the vendor's own pause, not the park's closure for tonight
   const next = closed ? null : nextBookable(slots);
   const photo = truckPhoto(truck.id);
 
@@ -76,7 +78,7 @@ export default async function TruckMenu({ params }: { params: Promise<{ id: stri
               <Isolate>{t.nextPickup(formatSlot(next.slot_start, locale))}</Isolate>
             </PickupSticker>
           ) : (
-            <StateLabel>{closed ? t.closedTonight : t.noSlotsToday}</StateLabel>
+            <StateLabel>{paused ? t.pausedNow : closed ? t.closedTonight : t.noSlotsToday}</StateLabel>
           )}
         </div>
       </header>
@@ -88,7 +90,7 @@ export default async function TruckMenu({ params }: { params: Promise<{ id: stri
 
           {closed && (
             <p className="mb-4 rounded-control bg-warning-surface px-3 py-2 text-sm font-semibold text-warning">
-              {t.closedMenuNote}
+              {paused ? t.pausedMenuNote(truckName(truck, locale)) : t.closedMenuNote}
             </p>
           )}
 

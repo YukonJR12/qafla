@@ -186,6 +186,9 @@ A vendor with an assigned truck can now run it from the app.
 | Stored in | `trucks.is_open` | a row in `truck_closures` |
 | Lasts | until the vendor changes it | tonight's Kuwait service date |
 | Kitchen shows | "Paused · Not taking orders" | "Closed for tonight by the park", and the switch is locked |
+| Customers read | "Paused · Back soon" | "Closed for tonight" |
+
+Customers are told which it is on Explore, on the menu and at checkout, because a pause may lift in minutes and a closure lasts all night. When both are true the truck reads as closed for tonight (`closedBy` in `lib/vendor-edits.ts`). At checkout a paused truck offers "Check again"; the cart is kept either way.
 
 `place_order` refuses a new order when either says closed, so switching back on cannot undo Dana's closure. Neither touches an order that already exists: the kitchen keeps every ticket and its buttons, and can finish them.
 

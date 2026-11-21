@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KitchenOrder, OrderStatus } from "./kitchen";
 import { kuwaitNow, LEAD_SECONDS, slotSeconds } from "./time";
+import { closedBy, type ClosedBy } from "./vendor-edits";
 
 export type Truck = {
   id: string;
@@ -29,6 +30,8 @@ export type Slot = { slot_start: string; booked: number; capacity: number };
 export type TruckTonight = Truck & {
   /** Closed by the vendor's switch or by the park manager for tonight. */
   closed: boolean;
+  /** Which of the two it is. The park manager's closure comes first. */
+  closedBy: ClosedBy;
   /** Earliest slot that can still be booked, or null when none is left. */
   nextSlot: string | null;
 };
@@ -54,15 +57,14 @@ export async function fetchSlots(db: SupabaseClient, truckId: string): Promise<S
   return data as Slot[];
 }
 
-/** Is this truck closed tonight? Checks the vendor switch and tonight's closure. */
-export async function fetchClosed(db: SupabaseClient, truckId: string): Promise<boolean> {
-  const [truck, closure] = await Promise.all([
-    db.from("trucks").select("is_open").eq("id", truckId).single(),
-    db.from("truck_closures").select("truck_id").eq("truck_id", truckId).eq("service_date", kuwaitNow().date),
-  ]);
-  if (truck.error) throw new Error(truck.error.message);
-  if (closure.error) throw new Error(closure.error.message);
-  return !truck.data.is_open || closure.data.length > 0;
+/**
+ * Why this truck is not taking orders right now: the park manager closed it
+ * for tonight ("park"), its vendor paused it ("vendor"), or null when it is
+ * open. Customers are told which, because one ends tonight and the other
+ * may end in a few minutes.
+ */
+export async function fetchClosedBy(db: SupabaseClient, truckId: string): Promise<ClosedBy> {
+  return closedBy(await fetchTruckState(db, truckId));
 }
 
 export async function fetchTruck(db: SupabaseClient, truckId: string): Promise<Truck | null> {
@@ -98,9 +100,10 @@ export async function fetchTrucksTonight(db: SupabaseClient): Promise<TruckTonig
 
   return Promise.all(
     trucks.data.map(async (truck) => {
-      const closed = !truck.is_open || closedIds.has(truck.id);
+      const why = closedBy({ isOpen: truck.is_open, closedByPark: closedIds.has(truck.id) });
+      const closed = why !== null;
       const slots = closed ? [] : await fetchSlots(db, truck.id);
-      return { ...truck, closed, nextSlot: nextBookable(slots)?.slot_start ?? null };
+      return { ...truck, closed, closedBy: why, nextSlot: nextBookable(slots)?.slot_start ?? null };
     }),
   );
 }
