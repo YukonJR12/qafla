@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useId, useRef, useState } from "react";
-import { ParkLineArt } from "@/components/line-art";
 import { ChevronForward, EditIcon, GlobeIcon, HelpIcon, primaryButton, secondaryButton, SignOutIcon, UserIcon } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { saveMyName } from "@/lib/data";
@@ -102,12 +102,12 @@ export default function AccountPage() {
 
         {/* The profile card: initials on Yellow Punk, then the name, email and role as saved. */}
         <section aria-label={t.signedInAs(account.email)} className="relative mt-4 min-h-[190px] overflow-hidden rounded-poster bg-ink p-5 text-snowy-white">
-          <ParkLineArt className="pointer-events-none absolute end-3 top-[14%] h-[62%] w-auto text-snowy-white/40" />
-          <div className="relative flex items-center justify-between gap-3">
+          <div dir="ltr" className="relative flex items-center justify-between gap-3">
             <span aria-hidden className="flex size-[58px] items-center justify-center rounded-full bg-yellow-punk text-[1.7rem] font-black text-ink" dir="ltr">
               {initials(account.name, account.email)}
             </span>
             <button
+              dir={locale === "ar" ? "rtl" : "ltr"}
               type="button"
               onClick={openDetails}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-snowy-white/70 px-3.5 text-sm font-semibold transition-colors duration-[120ms] ease-out hover:bg-snowy-white/10"
@@ -116,14 +116,15 @@ export default function AccountPage() {
               {t.editProfile}
             </button>
           </div>
-          <p className="relative mt-6 text-[1.65rem] leading-tight font-extrabold tracking-tight wrap-anywhere">{account.name ?? t.roleName[account.role]}</p>
-          <p className="relative text-start wrap-anywhere" dir="ltr">
-            {account.email}
-          </p>
-          <p className="relative mt-2 text-sm">
-            {t.roleLabel} <span className="font-bold">{t.roleName[account.role]}</span>
-            {account.truck && ` · ${truckName(account.truck, locale)}`}
-          </p>
+          <Image src="/brand/qafla-account-art.png" alt="" width={1902} height={827} unoptimized className="pointer-events-none absolute top-20 right-4 h-20 w-[58%] object-contain sm:h-28 sm:w-[44%]" />
+          <div className="relative mt-[5.5rem] sm:mt-6 sm:mr-auto sm:ml-0 sm:max-w-[52%]">
+            <p className="text-[1.65rem] leading-tight font-extrabold tracking-tight wrap-anywhere">{account.name ?? t.roleName[account.role]}</p>
+            <p className="text-start wrap-anywhere" dir="ltr">{account.email}</p>
+            <p className="mt-2 text-sm">
+              {t.roleLabel} <span className="font-bold">{t.roleName[account.role]}</span>
+              {account.truck && ` · ${truckName(account.truck, locale)}`}
+            </p>
+          </div>
         </section>
         <p role="status" className="mt-2 min-h-5 text-sm font-semibold">
           {savedNote && t.nameSaved}

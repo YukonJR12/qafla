@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { CartBar } from "@/components/cart-bar";
 import { LanguageSwitch } from "@/components/language-switch";
-import { ParkLineArt } from "@/components/line-art";
 import { ScrollMemory } from "@/components/scroll-memory";
 import { TruckList } from "@/components/truck-list";
 import { fetchDishNames, fetchTrucksTonight } from "@/lib/data";
@@ -41,13 +40,13 @@ export default async function Explore() {
         {/* Coming back from a menu returns to the same place in the list. */}
         <ScrollMemory id="explore" />
 
-        {/* The park's banner: its name and tonight's pickup hours. The line art is decoration. */}
-        <div className="relative flex min-h-[110px] items-center overflow-hidden rounded-poster bg-ink p-5 text-snowy-white">
-          <ParkLineArt className="pointer-events-none absolute end-2 bottom-0 h-[5.5rem] w-auto text-red-orange" />
-          <div className="relative max-w-[62%]">
-            <p className="text-[1.7rem] leading-[1.05] font-extrabold tracking-tight text-balance">{t.parkName}</p>
-            <p className="mt-1.5">{t.parkHoursShort}</p>
+        {/* Physical artwork stays on the right in both languages; copy keeps its reading direction. */}
+        <div dir="ltr" className="grid min-h-[104px] grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] items-center gap-2 rounded-poster bg-ink p-3.5 text-snowy-white sm:p-5">
+          <div dir={locale === "ar" ? "rtl" : "ltr"}>
+            <p className="text-[clamp(1.125rem,5vw,1.7rem)] leading-[1.05] font-extrabold tracking-tight text-balance">{t.parkName}</p>
+            <p className="mt-1.5 text-[clamp(0.75rem,3.4vw,1rem)]">{t.parkHoursShort}</p>
           </div>
+          <Image src="/brand/qafla-park-art.png" alt="" width={1942} height={809} unoptimized className="pointer-events-none h-auto max-h-28 w-full object-contain" />
         </div>
 
         <div className="mt-4 flex items-baseline justify-between gap-3">
