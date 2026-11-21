@@ -46,4 +46,3 @@ The browser harness uses fake auth and intercepted REST/Realtime with a dummy lo
 Actual iOS/Android hardware, Safari, screen-reader speech and deployed mobile-network latency were not measured. The scene is an authored representation of this fictional park, not surveyed coordinates. Both mesh picking and attached truck-label controls are implemented; the repeatable recording uses the labels. Earlier experimental recordings that clicked guessed pixels were discarded.
 
 Leave this feature PR open for visual approval; do not deploy it to Production as part of this change.
-

@@ -18,4 +18,3 @@ test("map deep links survive customer login and remain outside staff workspaces"
   assert.equal(mayOpen("vendor", "/map"), false);
   assert.equal(mayOpen("manager", "/map"), false);
 });
-

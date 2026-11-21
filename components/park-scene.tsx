@@ -189,5 +189,3 @@ export default function ParkScene(props: Props) {
     </Canvas>
   </div>;
 }
-
-

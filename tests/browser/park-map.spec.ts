@@ -187,6 +187,3 @@ test("recording: rotate real geometry, Karak sheet, then Ready Dune location; pi
   await expect(page.getByRole("link", { name: /Karak Corner/ }).first()).toBeVisible();
   expect(writes).toEqual([]);
 });
-
-
-
