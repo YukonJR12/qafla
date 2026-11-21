@@ -77,4 +77,4 @@ Placed → Accepted → Preparing → Ready → Collected is enforced by set_ord
 
 ## Levels and limits
 
-Core/Premium features and the Park Guide are shipped. Existing AI/payment evidence includes local and Preview runs. Full assessment completion is not claimed until the five demo logins, live tampering write-up and two-browser race recording are packaged. Notifications are not implemented; the guide does not depend on them. See [submission audit](submission.md).
+Core/Premium features and the Park Guide are shipped. All required demo logins are now verified, including vendors for all six trucks, and the two-browser five-round race is packaged with real isolated PostgreSQL results. Existing AI/payment evidence includes local and Preview runs. Full assessment completion is not claimed: the live tampering observations, acceptance or live rerun of the isolated race, and panel repository/attachment access remain outstanding. Notifications are not implemented; the guide does not depend on them. See [submission audit](submission.md).
