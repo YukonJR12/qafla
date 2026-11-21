@@ -41,7 +41,7 @@ export function homeFor(role: Role): string {
   return role === "vendor" ? "/vendor" : role === "manager" ? "/manager" : "/explore";
 }
 
-const CUSTOMER = ["/explore", "/trucks", "/cart", "/checkout", "/orders", "/account"];
+const CUSTOMER = ["/map", "/explore", "/trucks", "/cart", "/checkout", "/orders", "/account"];
 const VENDOR = ["/vendor", "/account"];
 const MANAGER = ["/manager", "/account"];
 
@@ -118,7 +118,7 @@ export function route(who: Who, path: string, search = ""): { view: View; redire
   return { view: "page", redirect: null };
 }
 
-export type NavItem = { key: "explore" | "orders" | "account" | "kitchen" | "menu" | "capacity" | "overview" | "slot"; href: string };
+export type NavItem = { key: "map" | "explore" | "orders" | "account" | "kitchen" | "menu" | "capacity" | "overview" | "slot"; href: string };
 
 /** The destinations each role's navigation offers, in order. */
 export function navFor(role: Role): NavItem[] {
@@ -139,6 +139,7 @@ export function navFor(role: Role): NavItem[] {
   }
   return [
     { key: "explore", href: "/explore" },
+    { key: "map", href: "/map" },
     { key: "orders", href: "/orders" },
     { key: "account", href: "/account" },
   ];
@@ -148,6 +149,7 @@ export function navFor(role: Role): NavItem[] {
 export function activeNav(role: Role, path: string, search = ""): NavItem["key"] | null {
   const clean = pathOnly(path);
   if (clean === "/account") return "account";
+  if (role === "customer" && clean === "/map") return "map";
   if (role === "vendor") {
     if (clean === "/vendor/menu" || clean.startsWith("/vendor/menu/")) return "menu";
     // Truck details is reached from the Kitchen board, so it stays under Kitchen.

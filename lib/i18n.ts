@@ -429,6 +429,7 @@ const en = {
   navLabel: "Main",
   nav: {
     explore: "Explore",
+    map: "Map",
     orders: "Orders",
     account: "Account",
     kitchen: "Kitchen",
@@ -1051,6 +1052,7 @@ const ar: Dict = {
   navLabel: "التنقل الرئيسي",
   nav: {
     explore: "العربات",
+    map: "الخريطة",
     orders: "طلباتي",
     account: "الحساب",
     kitchen: "المطبخ",

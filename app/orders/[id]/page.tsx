@@ -15,6 +15,7 @@ import { useLocale } from "@/lib/locale";
 import { supabaseBrowser } from "@/lib/supabase";
 import { dishPhoto } from "@/lib/images";
 import { canPayNow, moneyLine } from "@/lib/payments";
+import { parkWords, parkTruck } from "@/lib/park-map";
 import { canCancel } from "@/lib/ticket";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
@@ -128,6 +129,10 @@ export default function OrderPage() {
                 </p>
               )}
             </div>
+
+            {order.status === "ready" && parkTruck(order.truck_id) && (
+              <Link href={`/map?truck=${encodeURIComponent(order.truck_id)}`} prefetch={false} className={`${secondaryButton} mb-4 w-full`}>{parkWords[locale].find}</Link>
+            )}
 
             {/* The black ticket: truck, status, the pickup time above all, and the reference on the stub. */}
             <TicketCard truck={truck} slot={order.slot_start} status={order.status}>

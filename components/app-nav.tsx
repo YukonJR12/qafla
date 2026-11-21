@@ -10,6 +10,7 @@ import { BagIcon, ClockIcon, FlameIcon, GridIcon, ListIcon, SlidersIcon, StoreIc
 
 const ICONS: Record<NavItem["key"], (props: { className?: string }) => React.ReactNode> = {
   explore: StoreIcon,
+  map: GridIcon,
   orders: TicketIcon,
   account: UserIcon,
   kitchen: FlameIcon,
@@ -53,6 +54,7 @@ export function BottomBar({ role }: { role: Role }) {
             <li key={item.key} className="min-w-0 flex-1">
               <Link
                 href={item.href}
+                prefetch={item.key === "map" ? false : undefined}
                 aria-current={here ? "page" : undefined}
                 className={`relative flex h-16 flex-col items-center justify-center gap-0.5 px-1 pb-1.5 text-xs leading-tight transition-colors duration-[120ms] ease-out ${
                   here ? "font-extrabold text-ink" : "font-semibold text-muted hover:text-ink"
@@ -96,6 +98,7 @@ export function TopBar({ role }: { role: Role }) {
               <li key={item.key}>
                 <Link
                   href={item.href}
+                prefetch={item.key === "map" ? false : undefined}
                   aria-current={here ? "page" : undefined}
                   className={`inline-flex min-h-11 items-center gap-2 rounded-control px-3.5 text-base transition-colors duration-[120ms] ease-out ${
                     here ? "bg-ink font-bold text-snowy-white" : "font-semibold text-ink hover:bg-subtle"
