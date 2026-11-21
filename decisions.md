@@ -1,6 +1,7 @@
 # Qafla — decisions
 
-Candidate: Faisal (confirm full submission name). Repository: https://github.com/YukonJR12/qafla
+Candidate: Faisal Alrefae. Repository: https://github.com/YukonJR12/qafla
+Submission deadline: Monday, 23 November 2026, 11:59 PM Kuwait time (UTC+3).
 Prepared from shipped source and recorded evidence, 22 November 2026. Candidate must review and be able to explain these decisions.
 
 ## Customer problem: recognizing the pickup counter
