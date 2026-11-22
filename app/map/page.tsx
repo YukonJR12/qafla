@@ -3,10 +3,11 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { LanguageSwitch } from "@/components/language-switch";
 import { TruckList } from "@/components/truck-list";
 import { TruckLogo } from "@/components/truck-logo";
+import { TruckSheet } from "@/components/truck-sheet";
 import { primaryButton, secondaryButton } from "@/components/ui";
 import { fetchDishNames, fetchTrucksTonight, type TruckTonight } from "@/lib/data";
 import { truckName, truckCuisine, truckBlurb } from "@/lib/i18n";
@@ -28,6 +29,14 @@ export default function MapPage() {
   const words = parkWords[locale];
   const search = useSearchParams();
   const [selected, setSelected] = useState<string | null>(() => parkTruck(search.get("truck"))?.id ?? null);
+  const [sheetOpen, setSheetOpen] = useState(() => Boolean(parkTruck(search.get("truck"))));
+  const returnTo = useRef<HTMLElement | null>(null);
+  const closeSheet = useCallback(() => { setSheetOpen(false); (returnTo.current ?? resetButton.current)?.focus({ preventScroll: true }); }, []);
+  function selectTruck(id: string) {
+    returnTo.current = document.querySelector<HTMLElement>(`[data-truck="${id}"]`);
+    setSelected(id);
+    setSheetOpen(true);
+  }
   const resetButton = useRef<HTMLButtonElement>(null);
   const [reset, setReset] = useState(0);
   const [list, setList] = useState(false);
@@ -66,7 +75,7 @@ export default function MapPage() {
           <button aria-pressed={!list} onClick={() => { if (list) setReady(false); setList(false); }} className={`${list ? secondaryButton : primaryButton} w-auto! whitespace-nowrap px-3! py-2!`}>{words.map}</button>
           <button aria-pressed={list} onClick={() => setList(true)} className={`${list ? primaryButton : secondaryButton} w-auto! whitespace-nowrap px-3! py-2!`}>{words.list}</button>
         </div>
-        {!list && <button ref={resetButton} className="min-h-11 rounded-control px-2 text-sm font-bold underline" onClick={() => { setSelected(null); setReset((v) => v + 1); }}>{words.reset}</button>}
+        {!list && <button ref={resetButton} className="min-h-11 rounded-control px-2 text-sm font-bold underline" onClick={() => { setSheetOpen(false); setSelected(null); setReset((v) => v + 1); }}>{words.reset}</button>}
       </div>
     </header>
     {error && <p role="alert" className="px-4 text-sm">{words.error} <button className="min-h-11 underline" onClick={() => setRetry((v) => v + 1)}>{words.retry}</button></p>}
@@ -74,20 +83,20 @@ export default function MapPage() {
       <p className="px-4 pt-2 text-center text-xs text-muted">{words.hint}</p>
       <div className="relative min-h-[230px] flex-1" data-testid="park" data-ready={ready} data-selected={selected ?? ""}>
         {!ready && <p role="status" className="absolute inset-x-0 top-4 text-center">{words.loading}</p>}
-        <SceneBoundary fallback={fallback}><Scene trucks={data.trucks} selected={selected} reset={reset} onSelect={setSelected} onReady={() => setReady(true)} fallback={fallback} /></SceneBoundary>
+        <SceneBoundary fallback={fallback}><Scene trucks={data.trucks} selected={selected} reset={reset} onSelect={selectTruck} onReady={() => setReady(true)} fallback={fallback} /></SceneBoundary>
       </div>
-      {truck ? <section aria-label={words.details} className="max-h-[32dvh] shrink-0 overflow-y-auto rounded-t-[24px] border-t border-divider bg-snowy-white px-4 pt-3 pb-3 shadow-[0_-4px_18px_#1010100d]">
+      {truck && sheetOpen ? <TruckSheet key={truck.id} title={words.details} closeLabel={words.close} onClose={closeSheet}>
         <div className="flex items-center gap-3">
           <TruckLogo truck={truck} className="size-12" />
           <div className="min-w-0 flex-1"><h2 className="text-xl font-extrabold" aria-live="polite">{truckName(truck, locale)}</h2><p className="text-sm text-muted">{truckCuisine(truck, locale)}</p></div>
-          <button aria-label={words.close} className="size-11 shrink-0 rounded-full border border-divider text-2xl" onClick={() => { setSelected(null); setReset((v) => v + 1); resetButton.current?.focus(); }}>×</button>
+          <button aria-label={words.close} className="size-11 shrink-0 rounded-full border border-divider text-2xl" onClick={closeSheet}>×</button>
         </div>
         <p className="mt-1 text-sm">{truckBlurb(truck, locale)}</p>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-bold">{truck.closed ? (truck.closedBy === "vendor" ? t.pausedNow : t.closedTonight) : truck.nextSlot ? t.nextPickup(formatSlot(truck.nextSlot, locale)) : t.noSlotsToday}</p>
           <Link href={`/trucks/${truck.id}`} className={primaryButton}>{words.menu}</Link>
         </div>
-      </section> : <p className="shrink-0 px-4 pb-4 text-center text-sm text-muted">{words.tap}</p>}
+      </TruckSheet> : <p className="shrink-0 px-4 pb-4 text-center text-sm text-muted">{words.tap}</p>}
     </>}
   </main>;
 }

@@ -76,6 +76,7 @@ function Table({ x, z }: { x: number; z: number }) {
 }
 type Props = { trucks: TruckTonight[]; selected: string | null; reset: number; onSelect: (id: string) => void; onReady: () => void; fallback: ReactNode };
 function World({ trucks, selected, reset, onSelect, onReady }: Omit<Props, "fallback">) {
+  const lastFocus = useRef<{ selected: string | null; reset: number } | null>(null);
   const { locale } = useLocale();
   const textures = useTexture([...PARK_TRUCKS.map((t) => `/trucks/logos/${t.id}.webp`), "/brand/qafla-logo.png", "/park/coded-bootcamp.png"]);
   textures.forEach((texture) => { texture.colorSpace = THREE.SRGBColorSpace; });
@@ -93,6 +94,9 @@ function World({ trucks, selected, reset, onSelect, onReady }: Omit<Props, "fall
   const readyCallback = useRef(onReady);
   useEffect(() => { readyCallback.current = onReady; }, [onReady]);
   useEffect(() => {
+    // Dismissing the sheet resizes the canvas, but must not move the camera.
+    if (lastFocus.current?.selected === selected && lastFocus.current.reset === reset) return;
+    lastFocus.current = { selected, reset };
     const truck = parkTruck(selected);
     const target = new THREE.Vector3(truck?.x ?? 0, 0.7, truck?.z ?? 0.5);
     const zoom = truck ? Math.min(size.width / 10, size.height / 10) : Math.min(size.width / 14, size.height / 23);
