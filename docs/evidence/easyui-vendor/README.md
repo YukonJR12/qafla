@@ -2,7 +2,7 @@
 
 [390 px English draft review](vendor-review-390-en.png) · [320 px Arabic draft review](vendor-review-320-ar.png) · [390 px saved result](vendor-saved-390-en.png)
 
-Local production build based on `53f593a`, Chromium **159.0.8154.6** on Windows. Chrome emulation at 320×844 and 390×844; desktop 1440×844, English and Arabic. Both 320 px photo/review journeys use reduced motion. Native checkbox keyboard operation is exercised. All database and AI responses in these browser scenarios are controlled fixtures; no Production edits or paid model requests.
+Tested application commit: **03da133**. Local production build based on `53f593a`, Chromium **159.0.8154.6** on Windows. Chrome emulation at 320×844 and 390×844; desktop 1440×844, English and Arabic. Both 320 px photo/review journeys use reduced motion. Native checkbox keyboard operation is exercised. All database and AI responses in these browser scenarios are controlled fixtures; no Production edits or paid model requests.
 
 ## Source mapping
 
