@@ -2,7 +2,7 @@
 
 [Normal-speed 390 px recording](customer-390.webm)
 
-Environment: local **production build** from `53f593a` plus this PR. Playwright Chromium 149, Windows, Chrome mobile emulation at 320×844 and 390×844; desktop 1440×844. Controlled HTTP, auth, order and payment fixtures; no hosted database writes or gateway payments. This is not physical-phone verification.
+Tested application commit: **4a910a7**. Environment: local **production build** based on `53f593a`. Playwright Chromium **159.0.8154.6**, Windows, Chrome mobile emulation at 320×844 and 390×844; desktop 1440×844. Controlled HTTP, auth, order and payment fixtures; no hosted database writes or gateway payments. This is not physical-phone verification.
 
 ## Source mapping
 

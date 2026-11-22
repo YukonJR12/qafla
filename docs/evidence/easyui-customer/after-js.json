@@ -1,5 +1,5 @@
 {
-  "commit": "53f593a409fbaa8a0973155bb04682edf9ed05b0",
+  "commit": "4a910a7ccf6bfb27bc5035a8b13625d2ba966469",
   "method": "Unique production route entry JS plus route-local dynamic imports; per-file gzip level 9. Includes shared Next/React code. Build artifact sizes, not latency or HTTP transfer measurements.",
   "routes": {
     "menu": {
