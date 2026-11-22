@@ -1,0 +1,9 @@
+{
+  "fps": 5,
+  "durationSeconds": 20.8,
+  "firstCaptionFrame": [
+    7,
+    7
+  ],
+  "alignment": "Both streams start at their first Round 1 green evidence caption; 5fps preserves elapsed speed, not precision timing telemetry. Original videos retained."
+}

@@ -10,12 +10,12 @@
       "delta": 1,
       "results": [
         {
-          "customer": "race-a@example.test",
+          "customer": "race-b@example.test",
           "outcome": "saved",
           "ticket": "T02-000006"
         },
         {
-          "customer": "race-b@example.test",
+          "customer": "race-a@example.test",
           "outcome": "slot_full"
         }
       ]
@@ -82,12 +82,12 @@
       "delta": 1,
       "results": [
         {
-          "customer": "race-a@example.test",
+          "customer": "race-b@example.test",
           "outcome": "saved",
           "ticket": "T02-000030"
         },
         {
-          "customer": "race-b@example.test",
+          "customer": "race-a@example.test",
           "outcome": "slot_full"
         }
       ]
