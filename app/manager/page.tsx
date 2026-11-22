@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
+const RushForecast = dynamic(() => import("@/components/rush-forecast").then(m => m.RushForecast));
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { LoadError } from "@/components/cart-states";
@@ -119,6 +121,7 @@ function ManagerDashboard() {
   const params = useSearchParams();
   const slot = parseSlot(params.get("slot")) ?? currentSlot(now.seconds);
   const truckId = params.get("truck");
+  const forecasting = params.get("view") === "forecast";
   const selected = park?.trucks.find((truck) => truck.id === truckId) ?? null;
 
   function select(next: { slot: string; truck: string | null }) {
@@ -212,7 +215,7 @@ function ManagerDashboard() {
             </div>
             <LanguageSwitch />
           </div>
-          {isManager && (
+          {isManager && !forecasting && (
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <span className="font-bold">
                 <Isolate>{t.kuwaitTimeNow(formatKuwaitTime(new Date(), locale))}</Isolate>
@@ -237,6 +240,10 @@ function ManagerDashboard() {
       </header>
 
       <main className="mx-auto max-w-[1440px] px-4 pt-4 pb-10 md:px-6">
+        {isManager && <nav aria-label={locale === "ar" ? "عرض الحديقة" : "Park view"} className="mb-4 flex gap-2">
+          <Link href="/manager" aria-current={!forecasting ? "page" : undefined} className={`rounded-control border px-4 py-3 font-bold ${!forecasting ? "bg-ink text-white" : ""}`}>{locale === "ar" ? "الإشغال الفعلي" : "Live overview"}</Link>
+          <Link href="/manager?view=forecast" aria-current={forecasting ? "page" : undefined} className={`rounded-control border px-4 py-3 font-bold ${forecasting ? "bg-ink text-white" : ""}`}>{locale === "ar" ? "التوقع" : "Forecast"}</Link>
+        </nav>}
         {sessionLoading || (userId && !account) ? (
           <p className="min-h-96 text-muted" aria-live="polite">
             {t.loading}
@@ -259,6 +266,8 @@ function ManagerDashboard() {
               {t.signOut}
             </button>
           </div>
+        ) : forecasting ? (
+          <RushForecast token={session!.access_token} />
         ) : !park ? (
           loadFailed ? (
             <LoadError title={t.parkLoadErrorTitle} body={t.boardLoadErrorBody} onRetry={() => reread().catch(() => {})} />

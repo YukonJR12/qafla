@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-22",
+  "environment": "Local production build; Chromium emulation; isolated browser fixtures and PostgreSQL",
+  "lint": "passed",
+  "typecheck": "passed",
+  "unit": {
+    "passed": 116,
+    "failed": 0
+  },
+  "database": {
+    "passed": 83,
+    "exitCode": 0,
+    "limitation": "Initial sandboxed run stalled in teardown; successful unrestricted rerun exited normally"
+  },
+  "browserFull": {
+    "passed": 43,
+    "failed": 0
+  },
+  "browserFinalForecast": {
+    "passed": 8,
+    "failed": 0,
+    "seconds": 38,
+    "checks": [
+      "320/390/1440 EN/AR",
+      "KPI/chart/detail/request figures at each replay time",
+      "touch and Enter",
+      "no horizontal overflow",
+      "provider fallback",
+      "customer gate"
+    ]
+  },
+  "productionOrdersCreated": 0,
+  "physicalDevice": false
+}
