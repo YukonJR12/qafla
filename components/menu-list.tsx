@@ -93,7 +93,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
               disabled={closed}
               aria-label={t.addItem(name)}
               onClick={() => add(item)}
-              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-divider bg-snowy-white transition-colors duration-[120ms] ease-out hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:border-divider disabled:text-muted"
+              className="tap-ack inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-divider bg-snowy-white hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:border-divider disabled:text-muted"
             >
               <PlusIcon className="size-5" />
             </button>

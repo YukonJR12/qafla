@@ -87,6 +87,18 @@ export async function fetchMenu(db: SupabaseClient, truckId: string): Promise<Me
   return data;
 }
 
+/** Independent menu reads share one network round; availability is never cached. */
+export async function fetchTruckMenu(db: SupabaseClient, truckId: string) {
+  const [truck, items, slots, closures] = await Promise.all([
+    fetchTruck(db, truckId),
+    fetchMenu(db, truckId),
+    fetchSlots(db, truckId),
+    db.from("truck_closures").select("truck_id").eq("truck_id", truckId).eq("service_date", kuwaitNow().date),
+  ]);
+  if (closures.error) throw new Error(closures.error.message);
+  return { truck, items, slots, why: truck ? closedBy({ isOpen: truck.is_open, closedByPark: closures.data.length > 0 }) : null };
+}
+
 /**
  * Every dish's ID, truck and name: what Explore's search looks through, so
  * "karak" finds the truck that serves it. Menus are public to read.

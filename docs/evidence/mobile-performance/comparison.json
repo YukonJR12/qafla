@@ -1,0 +1,38 @@
+{
+  "environment": "Local next build + next start; shared live read-only Supabase backend. Server assets primed before final measurements. NOT a deployed Vercel comparison.",
+  "baseCommit": "12870f381535368cb9b50059b2b835cf3c202277",
+  "headCommit": "e3d6220ff767bc16cd3a36e875b56cb6fb22807a",
+  "browser": "159.0.8154.6",
+  "viewport": "390x844",
+  "profile": "150ms RTT, 1.6 Mbps down, 750 Kbps up; CPU 4x",
+  "metrics": [
+    {
+      "name": "Fresh launch",
+      "base_cold": 2915.8,
+      "head_cold": 2494.1,
+      "base_warm": 489.2,
+      "head_warm": 624.1
+    },
+    {
+      "name": "Returning launch",
+      "base_cold": 4743.5,
+      "head_cold": 4309.7,
+      "base_warm": 2024.5,
+      "head_warm": 2255.8
+    },
+    {
+      "name": "Menu usable",
+      "base_cold": 1179.5,
+      "head_cold": 926.6,
+      "base_warm": 767.6,
+      "head_warm": 404.8
+    },
+    {
+      "name": "Add update",
+      "base_cold": 24.9,
+      "head_cold": 25.7,
+      "base_warm": 26.9,
+      "head_warm": 25.1
+    }
+  ]
+}

@@ -20,7 +20,7 @@ export function QuantityStepper({
 }) {
   const { t } = useLocale();
   const button =
-    "inline-flex size-11 items-center justify-center rounded-full transition-colors duration-[120ms] ease-out hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-40";
+    "tap-ack inline-flex size-11 items-center justify-center rounded-full hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <div role="group" aria-label={t.quantityOf(name, quantity)} className="flex shrink-0 items-center rounded-full border border-divider bg-snowy-white">
@@ -32,7 +32,7 @@ export function QuantityStepper({
       >
         <MinusIcon className="size-5" />
       </button>
-      <span aria-hidden className="w-5 text-center text-base font-extrabold tabular-nums">
+      <span key={quantity} aria-hidden className="quantity-ack w-5 rounded-full text-center text-base font-extrabold tabular-nums">
         {quantity}
       </span>
       <button

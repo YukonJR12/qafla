@@ -13,8 +13,17 @@ for (const width of [320, 390]) for (const locale of ["en", "ar"] as const) {
       return route.abort();
     });
     await page.goto("/sign-in");
+    await expect(page.locator(".launch")).toHaveCount(0);
+    const artwork = page.locator('img[src*="qafla-account-art"]');
+    await expect(artwork).toBeVisible();
+    await expect(artwork).toHaveAttribute("alt", "");
     const password = page.getByLabel(t.password, { exact: true });
     for (const mode of ["sign-in", "sign-up"]) {
+      const art = (await artwork.boundingBox())!;
+      const heading = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
+      expect(art.x).toBeGreaterThanOrEqual(heading.x + heading.width);
+      expect(art.x + art.width).toBeLessThan(width);
+      expect(await artwork.evaluate(el => getComputedStyle(el).objectFit)).toBe("contain");
       await password.fill("ExampleOnly123");
       await expect(password).toHaveAttribute("type", "password");
       await page.getByRole("button", { name: t.showPassword, exact: true }).tap();

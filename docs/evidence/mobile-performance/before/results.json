@@ -1,0 +1,81 @@
+{
+  "base": "https://qafla-rjqd.vercel.app",
+  "browser": "159.0.8154.6",
+  "viewport": "390x844",
+  "profile": "150ms RTT, 1.6 Mbps down, 750 Kbps up; CPU 4x",
+  "cache": "Cold: new context and cleared HTTP cache; warm: same context HTTP cache. No Map visit. Server/CDN cache uncontrolled.",
+  "runs": [
+    {
+      "id": "fresh-1-cold",
+      "launchMs": 4009,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-1-warm",
+      "launchMs": 1253,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-1-cold",
+      "launchMs": 6459,
+      "menuMs": 2422,
+      "addMs": 28.5
+    },
+    {
+      "id": "returning-1-warm",
+      "launchMs": 2816,
+      "menuMs": 2424,
+      "addMs": 26
+    },
+    {
+      "id": "fresh-2-cold",
+      "launchMs": 3965,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-2-warm",
+      "launchMs": 1304,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-2-cold",
+      "launchMs": 5945,
+      "menuMs": 2437,
+      "addMs": 27.19999998807907
+    },
+    {
+      "id": "returning-2-warm",
+      "launchMs": 2833,
+      "menuMs": 1920,
+      "addMs": 47
+    },
+    {
+      "id": "fresh-3-cold",
+      "launchMs": 3951,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-3-warm",
+      "launchMs": 1267,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-3-cold",
+      "launchMs": 6184,
+      "menuMs": 2438,
+      "addMs": 26.200000002980232
+    },
+    {
+      "id": "returning-3-warm",
+      "launchMs": 2856,
+      "menuMs": 2427,
+      "addMs": 47.79999999701977
+    }
+  ]
+}

@@ -123,6 +123,7 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
               <li key={truck.id}>
                 <Link
                   href={`/trucks/${truck.id}`}
+                  prefetch={false}
                   aria-label={t.orderFromLabel(name, bookable ? t.nextPickup(formatSlot(truck.nextSlot!, locale)) : state)}
                   className="flex h-full items-stretch gap-3 py-3 transition-colors duration-[120ms] ease-out hover:bg-subtle md:rounded-panel md:border md:border-divider md:p-2 md:hover:border-ink"
                 >
@@ -135,6 +136,7 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
                         width={480}
                         height={480}
                         sizes="(min-width: 768px) 176px, 40vw"
+                        fetchPriority="low"
                         className={`size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10 ${bookable ? "" : "opacity-60 grayscale"}`}
                       />
                     ) : (
