@@ -1,16 +1,12 @@
-import {
-  DEMO_DAY,
-  REPLAY,
-  explanation,
-  forecast,
-  generateHistory,
-} from "./rush.ts";
+import { explanation, forecast } from "./rush.ts";
+import { validSelection, type RushData } from "./rush-data.ts";
 export function rushHandler(
   authorize: (token: string) => Promise<boolean>,
   ask: (
     figures: Record<string, unknown>,
     locale: "en" | "ar",
   ) => Promise<string | null>,
+  load: (token: string) => Promise<RushData>,
 ) {
   return async (request: Request): Promise<Response> => {
     const token = request.headers
@@ -36,14 +32,17 @@ export function rushHandler(
     } catch {
       return Response.json({ error: "invalid_request" }, { status: 400 });
     }
-    const history = generateHistory();
+    let data: RushData;
+    try { data = await load(token); }
+    catch { return Response.json({error: "history_unavailable"}, {status: 503}); }
+    const history = data.history;
     const row = history.find(
       (r) =>
-        r.day === DEMO_DAY && r.truck === body.truck && r.slot === body.slot,
+        r.serviceDate === body.date && r.truck === body.truck && r.slot === body.slot,
     );
     if (
       !row ||
-      !REPLAY.includes(body.now) ||
+      !validSelection(data, body.date, body.now) ||
       !["en", "ar"].includes(body.locale)
     )
       return Response.json({ error: "invalid_selection" }, { status: 400 });
@@ -59,7 +58,7 @@ export function rushHandler(
       historySize: f.n,
       similarEveningAdditional: Number(f.mean.toFixed(1)),
       state: f.state,
-      minutesUntilClose: f.cutoff - f.now,
+      minutesUntilClose: Math.max(0,Math.ceil(f.cutoff - f.now)),
     };
     let text: string | null = null;
     try {

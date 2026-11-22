@@ -9,7 +9,7 @@ export const TRUCKS = [
   { id: "T05", en: "Saj Station", ar: "محطة الصاج", capacity: 8 },
   { id: "T06", en: "Lugaimat & Co", ar: "لقيمات وشركاه", capacity: 8 },
 ] as const;
-export const REPLAY = [19 * 60, 19 * 60 + 15, 19 * 60 + 31] as const;
+export const REPLAY = [19 * 60, 19 * 60 + 15, 19 * 60 + 46] as const;
 export const DEMO_DAY = 56;
 export type Booking = {
   madeAt: number;
@@ -28,15 +28,16 @@ export type Evening = {
 const weekend = (day: number) => [4, 5].includes(day % 7); // day zero: Sunday, Kuwait
 export const minute = (slot: string) => slotSeconds(slot) / 60;
 export const timeString = (m: number) =>
-  `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}:00`;
+  `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}:00`;
 /** Synthetic successful bookings only. Each number is minutes into the Kuwait service day. */
-export function generateHistory(seed = 20261122, days = 57): Evening[] {
+export function generateHistory(seed = 20261122, days = 57, startDate = "2026-09-27"): Evening[] {
   let state = seed >>> 0;
   const random = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
     return state / 4294967296;
   };
   const rows: Evening[] = [];
+  const start = Date.parse(`${startDate}T00:00:00Z`), startWeekday = new Date(start).getUTCDay();
   for (let day = 0; day < days; day++) {
     const quiet = random() < 0.14 ? 0.35 : 0.85 + random() * 0.3;
     for (const [i, truck] of TRUCKS.entries()) {
@@ -53,7 +54,7 @@ export function generateHistory(seed = 20261122, days = 57): Evening[] {
           0.99,
           (0.25 + 0.7 * Math.exp(-(((minute(slot) - peak) / 85) ** 2))) *
             quiet *
-            (weekend(day) ? 1.15 : 1),
+            (weekend(day + startWeekday) ? 1.15 : 1),
         );
         const bookings: Booking[] = [];
         for (let seat = 0; seat < truck.capacity; seat++)
@@ -73,7 +74,7 @@ export function generateHistory(seed = 20261122, days = 57): Evening[] {
           }
         rows.push({
           day,
-          serviceDate: new Date(Date.UTC(2026, 8, 27 + day))
+          serviceDate: new Date(start + day * 86400000)
             .toISOString()
             .slice(0, 10),
           truck: truck.id,
@@ -212,12 +213,14 @@ export function dashboard(history: Evening[], day: number, now: number) {
   };
 }
 /** Fixed first 42 evenings train; latest 14 never enter training, even for later held-out days. */
-export function validate(history = generateHistory()) {
-  const training = history.filter((h) => h.day < 42);
+export function validate(history = generateHistory(), beforeDay = DEMO_DAY) {
+  const days = [...new Set(history.filter(h => h.day < beforeDay).map(h => h.day))].sort((a,b)=>a-b);
+  const heldOutDays = days.slice(-14), trainingDays = days.slice(0,-14);
+  const training = history.filter((h) => trainingDays.includes(h.day));
   let model = 0,
     baseline = 0,
     n = 0;
-  for (const row of history.filter((h) => h.day >= 42 && h.day < 56))
+  for (const row of history.filter((h) => heldOutDays.includes(h.day)))
     for (const lead of [30, 60, 90]) {
       const now = minute(row.slot) - lead,
         f = forecast(training, row, now);
@@ -228,16 +231,16 @@ export function validate(history = generateHistory()) {
       n++;
     }
   return {
-    modelMAE: model / n,
-    baselineMAE: baseline / n,
+    modelMAE: n ? model / n : 0,
+    baselineMAE: n ? baseline / n : 0,
     samples: n,
-    evenings: 14,
-    trainingEvenings: 42,
+    evenings: heldOutDays.length,
+    trainingEvenings: trainingDays.length,
   };
 }
 export function explanation(f: Forecast, locale: "en" | "ar") {
   const n = (x: number) => Number(x.toFixed(1));
   return locale === "ar"
-    ? `توقع تجريبي: ${f.current} من ${f.capacity} محجوزة الآن. نتوقع ${n(f.additional)} طلبات إضافية، ليصبح الإجمالي ${n(f.projected)}، ضمن نطاق ${f.low}–${f.high}. استندنا إلى ${f.n} أمسيات مشابهة. ${f.state === "deadline_passed" || f.state === "truck_closed" ? "الحجز مغلق؛ لا حجوزات جديدة متوقعة." : "راجع المطبخ قبل إغلاق الحجز؛ القرار لك."}`
-    : `Demo forecast: ${f.current} of ${f.capacity} booked now. About ${n(f.additional)} more bookings gives ${n(f.projected)} projected, with a range of ${f.low}–${f.high}. Based on ${f.n} similar evenings. ${f.state === "deadline_passed" || f.state === "truck_closed" ? "Booking is closed; no new bookings expected." : "Check with the kitchen before booking closes; the decision stays with you."}`;
+    ? `${f.current} من ${f.capacity} محجوزة الآن. نتوقع ${n(f.additional)} طلبات إضافية، ليصبح الإجمالي ${n(f.projected)}، ضمن نطاق ${f.low}–${f.high}. استندنا إلى ${f.n} أمسيات مشابهة. ${f.state === "deadline_passed" || f.state === "truck_closed" ? "الحجز مغلق؛ لا حجوزات جديدة متوقعة." : "راجع المطبخ قبل إغلاق الحجز؛ القرار لك."}`
+    : `${f.current} of ${f.capacity} booked now. About ${n(f.additional)} more bookings gives ${n(f.projected)} projected, with a range of ${f.low}–${f.high}. Based on ${f.n} similar evenings. ${f.state === "deadline_passed" || f.state === "truck_closed" ? "Booking is closed; no new bookings expected." : "Check with the kitchen before booking closes; the decision stays with you."}`;
 }

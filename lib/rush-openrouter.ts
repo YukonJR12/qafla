@@ -27,7 +27,7 @@ export async function askRushExplanation(
         messages: [
           {
             role: "system",
-            content: `Explain the strongest signal in this simulated booking forecast in one short sentence in ${locale === "ar" ? "Arabic" : "English"}. Use only supplied aggregate figures. Do not invent causes, guarantees, demand beyond capacity, kitchen prep times, or actions already taken. Mention simulated history. If booking is closed or full do not predict new bookings. Advisory only. No markdown.`,
+            content: `Explain the strongest signal in this booking forecast in one short sentence in ${locale === "ar" ? "Arabic" : "English"}. Use only supplied aggregate figures. Do not invent causes, guarantees, demand beyond capacity, kitchen prep times, or actions already taken. If booking is closed or full do not predict new bookings. Advisory only. No markdown.`,
           },
           { role: "user", content: JSON.stringify(figures) },
         ],

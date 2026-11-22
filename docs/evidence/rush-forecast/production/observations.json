@@ -1,0 +1,43 @@
+{
+  "commit": "061eb1cfca121bf4d3d39c478c0f962ff5ff0dfb",
+  "deployment": "dpl_8vA4H8EUvDCXcJpSs8tcpLkvNfsS",
+  "url": "https://qafla-rjqd.vercel.app/manager?view=forecast",
+  "checkedAt": "2026-11-22T13:25:52.963Z",
+  "browser": "ChatGPT in-app browser Chromium responsive viewport override; no physical device",
+  "checks": [
+    {
+      "width": 390,
+      "height": 844,
+      "language": "en",
+      "initial": "Dune Burgers · 7:45 PM\n\nAt risk · As of 7:00 PM\n\n0.7 places likely left\n\n3 of 6 booked. About 2.3 more orders expected before booking closes.\n\nProjected occupancy: 5.3 / 6 · Likely range: 4–6\n\nCheck the kitchen now; booking closes at 7:30 PM (30 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nExplain this forecast\nRule-based explanation\n\nDemo forecast: 3 of 6 booked now. About 2.3 more bookings gives 5.3 projected, with a range of 4–6. Based on 12 similar evenings. Check with the kitchen before booking closes; the decision stays with you.",
+      "explained": "Dune Burgers · 7:45 PM\n\nAt risk · As of 7:00 PM\n\n0.7 places likely left\n\n3 of 6 booked. About 2.3 more orders expected before booking closes.\n\nProjected occupancy: 5.3 / 6 · Likely range: 4–6\n\nCheck the kitchen now; booking closes at 7:30 PM (30 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nExplain this forecast\nOpenRouter explanation\n\nBased on the simulated history of 12 similar evenings, the forecast projects about 5.3 bookings against capacity of 6 (current 3, with a range of 4 to 6), so the strongest signal is that the projected total sits close to capacity with 30 minutes until close.",
+      "final": "Dune Burgers · 7:45 PM\n\nBooking closed · As of 7:31 PM\n\n0 places likely left\n\n6 of 6 booked. About 0 more orders expected before booking closes.\n\nProjected occupancy: 6 / 6 · Likely range: 6–6\n\nNo new bookings expected: this booking window is closed.\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:50 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nDune Burgers · 7:45 PM. At 7:00 PM: predicted 5.3. Actual at close: 6. Absolute error: 0.7 orders.\n\nInspect the model and comparable evenings\nExplain this forecast\nRule-based explanation\n\nDemo forecast: 6 of 6 booked now. About 0 more bookings gives 6 projected, with a range of 6–6. Based on 12 similar evenings. Booking is closed; no new bookings expected.",
+      "rewindIdentical": true
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "language": "en",
+      "explained": "Dune Burgers · 7:45 PM\n\nAt risk · As of 7:00 PM\n\n0.7 places likely left\n\n3 of 6 booked. About 2.3 more orders expected before booking closes.\n\nProjected occupancy: 5.3 / 6 · Likely range: 4–6\n\nCheck the kitchen now; booking closes at 7:30 PM (30 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nExplain this forecast\nOpenRouter explanation\n\nThe simulated history of 12 comparable evenings projects about 5.3 bookings against capacity 6 (range 4 to 6), so the strongest signal is that the current 3 bookings plus roughly 2.3 more would approach the limit with 30 minutes until close.",
+      "final": "Dune Burgers · 7:45 PM\n\nBooking closed · As of 7:31 PM\n\n0 places likely left\n\n6 of 6 booked. About 0 more orders expected before booking closes.\n\nProjected occupancy: 6 / 6 · Likely range: 6–6\n\nNo new bookings expected: this booking window is closed.\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:50 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nDune Burgers · 7:45 PM. At 7:00 PM: predicted 5.3. Actual at close: 6. Absolute error: 0.7 orders.\n\nInspect the model and comparable evenings\nExplain this forecast\nRule-based explanation\n\nDemo forecast: 6 of 6 booked now. About 0 more bookings gives 6 projected, with a range of 6–6. Based on 12 similar evenings. Booking is closed; no new bookings expected.",
+      "rewindIdentical": true
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "language": "ar",
+      "initial": "ديون برجر · 7:45 م\n\nمعرّض للامتلاء · عند 7:00 م\n\n0.7 أماكن متوقعة متبقية\n\n3 من 6 محجوزة. نتوقع نحو 2.3 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 5.3 / 6 · النطاق المتوقع: 4–6\n\nراجع المطبخ الآن؛ يغلق الحجز عند 7:30 م (بعد 30 دقيقة).\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:20 م\n7:30 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nافحص النموذج والأمسيات المشابهة\nاشرح هذا التوقع\nشرح مبني على القواعد\n\nتوقع تجريبي: 3 من 6 محجوزة الآن. نتوقع 2.3 طلبات إضافية، ليصبح الإجمالي 5.3، ضمن نطاق 4–6. استندنا إلى 12 أمسيات مشابهة. راجع المطبخ قبل إغلاق الحجز؛ القرار لك.",
+      "explained": "ديون برجر · 7:45 م\n\nمعرّض للامتلاء · عند 7:00 م\n\n0.7 أماكن متوقعة متبقية\n\n3 من 6 محجوزة. نتوقع نحو 2.3 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 5.3 / 6 · النطاق المتوقع: 4–6\n\nراجع المطبخ الآن؛ يغلق الحجز عند 7:30 م (بعد 30 دقيقة).\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:20 م\n7:30 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nافحص النموذج والأمسيات المشابهة\nاشرح هذا التوقع\nشرح OpenRouter\n\nبناءً على التاريخ المحاكى المكون من 12 حالة، يتوقع أن يصل عدد الحجوزات الحالية البالغ 3 من أصل سعة 6 إلى نحو 5.3 (بين 4 و6)، وهو ما يضع الوضع في حالة خطر مع بقاء 30 دقيقة على الإغلاق.",
+      "final": "ديون برجر · 7:45 م\n\nالحجز مغلق · عند 7:31 م\n\n0 أماكن متوقعة متبقية\n\n6 من 6 محجوزة. نتوقع نحو 0 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 6 / 6 · النطاق المتوقع: 6–6\n\nلا حجوزات جديدة متوقعة: نافذة الحجز هذه مغلقة.\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:50 م\n7:30 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nديون برجر · 7:45 م. عند 7:00 م: التوقع 5.3. الفعلي عند الإغلاق: 6. الخطأ المطلق: 0.7 طلبات.\n\nافحص النموذج والأمسيات المشابهة\nاشرح هذا التوقع\nشرح مبني على القواعد\n\nتوقع تجريبي: 6 من 6 محجوزة الآن. نتوقع 0 طلبات إضافية، ليصبح الإجمالي 6، ضمن نطاق 6–6. استندنا إلى 12 أمسيات مشابهة. الحجز مغلق؛ لا حجوزات جديدة متوقعة.",
+      "rewindIdentical": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "language": "ar",
+      "explained": "ديون برجر · 7:45 م\n\nمعرّض للامتلاء · عند 7:00 م\n\n0.7 أماكن متوقعة متبقية\n\n3 من 6 محجوزة. نتوقع نحو 2.3 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 5.3 / 6 · النطاق المتوقع: 4–6\n\nراجع المطبخ الآن؛ يغلق الحجز عند 7:30 م (بعد 30 دقيقة).\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:20 م\n7:30 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nافحص النموذج والأمسيات المشابهة\nاشرح هذا التوقع\nشرح OpenRouter\n\nبناءً على التاريخ المحاكى المكون من 12 حالة، يتوقع أن يصل عدد الحجوزات الحالية البالغ 3 من أصل سعة 6 إلى نحو 5.3 (بين 4 و6)، وهو ما يضع الوضع في حالة خطر مع بقاء 30 دقيقة على الإغلاق.",
+      "final": "ديون برجر · 7:45 م\n\nالحجز مغلق · عند 7:31 م\n\n0 أماكن متوقعة متبقية\n\n6 من 6 محجوزة. نتوقع نحو 0 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 6 / 6 · النطاق المتوقع: 6–6\n\nلا حجوزات جديدة متوقعة: نافذة الحجز هذه مغلقة.\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:50 م\n7:30 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nديون برجر · 7:45 م. عند 7:00 م: التوقع 5.3. الفعلي عند الإغلاق: 6. الخطأ المطلق: 0.7 طلبات.\n\nافحص النموذج والأمسيات المشابهة\nاشرح هذا التوقع\nشرح مبني على القواعد\n\nتوقع تجريبي: 6 من 6 محجوزة الآن. نتوقع 0 طلبات إضافية، ليصبح الإجمالي 6، ضمن نطاق 6–6. استندنا إلى 12 أمسيات مشابهة. الحجز مغلق؛ لا حجوزات جديدة متوقعة.",
+      "rewindIdentical": true
+    }
+  ]
+}

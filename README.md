@@ -367,8 +367,10 @@ where id = 'T02';
 ```
 
 
-## Rush Forecast (manager demo)
+## Rush Forecast
 
-Park overview → **Forecast** opens a bilingual, advisory replay alongside real live occupancy. Synthetic history stays outside the database and is labelled throughout. The 7:00 / 7:15 / 7:31 PM replay shows next-hour risk, expected bookings, a truck/time heatmap, booking pace and the earlier prediction versus actual at cutoff. OpenRouter explains aggregate signals through a manager-verified server route using the existing `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`; a deterministic explanation works without either setting. No additional environment variables or migrations are needed.
+Park overview → **Forecast** reads the same database orders as live occupancy. **Live today** uses the database clock; **Replay the evening** identifies the latest completed service date and shows its 7:00 / 7:15 / 7:46 PM snapshots. The manager-only forecast_history RPC returns booking/cancellation times and capacities without customer identities. **Generate AI forecast** adds an AI-powered explanation through the existing server-only OpenRouter configuration; provider failure leaves a booking-based explanation.
 
-See [model decisions](decisions.md) and [recording, measured simulated accuracy and test evidence](docs/evidence/rush-forecast/README.md). A live forecast is not yet connected to validated historical booking events.
+Apply migration 20261122170000_forecast_history.sql. For this demo deployment only, the owner-authorized fixture importer is scripts/seed-rush-demo.mjs: load SUPABASE_DB_URL privately, run without arguments to inspect its plan, then --apply to import. It creates identifiable synthetic history and sparse upcoming pay-at-pickup bookings without making payments. Never run it on a real customer deployment.
+
+See [model decisions](decisions.md), [original PR #17 evidence](docs/evidence/rush-forecast/README.md), and [shared-data verification](docs/evidence/rush-shared-data/README.md). Fixture backtests are not evidence of real demand accuracy.

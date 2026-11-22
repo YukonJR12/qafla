@@ -15,4 +15,8 @@ export const POST = rushHandler(async (token) => {
     .eq("id", data.user.id)
     .single();
   return !profile.error && profile.data?.role === "manager";
-}, askRushExplanation);
+}, askRushExplanation, async token => {
+  const {data, error} = await supabaseAs(token).rpc("forecast_history");
+  if(error) throw error;
+  return data;
+});
