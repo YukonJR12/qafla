@@ -1,0 +1,15 @@
+$kind: http-request
+order: 23000
+method: GET
+url: '{{supabaseUrl}}/rest/v1/menu_items?select=id,truck_id,price_kwd,description,allergens,sold_out&id=eq.{{itemId}}'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{vendorToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Generating a draft leaves saved description, allergens and price unchanged", () => pm.expect(pm.response.json()[0]).to.deep.eql(JSON.parse(pm.variables.get("menuBefore"))));

@@ -1,0 +1,23 @@
+$kind: http-request
+order: 22000
+method: POST
+url: '{{baseUrl}}/api/menu/suggest'
+headers:
+  - key: Authorization
+    value: 'Bearer {{vendorToken}}'
+body:
+  type: formdata
+  content:
+    - key: itemId
+      type: text
+      value: '{{itemId}}'
+    - key: photo
+      type: file
+      src: '{{photoPath}}'
+      contentType: image/webp
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Live model returns a bounded draft with allowed allergens", () => { const r=pm.response.json(); pm.expect(r.model).to.be.a("string").and.not.empty; pm.expect(r.requestId).to.match(/^[a-f0-9]{8}$/); pm.expect(r.suggestion).to.have.all.keys("description","allergens"); pm.expect(r.suggestion.description.length).to.be.within(1,160); pm.expect(r.suggestion.description).not.to.match(/[\r\n]/); const allowed=["gluten","milk","egg","peanuts","tree_nuts","sesame","soy","fish","shellfish","mustard","celery"]; pm.expect(r.suggestion.allergens).to.be.an("array"); r.suggestion.allergens.forEach(a=>pm.expect(allowed).to.include(a)); pm.expect(r.remaining).to.be.at.least(0); });

@@ -1,0 +1,18 @@
+$kind: http-request
+order: 12000
+method: POST
+url: '{{supabaseUrl}}/rest/v1/rpc/set_order_status'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{vendorToken}}'
+body:
+  type: json
+  content: |-
+    {"p_order_id":"{{onlineOrderId}}","p_status":"accepted","p_reason":null}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Vendor cannot accept unpaid online order", () => { pm.expect(pm.response.code).to.be.within(400,499); pm.expect(pm.response.json().message).to.eql("payment_not_confirmed"); });

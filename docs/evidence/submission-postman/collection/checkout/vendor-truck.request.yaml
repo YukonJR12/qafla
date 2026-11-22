@@ -1,0 +1,15 @@
+$kind: http-request
+order: 4000
+method: GET
+url: '{{supabaseUrl}}/rest/v1/trucks?select=id,is_open,vendor_id&id=eq.{{truckId}}'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{vendorToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Vendor owns the open test truck", () => { const t=pm.response.json()[0]; pm.expect(t.vendor_id).to.eql(pm.variables.get("vendorId")); pm.expect(t.is_open).to.eql(true); });

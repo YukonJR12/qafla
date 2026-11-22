@@ -1,0 +1,17 @@
+$kind: http-request
+order: 17000
+method: POST
+url: '{{supabaseUrl}}/auth/v1/token?grant_type=password'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+body:
+  type: json
+  content: |-
+    {"email":"{{customerEmail}}","password":"{{customerPassword}}"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("customer session issued", () => { const r=pm.response.json(); pm.expect(r.access_token).to.be.a("string").and.not.empty; pm.variables.set("customerToken",r.access_token); pm.variables.set("customerId",r.user.id); });

@@ -9,7 +9,7 @@
 | Repository | [YukonJR12/qafla](https://github.com/YukonJR12/qafla) — private; panel GitHub invitation is still required for full source access |
 | Production build | `8ed79b4e7b8d4cbf48bf9b03838d582bd31bda4b`; Vercel READY, Production alias confirmed 22 November |
 | Required write-ups | [decisions.md](decisions.md) · [tampering_test.md](tampering_test.md) |
-| Login details | The separate **private-demo-logins.md** handoff; passwords are deliberately excluded from this repository |
+| Login details | The separate private credential handoff from Faisal to Ahmad/CODED; passwords are excluded from this folder and repository |
 
 ## Demo accounts and a short panel walkthrough
 
@@ -27,6 +27,10 @@
 4. **Manager:** Park overview → Rush Forecast → Replay the evening. Select Taco Saha's 8:00 PM slot, inspect the booking pace, advance from 7:00 PM to 7:46 PM, compare the earlier forecast with the final simulated count, then rewind. The replay uses the latest completed evening, so its service date can move after midnight.
 
 All five panel logins and assignments have a [current Production access record](docs/evidence/submission-final-access/README.md). No account is missing. Customer, vendor and manager polish from PRs #19–21 is merged; this submission freezes feature development.
+
+## Highest level supported
+
+**Stretch features are implemented and evidenced, but no gated level is claimed fully complete.** Core is awaiting the manual live Tampering Test; Premium and Elite inherit that gate. The [PDF requirement matrix](docs/evidence/submission-audit/requirements.md) maps every deliverable and owner rule to its observed environment/build. The [latest Postman reconciliation](docs/evidence/submission-postman/README.md) adds 32 requests / 63 assertions with explicit localhost provenance.
 
 ## Shipped stretch features
 
@@ -55,25 +59,28 @@ Levels count in order; Core plus the live Tampering Test is the assessment pass 
 
 ## Attachment package
 
-The three root Markdown files are supplied directly. **qafla-evidence.zip** contains the same files and all of their local evidence/source references with relative paths preserved, so the private GitHub links are not the only way to inspect the evidence. Unzip before following local links. The private login handoff is separate and excluded from this evidence archive.
+Open the exported **Qafla-Submission** folder (or extract Qafla-Submission.zip). These Markdown files link to evidence inside the folder, independent of checkout paths or GitHub sign-in. Original captures remain beside their provenance notes. Screenshots below have added caption panels; their original evidence images remain unchanged in docs/evidence. They illustrate capabilities; pending pass gates remain explicit.
 
-| Representative attachment | What it substantiates / environment |
+| Direct attachment / link | Caption and provenance |
 | --- | --- |
-| `level-1-core-menu.png` | Current Production 8ed79b4 customer menu with seeded branding, menu prices and Add controls; 390 px Chrome emulation |
-| `level-2-premium-payment.jpg` | Historical MyFatoorah sandbox Preview payment confirmation; not a new Production payment |
-| `level-3-elite-forced-error.jpg` | Historical Preview missing-key failure with preserved edit and matching log reference; not an invalid-key rejection |
-| `stretch-park-guide.png` | Current Production 3D Park Guide at 390 px Chrome emulation |
+| [Core screenshot](docs/evidence/submission-audit/level-1-core-menu.png) | Production 8ed79b4, 390 px emulation: menu, prices and Add controls. Core live attacks Pending. |
+| [Premium screenshot](docs/evidence/submission-audit/level-2-premium-payment.png) | Historical Preview f4948c8: 3.200 KWD sandbox confirmation. Separate latest localhost run verified 1.200 KWD. Premium gate Pending. |
+| [Elite screenshot](docs/evidence/submission-audit/level-3-elite-forced-error.png) | Preview 961f7ef: missing OpenRouter key, clean error and reference matching [log](docs/evidence/ai-menu/forced-error-preview-log.txt). Not an invalid-key run. |
+| [Stretch screenshot](docs/evidence/submission-audit/stretch-park-guide.png) | Production 8ed79b4, 390 px emulation: recognizable six-truck 3D Park Guide. |
+| [Park Guide clip](docs/screenshots/park-3d/park-interaction-390-en.webm) | Local production build, controlled Ready-ticket fixture; 14.6 seconds. |
+| [Five-round race](docs/evidence/submission-race/five-round-race.webm) | Isolated PostgreSQL 17, test auth/clock and HTTP adapter; 20.8 seconds. Never labelled Production. |
+| [Injection result](docs/evidence/ai-menu/injection-card-local.md) and [capture](docs/evidence/ai-menu/injection-card-result-local-390.jpg) | Real OpenRouter on localhost; draft only, all 30 saved dishes unchanged. |
 
-Elite extras are also supplied directly: `five-round-race.webm`, `injection-card-result.md`, `injection-card-result.jpg`, and `forced-error-log.txt`. The forced-error representative screenshot above doubles as the required error screenshot. The archive preserves the 1a baseline, original race videos, per-round before/after screenshots and counts, the Park Guide/replay clips, sandbox and injection write-ups, and source rules linked by the Markdown files. [Packaging and access record](docs/evidence/submission-final-access/README.md).
+[Forecast mobile replay](docs/evidence/easyui-forecast/mobile-replay.webm) and [deployed comparison](docs/evidence/preview-approval-19-21/21-390-en-comparison.png) are included. All forecast history and outcomes are simulated. The three required filenames are submission.md, decisions.md and tampering_test.md. Private credentials are delivered separately, never inside this evidence folder/zip.
 
 ## Reviewer access and scope
 
-Fresh browser sessions with no owner GitHub cookies can reach Production and sign into the five panel accounts. The repository and pinned recording links return **404 without repository access**. Their presence is confirmed from the owner checkout; that does not establish authenticated panel GitHub access. Local copies in the evidence archive remove that barrier for the attachments. Faisal must still invite the GitHub identity supplied by Ahmad for full repository review. No sharing settings were changed and no email was sent.
+Fresh browser sessions with no owner GitHub cookies can reach Production and sign into the five panel accounts. The repository and pinned recording links return **404 without repository access**. Their presence is confirmed from the owner checkout; that does not establish authenticated panel GitHub access. Local copies in the exported folder/zip remove that barrier for the attachments. Faisal must still invite the GitHub identity supplied by Ahmad for full repository review. No sharing settings were changed and no email was sent.
 
-Existing checks are reused with their original build/environment labels: the customer suite reports 118 unit, 57 browser and 86 isolated database checks; vendor 117/55/86; forecast final code passed 34 combined focused journeys after its earlier 43-test browser run. Database processes exited 0 normally. This documentation reconciliation changes no shipped application code, dependencies or migrations. It preserves the race test and evidence from PR15. No new Production orders, payments, closures or menu edits were made.
+Existing checks are reused with their original build/environment labels: the customer suite reports 118 unit, 57 browser and 86 isolated database checks; vendor 117/55/86; forecast final code passed 34 combined focused journeys after its earlier 43-test browser run. Database processes exited 0 normally. This documentation reconciliation changes no shipped application code, dependencies or migrations. It preserves the race test and evidence from PR15. No new Production orders, payments, closures or menu edits were made during this final packaging pass. The separately retained latest Postman run did create and cancel two T06 hosted-database test orders; its application routes ran on localhost.
 
 ## Before sending
 
 The single remaining-manual-observation checklist is in [tampering_test.md](tampering_test.md#manual-observations-still-owed-by-faisal). Complete the chosen live attempts, insert sanitized responses and data-after evidence, and update level claims before declaring the pass bar complete. If sending before completion, keep those limitations explicit.
 
-Faisal must review/approve PR #15 and these write-ups in his own voice, arrange panel GitHub access, approve private demo-login delivery, and confirm onboarding/presentation availability personally. Keep the app live through the panel session. The local reply to Ahmad is a draft only; sending and availability confirmation remain Faisal's actions.
+Faisal must review PR #15 and these write-ups in his own voice, arrange panel GitHub access, approve private demo-login delivery, and confirm onboarding/presentation availability personally. Keep the app live through the panel session. The local reply to Ahmad is a draft only; sending and availability confirmation remain Faisal's actions.

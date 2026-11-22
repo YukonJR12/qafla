@@ -1,0 +1,517 @@
+{
+  "prepared": "2026-11-22",
+  "appUrl": "http://127.0.0.1:3001",
+  "productionUrl": "https://qafla-rjqd.vercel.app",
+  "gatewayOrigin": "https://demo.myfatoorah.com",
+  "environment": "localhost production Next.js build, hosted Supabase database, real OpenRouter, real MyFatoorah sandbox",
+  "testedCommit": "Unknown exact built commit; checkout HEAD was 56f4e9d with uncommitted local changes. Do not attribute this run to Production 8ed79b4.",
+  "requests": 32,
+  "passingAssertions": 63,
+  "failedRequests": 0,
+  "failedAssertions": 0,
+  "exitCode": "Not explicitly retained in these logs; successful summary and 63 Pass lines retained",
+  "sourceHashes": [
+    {
+      "file": ".afk/postman-checkout.log",
+      "sha256": "6cab8e155aa3a5a494559a7be90d9175faf02f0daee93fa9826a156f862ca418",
+      "requests": 16,
+      "assertions": 31,
+      "rawExportIncluded": false
+    },
+    {
+      "file": ".afk/postman-ai.log",
+      "sha256": "a4cb3e90566bf4d4b3a09137d30ced0f169d72dc856102472ba1031e2e6dc4b8",
+      "requests": 7,
+      "assertions": 14,
+      "rawExportIncluded": false
+    },
+    {
+      "file": ".afk/postman-payment-completion.log",
+      "sha256": "92d28ed6152aad8cb1bf8e5445401b7fc1ff31de8bcbe32010423ad552d7a56e",
+      "requests": 9,
+      "assertions": 18,
+      "rawExportIncluded": false
+    }
+  ],
+  "records": [
+    {
+      "group": "checkout",
+      "name": "login-customer",
+      "order": 1000,
+      "file": "collection/checkout/login-customer.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "customer session issued"
+      ],
+      "sha256": "e8ff7c2ea2613f5134719cb1b8d7a4a8d9dfc3add4a9b2e60afd317ad63ef399"
+    },
+    {
+      "group": "checkout",
+      "name": "login-vendor",
+      "order": 2000,
+      "file": "collection/checkout/login-vendor.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "vendor session issued"
+      ],
+      "sha256": "cd70d41cba5958d190e2d8d0871ea8fe2c3e86eeed056d24630249f42cbc03ec"
+    },
+    {
+      "group": "checkout",
+      "name": "customer-role",
+      "order": 3000,
+      "file": "collection/checkout/customer-role.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/profiles?select=role&id=eq.{{customerId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Customer role comes from database"
+      ],
+      "sha256": "22c0cb2c490c986fcc19bba966dcf95e7c317b00e08fc165a1a7c2217300df81"
+    },
+    {
+      "group": "checkout",
+      "name": "vendor-truck",
+      "order": 4000,
+      "file": "collection/checkout/vendor-truck.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/trucks?select=id,is_open,vendor_id&id=eq.{{truckId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Vendor owns the open test truck"
+      ],
+      "sha256": "1cec4b86ffc4ededae001d3df8d6028f572d23a8580559f485d6ba035ff38426"
+    },
+    {
+      "group": "checkout",
+      "name": "menu-price",
+      "order": 5000,
+      "file": "collection/checkout/menu-price.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/menu_items?select=id,truck_id,price_kwd,description,allergens,sold_out&id=eq.{{itemId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Dish is available and priced"
+      ],
+      "sha256": "4058a1d988a2d6409dd34cb175c7b8841238024ee0acf215be64ca9fa5ff5448"
+    },
+    {
+      "group": "checkout",
+      "name": "available-slot",
+      "order": 6000,
+      "file": "collection/checkout/available-slot.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/slot_usage",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Choose an available pickup at least 30 minutes ahead"
+      ],
+      "sha256": "425f1301ad3f3eaec05bd7e0fa944c13c39f4d58a4bc25a3246d366c3db1859b"
+    },
+    {
+      "group": "checkout",
+      "name": "place-pay-at-pickup",
+      "order": 7000,
+      "file": "collection/checkout/place-pay-at-pickup.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/place_order_paying",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Order is saved with server price and correct owner"
+      ],
+      "sha256": "7c76d201bd12deaf46559f6f92661ab67607a638692c87f3f33e10a719523ac7"
+    },
+    {
+      "group": "checkout",
+      "name": "retry-checkout",
+      "order": 8000,
+      "file": "collection/checkout/retry-checkout.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/place_order_paying",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Retry returns the same order"
+      ],
+      "sha256": "41c4cc7a1b91bfaa88588cc154c3361da051e2a709a23ea2c7e6a6f394511316"
+    },
+    {
+      "group": "checkout",
+      "name": "saved-line-items",
+      "order": 9000,
+      "file": "collection/checkout/saved-line-items.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/order_items?select=item_id,quantity,unit_price_kwd&order_id=eq.{{pickupOrderId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "One correctly priced line persisted"
+      ],
+      "sha256": "472ff8e18a5d82fe1753a4b042451ede9b69cb90486008a78ee0a18e36b69d80"
+    },
+    {
+      "group": "checkout",
+      "name": "cancel-pickup-test-order",
+      "order": 10000,
+      "file": "collection/checkout/cancel-pickup-test-order.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/set_order_status",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Test order cancelled and capacity released"
+      ],
+      "sha256": "d721e4aae3d89f78246176af7037ca8a92a03423f7f43ba0261679feb2a15fcd"
+    },
+    {
+      "group": "checkout",
+      "name": "place-online-order",
+      "order": 11000,
+      "file": "collection/checkout/place-online-order.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/place_order_paying",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Order is saved with server price and correct owner"
+      ],
+      "sha256": "c62e44f71fbdd4f7498164672865888579fcacc97ccc5d935c5226c48cc0170b"
+    },
+    {
+      "group": "checkout",
+      "name": "unpaid-order-cannot-be-accepted",
+      "order": 12000,
+      "file": "collection/checkout/unpaid-order-cannot-be-accepted.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/set_order_status",
+      "status": 400,
+      "responseLabel": "Bad Request",
+      "assertions": [
+        "Vendor cannot accept unpaid online order"
+      ],
+      "sha256": "7b39fdbeaa3fd81c42908aa7b49b8b86cb2a51bf289fef27b017747b88aaff5b"
+    },
+    {
+      "group": "checkout",
+      "name": "create-payment-page",
+      "order": 13000,
+      "file": "collection/checkout/create-payment-page.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/start",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Sandbox payment page created"
+      ],
+      "sha256": "39f0eae016fdea6267e1e215e9b8a470f38315ee033ac3d4bcb48f6009010c56"
+    },
+    {
+      "group": "checkout",
+      "name": "reuse-payment-page",
+      "order": 14000,
+      "file": "collection/checkout/reuse-payment-page.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/start",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Untouched payment page is reused"
+      ],
+      "sha256": "cee8f70265abd61035a506d074ff202a35575e8cd4d9c562b9caf0ef4d5ba990"
+    },
+    {
+      "group": "checkout",
+      "name": "unpaid-before-gateway",
+      "order": 15000,
+      "file": "collection/checkout/unpaid-before-gateway.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/verify",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Creating an invoice does not mark an order paid"
+      ],
+      "sha256": "14a245e5509cbdbe5b42483267617cc47c1d8864f72d51efa1f792613377d307"
+    },
+    {
+      "group": "checkout",
+      "name": "saved-invoice-amount",
+      "order": 16000,
+      "file": "collection/checkout/saved-invoice-amount.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/order_payments?select=amount_kwd,currency,status&order_id=eq.{{onlineOrderId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Invoice uses saved amount despite client tampering"
+      ],
+      "sha256": "a8469da211b4c89b95b6bae4da2a3fc930c72e58253bbbfd199c602c37407b40"
+    },
+    {
+      "group": "ai",
+      "name": "login-customer",
+      "order": 17000,
+      "file": "collection/ai/login-customer.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "customer session issued"
+      ],
+      "sha256": "4dd202b44fd38f5402e329606410e38d67e63854d4c62767b7fcb9e50016bdf5"
+    },
+    {
+      "group": "ai",
+      "name": "login-vendor",
+      "order": 18000,
+      "file": "collection/ai/login-vendor.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "vendor session issued"
+      ],
+      "sha256": "837d8f6b33a9b37fd770d1a0e2a7bb9290783b8d92f6fe33864ed7c775c5e6ec"
+    },
+    {
+      "group": "ai",
+      "name": "menu-before",
+      "order": 19000,
+      "file": "collection/ai/menu-before.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/menu_items?select=id,truck_id,price_kwd,description,allergens,sold_out&id=eq.{{itemId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Remember saved menu copy and price"
+      ],
+      "sha256": "d253ffea713c1da6ca7d13c4eefb44da0b4a61ddecf5aef9b3e078d7c2945e76"
+    },
+    {
+      "group": "ai",
+      "name": "customer-is-not-vendor",
+      "order": 20000,
+      "file": "collection/ai/customer-is-not-vendor.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/menu/suggest",
+      "status": 401,
+      "responseLabel": "Unauthorized",
+      "assertions": [
+        "HTTP 401",
+        "Customer cannot request vendor AI generation"
+      ],
+      "sha256": "1fea90988c38c5446f33de27fc48efdd97fb3440ff17f66ec991f822c9919506"
+    },
+    {
+      "group": "ai",
+      "name": "vendor-needs-photo",
+      "order": 21000,
+      "file": "collection/ai/vendor-needs-photo.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/menu/suggest",
+      "status": 400,
+      "responseLabel": "Bad Request",
+      "assertions": [
+        "HTTP 400",
+        "Malformed photo upload rejected"
+      ],
+      "sha256": "e165cb1d810e8709cda8ce2e9aba2347a204f48677993bb2be2d2622f7512b68"
+    },
+    {
+      "group": "ai",
+      "name": "generate-dish-suggestion",
+      "order": 22000,
+      "file": "collection/ai/generate-dish-suggestion.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/menu/suggest",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Live model returns a bounded draft with allowed allergens"
+      ],
+      "sha256": "712356cbfdbb34266bb9b7af70e2896a80eae41e067adfaf9c9b726084504595"
+    },
+    {
+      "group": "ai",
+      "name": "menu-after",
+      "order": 23000,
+      "file": "collection/ai/menu-after.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/menu_items?select=id,truck_id,price_kwd,description,allergens,sold_out&id=eq.{{itemId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Generating a draft leaves saved description, allergens and price unchanged"
+      ],
+      "sha256": "34a7e0b7420234bf875418e25aac38fdcd98df06d1b9aa1a18ef3296d2cc3ee6"
+    },
+    {
+      "group": "completion",
+      "name": "login-customer",
+      "order": 24000,
+      "file": "collection/completion/login-customer.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "customer session issued"
+      ],
+      "sha256": "a894923fea4a9543c5b905da977abd4416ae961508c8bb04685af50c4a0bdbc1"
+    },
+    {
+      "group": "completion",
+      "name": "verify-paid",
+      "order": 25000,
+      "file": "collection/completion/verify-paid.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/verify",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Gateway-confirmed payment is paid"
+      ],
+      "sha256": "fb97f1112b37673da2aeffaafc56541dee4740bebb04260566c470608c4d6141"
+    },
+    {
+      "group": "completion",
+      "name": "verify-paid-again",
+      "order": 26000,
+      "file": "collection/completion/verify-paid-again.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/verify",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Gateway-confirmed payment is paid"
+      ],
+      "sha256": "96e209a5b0a8b3c017e7d28f1029e631d860936bc807d2051f6701f9f9714b83"
+    },
+    {
+      "group": "completion",
+      "name": "payment-notification",
+      "order": 26500,
+      "file": "collection/completion/payment-notification.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/notify",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Gateway notification acknowledged"
+      ],
+      "sha256": "89e17af33091b9b0b8b06554495f2992c007c87336aeecf9a07616d37d3e7f3b"
+    },
+    {
+      "group": "completion",
+      "name": "duplicate-payment-notification",
+      "order": 26600,
+      "file": "collection/completion/duplicate-payment-notification.request.yaml",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/payments/notify",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Gateway notification acknowledged"
+      ],
+      "sha256": "1ca789c958c663c11518c5332faff240ec1b529b055e1f956e8c5161cdb61f71"
+    },
+    {
+      "group": "completion",
+      "name": "paid-order",
+      "order": 27000,
+      "file": "collection/completion/paid-order.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/orders?select=id,payment_status,total_kwd,paid_at&id=eq.{{onlineOrderId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Paid status and timestamp persisted"
+      ],
+      "sha256": "6f61a10090a02ebf994e38eff02cb03e59b500fbe0d4cf41b2173f19457fb5ce"
+    },
+    {
+      "group": "completion",
+      "name": "one-paid-invoice",
+      "order": 28000,
+      "file": "collection/completion/one-paid-invoice.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/order_payments?select=status,currency,amount_kwd&order_id=eq.{{onlineOrderId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Exactly one invoice is paid"
+      ],
+      "sha256": "1b82ca6b9d62dddb186a327580f33da18bd48771a16cd16e594b01bb8837826f"
+    },
+    {
+      "group": "completion",
+      "name": "cancel-paid-test-order",
+      "order": 29000,
+      "file": "collection/completion/cancel-paid-test-order.request.yaml",
+      "method": "POST",
+      "url": "{{supabaseUrl}}/rest/v1/rpc/set_order_status",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Completed sandbox test order cancelled"
+      ],
+      "sha256": "9d91281d6f67c254855f4a19284e3bcce8c4357ea2cefe71fed4746ca4b0e9f4"
+    },
+    {
+      "group": "completion",
+      "name": "refund-due-after-cancel",
+      "order": 30000,
+      "file": "collection/completion/refund-due-after-cancel.request.yaml",
+      "method": "GET",
+      "url": "{{supabaseUrl}}/rest/v1/orders?select=status,payment_status&id=eq.{{onlineOrderId}}",
+      "status": 200,
+      "responseLabel": "OK",
+      "assertions": [
+        "HTTP 200",
+        "Cancelling a paid order records refund due"
+      ],
+      "sha256": "f7c4b4b437072bcb4755d4785e0b2c457023617462e7e680f88ba45a9fca03a7"
+    }
+  ]
+}

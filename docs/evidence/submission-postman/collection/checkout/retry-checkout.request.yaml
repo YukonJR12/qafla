@@ -1,0 +1,19 @@
+$kind: http-request
+order: 8000
+method: POST
+url: '{{supabaseUrl}}/rest/v1/rpc/place_order_paying'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: json
+  content: |-
+    {"p_truck_id":"{{truckId}}","p_slot_start":"{{pickupSlot}}","p_items":[{"item_id":"{{itemId}}","quantity":1}],"p_request_id":"{{checkoutRequestId}}","p_payment_method":"pay_at_pickup"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Retry returns the same order", () => pm.expect(pm.response.json().id).to.eql(pm.variables.get("pickupOrderId")));

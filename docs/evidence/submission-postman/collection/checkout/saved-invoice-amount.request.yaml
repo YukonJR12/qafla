@@ -1,0 +1,15 @@
+$kind: http-request
+order: 16000
+method: GET
+url: '{{supabaseUrl}}/rest/v1/order_payments?select=amount_kwd,currency,status&order_id=eq.{{onlineOrderId}}'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Invoice uses saved amount despite client tampering", () => { const rows=pm.response.json(); pm.expect(rows).to.have.length(1); pm.expect(Number(rows[0].amount_kwd)).to.eql(pm.variables.get("expectedTotal")); pm.expect(rows[0].currency).to.eql("KWD"); pm.expect(rows[0].status).to.eql("created"); });

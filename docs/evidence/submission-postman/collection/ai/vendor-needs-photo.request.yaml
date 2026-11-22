@@ -1,0 +1,17 @@
+$kind: http-request
+order: 21000
+method: POST
+url: '{{baseUrl}}/api/menu/suggest'
+headers:
+  - key: Authorization
+    value: 'Bearer {{vendorToken}}'
+body:
+  type: json
+  content: |-
+    {"itemId":"M601"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 400", () => pm.response.to.have.status(400));
+      pm.test("Malformed photo upload rejected", () => pm.expect(pm.response.json().problem).to.eql("bad_photo"));

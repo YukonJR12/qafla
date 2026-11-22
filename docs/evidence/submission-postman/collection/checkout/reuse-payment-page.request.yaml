@@ -1,0 +1,17 @@
+$kind: http-request
+order: 14000
+method: POST
+url: '{{baseUrl}}/api/payments/start'
+headers:
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: json
+  content: |-
+    {"orderId":"{{onlineOrderId}}","language":"en"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Untouched payment page is reused", () => { pm.expect(pm.response.json().reused).to.eql(true); pm.expect(pm.response.json().paymentUrl).to.eql(pm.variables.get("paymentUrl")); });

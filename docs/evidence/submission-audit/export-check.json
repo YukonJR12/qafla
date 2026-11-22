@@ -1,0 +1,228 @@
+{
+  "date": "2026-11-22",
+  "browser": "159.0.8154.6",
+  "productionCommit": "8ed79b4e7b8d4cbf48bf9b03838d582bd31bda4b",
+  "openedExportedMarkdown": [
+    "submission.md",
+    "decisions.md",
+    "tampering_test.md"
+  ],
+  "scope": "Fresh browser context; exported folder served alone; no checkout fallback; raw .md content and rendered-preview link clicks verified",
+  "localLinksChecked": 290,
+  "missingFiles": [],
+  "unresolvedAnchors": [],
+  "mediaDecoded": 85,
+  "videosPlayed": [
+    {
+      "file": "docs/evidence/submission-race/customer-a.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 21.6,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/submission-race/customer-b.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 21.88,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/submission-race/five-round-race.webm",
+      "width": 780,
+      "height": 874,
+      "duration": 20.8,
+      "played": true
+    },
+    {
+      "file": "docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 14.6,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/easyui-forecast/mobile-replay.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 22.04,
+      "played": true
+    },
+    {
+      "file": "docs/screenshots/park-3d/billboard/billboard-orbit-390-en.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 25.68,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/easyui-customer/customer-390.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 7.2,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/rush-forecast/mobile-replay.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 21.16,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/rush-shared-data/mobile-replay.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 21.92,
+      "played": true
+    }
+  ],
+  "filesScanned": 209,
+  "knownPasswordMatches": 0,
+  "recognizableSecretMatches": 0,
+  "remoteReferences": [
+    {
+      "label": "Production",
+      "url": "https://qafla-rjqd.vercel.app",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://qafla-rjqd.vercel.app/"
+    },
+    {
+      "label": "Private repository",
+      "url": "https://github.com/YukonJR12/qafla",
+      "status": 404,
+      "signedOut": true,
+      "finalUrl": "https://github.com/YukonJR12/qafla"
+    },
+    {
+      "label": "Park clip private GitHub",
+      "url": "https://github.com/YukonJR12/qafla/blob/c2c5be938c60a5d94b2928287ba81ae1944d4b06/docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "status": 404,
+      "signedOut": true,
+      "finalUrl": "https://github.com/YukonJR12/qafla/blob/c2c5be938c60a5d94b2928287ba81ae1944d4b06/docs/screenshots/park-3d/park-interaction-390-en.webm"
+    },
+    {
+      "label": "Race private GitHub",
+      "url": "https://github.com/YukonJR12/qafla/blob/c2c5be938c60a5d94b2928287ba81ae1944d4b06/docs/evidence/submission-race/five-round-race.webm",
+      "status": 404,
+      "signedOut": true,
+      "finalUrl": "https://github.com/YukonJR12/qafla/blob/c2c5be938c60a5d94b2928287ba81ae1944d4b06/docs/evidence/submission-race/five-round-race.webm"
+    },
+    {
+      "url": "https://github.com/Surajmaurya1/easyui/tree/15065930b3ee3991b4aece5713a6bfbca7a782f7/src/components/ui",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://github.com/Surajmaurya1/easyui/tree/15065930b3ee3991b4aece5713a6bfbca7a782f7/src/components/ui"
+    },
+    {
+      "url": "https://easyui.site/components/morphing-button",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/morphing-button"
+    },
+    {
+      "url": "https://easyui.site/components/animated-file-upload",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/animated-file-upload"
+    },
+    {
+      "url": "https://easyui.site/components/draw-checkbox",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/draw-checkbox"
+    },
+    {
+      "url": "https://easyui.site/components/press-button",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/press-button"
+    },
+    {
+      "url": "https://easyui.site/components/animated-tabs",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/animated-tabs"
+    },
+    {
+      "url": "https://easyui.site/components/sheet",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/sheet"
+    },
+    {
+      "url": "https://easyui.site/components/payment-receipt-printer",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/payment-receipt-printer"
+    },
+    {
+      "url": "https://easyui.site/components/payment-status",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/payment-status"
+    },
+    {
+      "url": "https://easyui.site/components/stepper",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/stepper"
+    },
+    {
+      "url": "https://qafla-rjqd-qgkjh4c56-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://vercel.com/login"
+    },
+    {
+      "url": "https://easyui.site/components/stat-card",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/stat-card"
+    },
+    {
+      "url": "https://easyui.site/components/activity-heatmap",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/activity-heatmap"
+    },
+    {
+      "url": "https://qafla-rjqd-rh2dkurub-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://vercel.com/login"
+    },
+    {
+      "url": "https://easyui.site/components/interactive-area-chart",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/interactive-area-chart"
+    },
+    {
+      "url": "https://easyui.site/components/animated-number",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/animated-number"
+    },
+    {
+      "url": "https://easyui.site/components/expandable-data-row",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/expandable-data-row"
+    },
+    {
+      "url": "https://qafla-rjqd-hlyviohew-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://vercel.com/login"
+    },
+    {
+      "url": "https://qafla-rjqd-17kdeehn1-ffalrefae-6713s-projects.vercel.app/manager?view=forecast",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://vercel.com/login"
+    }
+  ],
+  "limits": "Signed-out checks only; authenticated secret inspection remains Pending. Historical Vercel login redirects are not public evidence. Original recording frame samples were visually inspected separately."
+}
