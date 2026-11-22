@@ -31,7 +31,7 @@ For every manual attempt, Faisal must save the sanitized method/URL/body, actual
 
 **1a — Lower item price.** On Production, I verified the menu baseline of 1.950 KWD + 1.250 KWD = 3.200 KWD. The captured checkout contained item IDs and quantities only. I cancelled that attempt, and Qafla confirmed no order was placed. The isolated database test separately submitted lower price fields and verified that the saved lines used the menu prices, totaling 3.200 KWD. The manual Production price-tampering observation remains pending.
 
-Capture filename: `1a-menu-baseline.png` — awaiting the supplied image; not yet linked or claimed as packaged evidence. This is Faisal's reported observation, not a new Production test performed during this documentation update.
+[Production menu baseline and captured checkout payload](docs/evidence/submission-access/1a-menu-baseline.png). Supplied by Faisal: the screenshot shows the 3.200 KWD baseline, item IDs/quantities without lower price fields, and Qafla's cancellation confirmation. It does not show a tampered-price response or an independent database readback. This is Faisal's reported observation, not a new Production test performed during this documentation update.
 
 ### Where the keys live and limits of the scan
 
