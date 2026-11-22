@@ -70,7 +70,7 @@ Placed → Accepted → Preparing → Ready → Collected is enforced by set_ord
 | MyFatoorah key | Server environment, sandbox only |
 | Payment server secret | Server environment; only its hash is provisioned in private.server_keys |
 
-[.env.example](.env.example) contains names and empty values. This code/config review is not a completed live bundle/network secret scan.
+[.env.example](.env.example) contains names and empty values. The [signed-out Production scan](docs/evidence/submission-access/README.md) covers 12 loaded resources with no matching secret patterns; signed-in network and lazy-loaded bundle inspection is still pending. Source/config review alone does not establish deployed absence.
 
 ## What did not work — candidate review required
 

@@ -1,0 +1,175 @@
+{
+  "checkedAt": "2026-11-22T10:20:44.708Z",
+  "browser": "159.0.8154.6",
+  "environment": "Signed-out Production; fresh Chromium context; 390x844",
+  "method": "Scan HTML/JS/JSON response bodies loaded by sign-in for OpenRouter key prefix, Supabase secret prefix and JWT service_role claim. No authenticated routes or signed-in request bodies/headers inspected; no exact secret comparison. Not a whole-deployment proof.",
+  "captures": [
+    {
+      "url": "https://qafla-rjqd.vercel.app/sign-in",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 60165,
+      "sha256": "d9f1fcc82076c3ebc022f0010e0d42cab034022720b1202a1ff005e4e269fa34",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/150c5ndj0uhta.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 23146,
+      "sha256": "db7e16fb4a8af6da3a1ce7d1c1ed1c40e918996d873910413d61f67d50ddc5c1",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0745g8ez5ma__.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 207263,
+      "sha256": "b793b10de0007e9c41812a4c2a155087559d68e4b412a18f3b7c786954b39f2a",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/26k3cabewj0it.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 5962,
+      "sha256": "48228a9e05d2b1fd905cb52206c40980e3c44ed13b479e4ac6d9e7562ac5975b",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/20a9-omjjfwi9.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 31101,
+      "sha256": "5636c090da51444000957c9bb6e496891d40d6ed6fcedb17de03b93a74ee3338",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/2_kd7-btmd65c.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 35820,
+      "sha256": "6498abf2d71d9d744adc1a3b4e3b7f42d0fd71155f2e8f7dc6a1693998914370",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/222hra1148xtb.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 13640,
+      "sha256": "2310de7b6e25cfec8b4d640eebdf9b72e509c9d1ab306d3fcd8fd34957cc0724",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/01r5m29qen36s.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 22394,
+      "sha256": "34a116b6e88d217337a7a357aa75293cc6b66f4dc5c14b68fac5d89c2b6a2952",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0its-vpyjd_t5.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 67621,
+      "sha256": "81ac04c1a45c0576b8197197725177525042e8f8e19f6b0a165bce9e69a2e980",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0hzimmfcp9x2s.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 159603,
+      "sha256": "aafac13ba2b113944030e98b6ff527b6f158ee893f7f7ed3786cb0e51e7399b2",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0z0svvg07lqer.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 254270,
+      "sha256": "9d215786acf55bd41008c06587bd7dc1a92888653fc6521ddf23ffb61ebc6eac",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/turbopack-3xd-7z66s-4wg.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 9974,
+      "sha256": "439be7f075d69bbf510ceca09cbc0856956be6f1268f40948a2566148e13de07",
+      "matches": {
+        "openrouterKey": false,
+        "supabaseSecret": false,
+        "serviceRoleJwt": false
+      }
+    }
+  ],
+  "links": [
+    {
+      "name": "production",
+      "url": "https://qafla-rjqd.vercel.app",
+      "status": 200,
+      "finalUrl": "https://qafla-rjqd.vercel.app/",
+      "access": "Fresh anonymous browser context; no owner GitHub cookies"
+    },
+    {
+      "name": "park",
+      "url": "https://github.com/YukonJR12/qafla/raw/12870f381535368cb9b50059b2b835cf3c202277/docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "status": 404,
+      "finalUrl": "https://github.com/YukonJR12/qafla/raw/12870f381535368cb9b50059b2b835cf3c202277/docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "access": "Fresh anonymous browser context; no owner GitHub cookies"
+    },
+    {
+      "name": "race",
+      "url": "https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/submission-race/five-round-race.webm",
+      "status": 404,
+      "finalUrl": "https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/submission-race/five-round-race.webm",
+      "access": "Fresh anonymous browser context; no owner GitHub cookies"
+    }
+  ]
+}

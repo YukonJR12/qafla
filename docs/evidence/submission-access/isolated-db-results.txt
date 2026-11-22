@@ -1,0 +1,227 @@
+$ node scripts/build-seed.mjs --check && node tests/db/run.mjs
+supabase/seed.sql matches the CSVs.
+Isolated test database: PostgreSQL 17.11 (embedded, temp folder)
+Kuwait service date used: 2026-11-22
+Applied in order:
+  - tests/db/supabase-shim.sql (test only)
+  - supabase/migrations/20261118190000_schema.sql
+  - supabase/migrations/20261118190100_access_rules.sql
+  - supabase/migrations/20261118190200_order_functions.sql
+  - supabase/migrations/20261119120000_order_request_id.sql
+  - supabase/migrations/20261119180000_abandon_order_attempt.sql
+  - supabase/migrations/20261120090000_orders_realtime.sql
+  - supabase/migrations/20261120150000_order_ratings.sql
+  - supabase/migrations/20261120200000_menu_ai.sql
+  - supabase/migrations/20261120230000_online_payments.sql
+  - supabase/migrations/20261121120000_vendor_controls.sql
+  - supabase/migrations/20261121150000_profile_name.sql
+  - tests/db/test-clock.sql (test only)
+  - supabase/seed.sql
+
+A. Seed data matches the CSVs
+  PASS  6 trucks with the supplied IDs, names and capacities
+        -> T01 Karak Corner (10), T02 Dune Burgers (6), T03 Taco Saha (6), T04 Noodle Wagon (5), T05 Saj Station (8), T06 Lugaimat & Co (8)
+  PASS  30 dishes with the supplied IDs, names, prices and sold-out flags
+        -> 30 rows; sold out: M105, M305, M605; 22 without a description
+  PASS  running seed.sql a second time changes nothing
+        -> still 6 trucks and 30 dishes; an edited price was not overwritten
+
+B. Accounts and roles
+  PASS  signing up as 'manager' gives a customer account
+        -> requested role 'manager' -> saved role 'customer'
+  PASS  a customer cannot change their own role
+        -> permission denied (42501); role is still 'customer'
+  PASS  a vendor cannot assign themselves another truck
+        -> permission denied (42501) on trucks.vendor_id
+  PASS  the migrations revoke rights on Qafla's objects only, not on an unrelated table or function
+        -> unrelated_notes keeps select/insert/update/delete and private.unrelated_helper() stays callable by PUBLIC, anon and authenticated; the 6 Qafla tables lost insert, delete and truncate; Qafla's 6 internal private functions and its abandoned-attempts table are closed to the API roles
+
+Step 1. Dune Burgers takes one Classic smash and one Loaded fries
+  PASS  the order is refused when the request tampers with price or quantity
+        -> 10 bad requests refused; no rows added
+  PASS  pickup times must be exactly on the quarter hour, to the microsecond
+        -> 19:44:59.999999, 19:45:00.000001, 19:44:59.6, 19:45:00.4, 19:45:01 refused by place_order (invalid_slot) and by the table (orders_slot_on_grid); 19:45:00.000000 accepted; orders, items and occupancy unchanged
+  PASS  the server prices the order at 3.200 KWD and ignores prices sent by the browser
+        -> total 3.200 KWD = 1.950 + 1.250; service date 2026-11-22; real ticket T02-000007 (shown as #DUNE-104 in this fixture)
+  PASS  only the people involved can read the order
+        -> customer, Dune vendor and manager: 1 row. Another customer and the Taco Saha vendor: 0 rows
+  PASS  nobody can skip the order rules
+        -> 10 attempts refused; the order is still 'placed'
+  PASS  the table itself refuses a rejected order without a real reason
+        -> null, empty, spaces and tab/newline reasons: check violation orders_rejection_has_reason; 'Out of beef' is accepted (rolled back)
+  PASS  the Dune Burgers vendor accepts the order and marks it preparing
+        -> placed -> accepted -> preparing; going back and a late cancel are refused
+  PASS  a full slot refuses the next order, and a cancellation frees its place at once
+        -> 6/6 -> slot_full; after #DUNE-099 is cancelled the same slot counts 5/6
+
+Step 2. 7:06 PM: five qualifying orders, and Dana closes Dune Burgers for tonight
+  PASS  the manager sees five qualifying orders in the 7:15 PM slot
+        -> DUNE-100 collected, DUNE-101 preparing, DUNE-102 ready, DUNE-103 accepted, DUNE-104 preparing
+  PASS  the 7:15 PM slot has a free place but can no longer be booked (under 15 minutes away)
+        -> slot_too_soon at 7:06 PM for 7:15 PM
+  PASS  only the manager can close a truck
+        -> customer and vendor: not_a_manager; writing the table directly: permission denied
+  PASS  immediately before the closure, the second customer's 7:45 PM cart is bookable
+        -> 1 Classic smash + 1 Loaded fries for 7:45 PM accepted at 3.200 KWD, then rolled back so nothing was kept
+  PASS  Dana closes Dune Burgers for the current Kuwait service date
+        -> closure saved for 2026-11-22 at 07:06 PM Kuwait time
+
+Step 3. The second customer submits the same 7:45 PM request after the closure
+  PASS  the database rejects it and saves no order and no order items
+        -> truck_closed; 7:45 PM stays 0/6; orders 6 -> 6, order items 8 -> 8; the customer has 0 orders
+  PASS  the vendor's own switch cannot reopen a truck the manager closed
+        -> still truck_closed
+
+Step 4. The existing order is finished after the closure
+  PASS  the assigned vendor marks #DUNE-104 ready and then collected
+        -> preparing -> ready -> collected
+  PASS  the customer reads the updated status
+        -> #DUNE-104 collected, 3.200 KWD
+  PASS  the manager still sees five qualifying orders in the slot
+        -> DUNE-100 collected, DUNE-101 preparing, DUNE-102 ready, DUNE-103 accepted, DUNE-104 collected; slot_usage 5/6
+  PASS  a later price change does not alter the order
+        -> menu now 2.500; the order keeps 1.950 and 3.200. Another vendor's edit changed 0 rows
+
+Step 5. Two customers compete for the last place in an open slot
+  PASS  the second order waits for the first, then is refused (step by step)
+        -> first: placed; second: waited on the truck lock, then slot_full; slot holds 6/6
+  PASS  fired at the same instant, exactly one wins, five times out of five
+        -> 20:15 winner A, other slot_full, 6/6
+        -> 20:30 winner B, other slot_full, 6/6
+        -> 20:45 winner A, other slot_full, 6/6
+        -> 21:00 winner B, other slot_full, 6/6
+        -> 21:15 winner A, other slot_full, 6/6
+
+Extra. Placing an order at the same moment the manager closes the truck
+  PASS  if the closure gets the lock first, the order is refused
+        -> order waited for the closure, then truck_closed; nothing saved
+  PASS  if the order gets the lock first, it stands and the closure follows
+        -> order saved as 'placed'; closure then succeeded; the next order gets truck_closed
+
+Retrying the same checkout attempt never makes a second order
+  PASS  a retry after a lost response returns the original ticket, even once the slot is full and the truck is closed
+        -> T04-000046 returned for both retries (slot 5/5, then truck closed); this attempt left 1 order, 2 lines, 1 place
+  PASS  two submissions of the same attempt at once: the second waits, then gets the first one's ticket
+        -> both copies answered with T01-000051; 1 order, 1 line, 1 place
+  PASS  fired at the same instant, the same attempt makes one order, five times out of five
+        -> 5 rounds: both copies returned the same ticket; each round left 1 order, 1 line, 1 place
+  PASS  a request ID cannot be reused for a different order, and cannot be left out
+        -> another time, quantity, dish or truck: request_id_reused; no ID: request_id_required; only the other customer's own order was added
+  PASS  the same ID sent for two trucks at once: only one saves
+        -> T01-000058 saved; the second truck's copy was refused with request_id_reused and saved nothing
+  PASS  checkout's read-only lookup finds the customer's own saved attempt, and nobody else's
+        -> T04-000046 found for its own customer on a full slot and closed truck; another customer and an unsaved attempt both find nothing; no rows added
+
+Giving up on an attempt whose answer never arrived
+  PASS  placing wins: the original request is still in flight, the lookup is empty, and giving up returns its ticket
+        -> lookup was empty while the request was in flight; giving up waited, then returned T03-000059; 1 order, 2 lines, 1 place, nothing recorded as abandoned
+  PASS  giving up wins: the original request is held in flight, then refused, and the customer orders at another time
+        -> the held request was refused with request_abandoned and left 0 orders, 0 lines, 0 places at 6:45 PM; the new attempt T03-000060 took 1 place at 7:00 PM
+  PASS  a request that never reached the server: giving up works, twice is the same as once, and a late copy is refused
+        -> giving up returned no order both times and was recorded once; the late copy got request_abandoned; T03-000062 placed with a new ID
+  PASS  placing and giving up fired at the same instant: exactly one wins, five times out of five
+        -> 5 rounds: placing won 1, giving up won 4; never both, never neither
+  PASS  only the signed-in customer can give up their own attempts
+        -> signed-out visitors and vendors are refused; one customer's decision does not touch another customer's attempt
+
+The kitchen board: one truck's tickets, moved one step at a time
+  PASS  a vendor's board reads its own truck's tickets and lines, and nothing from another truck
+        -> Taco Saha's vendor reads 43 of its tickets and 0 of Dune Burgers'; the Dune Burgers vendor reads 0 of Taco Saha's
+  PASS  a ticket goes placed, accepted, preparing, ready, collected, and tapping an action twice saves it once
+        -> 4 moves saved, 4 repeats refused; the customer reads 'collected'
+  PASS  a collected ticket still holds its place in the slot
+        -> 1 qualifying order before and after collection
+  PASS  rejecting a placed ticket needs a reason; the customer reads it and the place is freed
+        -> refused without a reason; saved with one; slot back to 1 place taken
+  PASS  live updates are switched on for orders only
+        -> supabase_realtime publishes public.orders; who hears a change is still decided by orders_select
+
+Slot capacity: one number per truck, set by its vendor, and no order is ever lost
+  PASS  capacity is stored once per truck, and only the truck's own vendor can change it, within 1 to 20
+        -> trucks.slot_capacity only; a customer, the manager and another truck's vendor change nothing; 0 and 21 are refused
+  PASS  fixture: five qualifying bookings in one pickup time with capacity six
+        -> 21:45: T03-000067 accepted, T03-000068 preparing, T03-000069 placed, T03-000070 placed, T03-000071 placed; slot_usage 5/6
+  PASS  the vendor lowers capacity to five: the slot is full at 5 of 5 and all five tickets are kept
+        -> slot_usage 5/5 for customer and manager; sixth order gets slot_full; 5 tickets unchanged; capacity 5 on all 24 times
+  PASS  capacity below existing bookings is allowed: every order stays, and the slot takes no new one until it drops below the limit
+        -> 5 of 4: all five kept, new orders refused; still refused at 4 of 4; accepted again at 3 of 4
+  PASS  an order already being placed when capacity is lowered is saved first, and stays
+        -> the capacity change waited for the order, then saved; the order is 'placed' at 1 of 1; capacity restored to 6
+
+The customer ticket: cancelling against the kitchen, and rating once
+  PASS  a cancellation frees exactly one place, and the customer, the vendor and the manager all read it
+        -> 3 places -> 2 after the cancellation; all three roles read 'cancelled' and 2; an accepted order cannot be cancelled
+  PASS  the vendor accepts first: the customer's cancellation waits, then is refused, and the order stays accepted
+        -> cancellation waited for the acceptance, then transition_not_allowed; order 'accepted'; place still taken
+  PASS  the customer cancels first: the vendor's acceptance waits, then is refused, and the place is free
+        -> acceptance waited for the cancellation, then transition_not_allowed; order 'cancelled'; its place is free again
+  PASS  cancel and accept fired at the same instant: exactly one wins, five times out of five
+        -> cancelled (place freed); cancelled (place freed); cancelled (place freed); cancelled (place freed); cancelled (place freed)
+  PASS  only the customer of a collected order can rate it, with 1 to 5 stars
+        -> refused before collection, for anyone but the customer, outside 1 to 5, over 500 characters, and for a cancelled order
+  PASS  the rating is saved once: a second submission is refused and the first one stays
+        -> 4 stars and the trimmed comment saved; two more submissions got already_rated; still one row, unchanged
+  PASS  two submissions of a rating at the same instant save one rating, five times out of five
+        -> 5 stars saved, 5 stars saved, 5 stars saved, 5 stars saved, 5 stars saved; the other submission got already_rated each time
+  PASS  a rating can be read by its customer, the truck's vendor and the manager, and written by nobody directly
+        -> read by customer, vendor and manager only; update, delete and insert through the API are refused; the table refuses a duplicate and 6 stars
+
+The vendor's menu: photo suggestions are limited, and Save changes two fields only
+  PASS  only a vendor can start a photo suggestion, and only for a dish on their own truck
+        -> the truck's vendor is counted once; another vendor, a customer, the manager and a signed-out caller are refused and not counted
+  PASS  a vendor gets 20 suggestions an hour; the 21st is refused until the oldest is an hour old
+        -> requests 1 to 20 pass, 21 is refused with the time it reopens, another vendor is unaffected, and an hour later it works again
+  PASS  Save changes the description and allergens, and leaves price, sold-out, name and category alone
+        -> price 2.750 and sold-out are untouched; text is trimmed; allergens are de-duplicated; customers read the saved text
+  PASS  nobody else can save a dish, and nothing outside the rules is stored
+        -> another vendor, a customer and the manager are refused; 201 characters and an unknown allergen are refused; M203 is unchanged
+
+Online payment: paid only when the gateway's answer matches the saved order
+  PASS  Pay online places one order and takes one place; a retry adds nothing
+        -> T03-000091: online, unpaid, 3.200; 22:30 went from 0 to 1 and stayed there after two retries
+  PASS  a customer cannot mark their own order paid
+        -> direct update, both server functions without the secret, a hand-made payment row and reading the secret's hash are all refused; still unpaid
+  PASS  the amount to charge comes from the saved order, and only its own customer can start paying
+        -> 3.200 KWD read from the order; another customer and the vendor get order_not_found; a pay-at-pickup order cannot be paid online
+  PASS  the kitchen cannot accept an online order until it is paid, but can still see it
+        -> accept is refused with payment_not_confirmed; the vendor reads online / unpaid
+  PASS  a gateway answer that does not match the order never marks it paid
+        -> wrong amount, wrong currency and another order's ID are 'mismatch'; failed, cancelled and pending leave it unpaid; an unknown invoice is refused
+  PASS  a matching answer marks it paid once; repeating the answer changes nothing
+        -> paid once; five more answers (two at the same instant) changed nothing; a second paid invoice is 'duplicate'; one paid row; slot count unchanged; then accepted
+  PASS  a failed try does not close the invoice: a later successful try on it still pays the order
+        -> T03-000093: failed, then pending (still unpaid), then paid; a late failed answer changes nothing
+  PASS  a paid order that is rejected or cancelled shows Refund due, and its place is freed
+        -> T03-000094 paid then rejected: refund_due and 22:30 2 -> 1; paid then cancelled: refund_due; cancelled then paid: refund_due; unpaid then rejected: unpaid
+  PASS  pay at pickup works as before, and payment rows are private
+        -> old place_order: pay_at_pickup, unpaid, accepted normally; payment rows: customer reads own 7, vendor 0, manager all 11
+
+The vendor's controls: details, open or closed, price and sold out, on their own truck only
+  PASS  a vendor edits their own truck's details; everyone else changes nothing
+        -> name, cuisine and description saved; 4 outsiders changed nothing; this vendor changed nothing on T03; vendor_id and id are refused (42501)
+  PASS  truck details must be short, single-line and not blank
+        -> blank, padded, too long and multi-line are refused (23514); 40 / 30 / 120 characters, an empty description and an accented name are saved
+  PASS  a vendor changes the price of their own dish only, and it must be a real price
+        -> 0.750 -> 0.900 by its own vendor; 4 outsiders and another truck's dish unchanged; 0, a negative price and 1000 refused (23514); 0.8004 is stored as 0.800
+  PASS  a new order uses the new price; the earlier ticket keeps the price it was placed at
+        -> T01-000099 stays 2 x 0.750 = 1.500; T01-000100 is 2 x 0.900 = 1.800; a price sent by the browser is ignored (0.900)
+  PASS  sold out: the order is refused and nothing is saved; back on sale, it is accepted
+        -> outsiders cannot switch it; sold out -> item_sold_out, no order and no place taken; back on sale -> placed at 0.850
+  PASS  the vendor switches the truck off: no new orders, and every existing ticket can still be finished
+        -> off -> truck_closed and nothing saved; T01-000099 still went placed -> collected; a customer still cancelled; on again -> T01-000103 placed
+  PASS  Dana's Close for tonight wins over the vendor's switch, and is not the vendor's to undo
+        -> closed by the manager with the vendor's switch still on: orders refused; the vendor cannot touch the closure (42501, not_a_manager); a ticket still went placed -> collected
+
+Dana's dashboard: every count is explained by tickets she can read
+  PASS  for all 6 trucks and 24 times, the manager's tickets add up to slot_usage's count
+        -> 144 cells checked, 27 with orders; collected 12 counted, rejected 3 and cancelled 16 left out
+  PASS  the same dashboard read by a customer or a vendor returns only their own orders
+        -> manager reads 101 of 101; customer 16, vendor 76, none of them someone else's
+  PASS  closing a truck answers with the saved closure; a second tap changes nothing; everyone can read it
+        -> one closure row for T03, same closed_at both times; a vendor is refused; orders untouched
+
+Account: a user changes their own display name, and nothing else
+  PASS  set_my_name changes the caller's own name only; the role stays out of reach
+        -> own name tidied and saved, 61 characters refused, empty clears it; direct updates of name or role are still refused (42501); anon is refused
+
+83 checks passed.

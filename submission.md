@@ -16,6 +16,18 @@ This is reused controlled-fixture evidence from commit 3ca0776: local production
 
 **Phone checks are Chrome emulation:** 320/390 px, English/Arabic. Physical-device pinch smoothness remains unverified. The recorded 1.62-second Map load is a local desktop measurement, not mobile-network performance.
 
+## Panel starting path — five accounts
+
+Open [Production](https://qafla-rjqd.vercel.app). Use the matching credentials from the **private panel handoff**; no passwords are in these files. Keep Customer A and B in separate browser profiles/incognito sessions. This starting path is read-only: no order placement, payment, status changes or truck closures.
+
+1. **Customer A:** sign in → Explore → a branded truck menu → Map → rotate/select a truck and view its sheet. Open Orders to inspect an existing ticket; use Find my truck only if a Ready ticket exists. The Park Guide clip supplies the controlled Ready → T02 demonstration if none exists live.
+2. **Customer B:** in the second session, sign in → Explore → Orders → Account. Confirm a distinct customer identity and its own order list. This UI check is not a substitute for the cross-account direct-request evidence in tampering_test.md.
+3. **T02 vendor:** sign in → Dune Burgers Kitchen → inspect existing tickets and Account's truck assignment. Do not advance orders during this read-only tour.
+4. **T06 vendor:** sign in → Lugaimat & Co Kitchen → inspect its own board and Account assignment. An empty board is valid; do not create an order to fill it.
+5. **Manager:** sign in → Tonight across the park → inspect all six trucks/slot usage → Account confirms Park manager. Finish with the five-round recording and its per-round counts; it is isolated evidence, not a Production race.
+
+The account emails and verified landing screens are listed below. Account provisioning is complete; private credential delivery and reviewer repository access are still owner actions.
+
 ## Latest shipped customer verification
 
 PR #16 is merged and deployed. Fresh launch, actual customer sign-in, returning-session launch, truck menu opening and first Add passed on Production in **English/Arabic at 320 and 390 px**. No orders or payments were created. [Production assertions and screenshots](docs/evidence/production-pr16/README.md) · [Commit-pinned evidence](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/production-pr16/README.md).
@@ -45,7 +57,9 @@ PR #16 is merged and deployed. Fresh launch, actual customer sign-in, returning-
 | Forced AI failure | [Screenshot](docs/evidence/ai-menu/forced-error-preview.jpg), [matching log](docs/evidence/ai-menu/forced-error-preview-log.txt) | Missing-key failure; not an invalid-key rejection |
 | Payment evidence | [Preview sandbox run](docs/evidence/payments/preview-sandbox-run.md) | Paid/unpaid, fake success, failure and refund-due evidence; documented limits retained |
 
-When emailing standalone Markdown files, also attach the referenced evidence folder or grant the panel repository access. Relative paths alone do not carry files with an email. Pinned links are stable, but still require access to this private repository. Anonymous GET checks returned 200 for app sign-in and 404 for the repository and pinned park video. The owner's signed-in GitHub view shows the repository as Private; it is not proof of panel access. See [access evidence](docs/evidence/panel-access/README.md).
+**Reviewer-access check, 22 November:** fresh signed-out Chromium with no owner GitHub cookies reached Production (HTTP 200) and displayed usable sign-in. The exact pinned Park Guide download and five-round recording links both returned **404**. Both files were retrievable through the **owner-authorized GitHub connector only**; that confirms the files exist, not that a panel member can open them. No panel GitHub identity/invitation was available to verify authenticated reviewer access. [Statuses, URLs and screenshot](docs/evidence/submission-access/README.md).
+
+Before delivery, invite the panel's GitHub accounts and have one confirm both clips open, or privately attach the clips and referenced evidence directories alongside the Markdown files. Do not rely on private GitHub URLs alone. No sharing settings were changed and no attachments were sent.
 
 ## Five demo accounts — release gate
 
@@ -67,8 +81,8 @@ Checked against the supplied assessment PDF (pages 2–6), owner brief and start
 
 | Requirement | Actual submission evidence | Remaining gap |
 | --- | --- | --- |
-| Core app and six direct-request attacks | Shipped app, migrations, 108 unit tests and 83 isolated database checks; live report now has an inventory | Live attempts 1–6 need request/response, data-after proof, rule and screenshot per attempt |
-| Premium | MyFatoorah sandbox Preview evidence and fake-return results | Repository access for panel; live client-bundle/network gateway-key scan not packaged |
+| Core app and six direct-request attacks | Shipped app, migrations, 108 unit tests and 83 isolated database checks; live report now has an inventory | Criteria 1–5 need the enumerated manual Production responses and data-after captures; criterion 6 has signed-out Production evidence, but signed-in network/bundle inspection remains pending |
+| Premium | MyFatoorah sandbox Preview evidence and fake-return results | Repository access for panel; signed-in gateway-key network/bundle inspection remains pending |
 | Elite race | Two independent customer browser contexts; five recorded rounds, one saved ticket and one slot_full each; database count 5→6 each round | Isolated local production build, real PostgreSQL with auth/HTTP adapter; the assessment asks for the live link, so live-deployment observation remains pending |
 | Elite injection | Local real-model result and screenshot exist | Clearly label local provenance; do not present as Production execution |
 | Elite forced error | Preview missing-key screenshot/log share reference 238caf74 | Keep precise description of missing-key failure |
@@ -79,7 +93,7 @@ Checked against the supplied assessment PDF (pages 2–6), owner brief and start
 
 **Do not mark Core/Premium/Elite fully evidenced yet.** The shipped features and their local/Preview checks are distinct from the assessment's complete live evidence package.
 
-Validation after bringing PR #15 up to current main: lint, typecheck, production build, 108/108 unit tests, the refreshed five-round browser race, and 83/83 database checks passed. Both race and database processes exited 0 without interruption. All new relative evidence links were checked locally. Nine fresh Production logins and all six vendor assignments were reverified against the shipped PR #16 build. The evidence attachment contains no passwords; credentials must be delivered separately.
+Validation after bringing PR #15 up to current main: lint, typecheck, production build, 108/108 unit tests, the refreshed five-round browser race, and 83/83 database checks passed. Both race and database processes exited 0 without interruption. All new relative evidence links were checked locally. Nine fresh Production logins and all six vendor assignments were reverified against the shipped PR #16 build. Tracked evidence contains no passwords; credentials must be delivered separately. This is not a claim that an attachment has been sent.
 
 ## Inputs needed before sending
 
