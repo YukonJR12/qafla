@@ -1,63 +1,62 @@
-# Mobile performance and motion
+# Mobile performance and motion — local production-build comparison
 
-Status: implementation deployed to a protected Preview; comparable **after measurements and the hosted recording are pending Preview access**. Production is unchanged. Do not treat this as completed performance validation.
+[Watch the 14.4-second, normal-speed 390 px walkthrough](local-interaction/390-en-motion.webm) · [Storyboard](local-interaction/walkthrough-storyboard.png)
 
-## Reproduction before editing
+**Local fallback, not deployed timings.** Compared application builds `12870f381535368cb9b50059b2b835cf3c202277` (base) and `d5f47b4d3b9f621fa7f85cb3de2fca4382047917` (candidate). PR #16 remains draft for visual review. The candidate's [regular protected qafla-rjqd Preview](https://qafla-rjqd-rg0ew1yac-ffalrefae-6713s-projects.vercel.app) is Ready at d5f47b4 but redirects this unauthenticated session to Vercel sign-in. No share link was created and protection was not changed.
 
-Baseline: Production `https://qafla-rjqd.vercel.app`, main `12870f381535368cb9b50059b2b835cf3c202277`. Implementation Preview: commit `c79b6b396eeb6f73667d99e6b1fa70e72d1b5b7c`.
+## Before and after
 
-Chromium 159.0.8154.6 on Windows, **Chrome mobile emulation**, 390 × 844 CSS px, DPR 1, touch enabled. CDP profile: 150 ms RTT, 1.6 Mbps down, 750 Kbps up, CPU 4×. Three cold/warm pairs for fresh and returning sessions. Cold means new context plus cleared HTTP cache; warm reuses that context/cache. Backend and CDN caches are uncontrolled. This is not a physical-phone benchmark.
+Medians in milliseconds, **three cold and three warm observations per build per journey**:
 
-Returning runs use the existing Customer B account in disposable contexts. Add modifies only the local cart. No orders or payments are created. Passwords, auth tokens and Preview access links are excluded from the committed evidence.
+| Journey | Base cold | d5f47b4 cold | Base warm | d5f47b4 warm |
+| --- | ---: | ---: | ---: | ---: |
+| Open → usable sign-in | 3,123 | 3,131 | 535 | 604 |
+| Open → usable returning Explore | 5,180 | 4,191 | 2,157 | 2,153 |
+| Truck tap → usable menu | 1,409 | 1,402 | 883 | 895 |
+| Add → quantity/cart update, next frame | 27.6 | 25.5 | 26.2 | 24.9 |
 
-| Interaction | Cold median | Warm median | After |
-| --- | ---: | ---: | --- |
-| Open → usable sign-in | 3,965 ms | 1,267 ms | Pending |
-| Open → usable returning Explore | 6,184 ms | 2,833 ms | Pending |
-| Tap Karak Corner → usable menu Add | 2,437 ms | 2,424 ms | Pending |
-| Add click → quantity and cart visible together, next paint | 27.2 ms | 47.0 ms | Pending |
+[Machine-readable comparison](comparison.json) · [All base runs](local-base/results.json) · [All candidate runs](local-head/results.json).
 
-[All baseline runs](before/results.json), [unthrottled diagnostic](before-fast/results.json). Launch ends when the destination's real primary control is visible and enabled; menu ends when Add is visible and enabled. Add starts at the captured click event and ends at the next animation frame after both quantity and cart exist. This does not measure physical touchscreen latency. Tap acknowledgement is separately provided by the pressed state.
+Returning cold launch was 989 ms faster in this sample. Menu latency was essentially unchanged, and fresh warm entry was 69 ms slower. **These results do not demonstrate a meaningful menu-speed improvement.** Add was already fast and remains fast. Three samples are descriptive, not a statistical guarantee; live backend variability remains. Local testing cannot validate the benefit of moving Vercel functions from Virginia to Singapore.
 
-## What the waterfall and trace showed
+Both versions used `next build` + `next start` sequentially on the same Windows machine and **http://127.0.0.1:3103**, Node 24.15, Chromium **159.0.8154.6**, **Chrome mobile emulation** at **390 × 844 CSS px, DPR 1, touch enabled**, 150 ms RTT, 1.6 Mbps download, 750 Kbps upload, CPU 4×. No other browser suite or build ran during collection. Server assets were primed before final collection. Each cold run used a fresh browser context and cleared HTTP cache; its warm run reused that context/cache. Both builds used the same existing live Supabase backend and Customer B account. Backend caches and Internet latency to Supabase were uncontrolled. The Vercel region configuration does not affect these local servers.
 
-A representative returning cold run finished downloading root code around 2.7 seconds, then waited on account/profile restoration and the Explore response. The menu response was small (about 2.6 KB) but spent about two seconds waiting. Browser long tasks were comparatively small (94/70/66 ms in that cold trace; none in the corresponding warm trace). The bottleneck was server/data waiting, not Add rendering.
+Launch starts at navigation and ends when the real destination control is visible and enabled. Menu starts at the automated truck tap and ends when Add is visible and enabled. Add starts at the captured click event and ends at the next animation frame after both dish quantity and cart count are in the DOM: a DOM/paint proxy, not physical touchscreen latency or completion of the cart entrance animation. No orders, payments or hosted data changes were made; Add changes only the disposable local cart. Credentials and session tokens are excluded from evidence.
 
-The menu awaited its truck query before starting menu, slots and closure reads; the closure helper fetched the same truck again. `fetchTruckMenu` now starts the four independent reads together, reuses the truck result, and preserves closure precedence and live availability. No availability caching was added. A focused held-promise test verifies that dependency removal.
+## Recording and actual frames
 
-Production functions were in `iad1`; the configured database is in Singapore. This branch's `vercel.json` places its functions in `sin1`, confirmed on the Preview deployment. This includes existing server routes, so checkout/payment regression checks remain relevant even though their logic is unchanged. Region placement is an intentional deployment difference in the upcoming comparison, not an identical server environment.
+The original-speed video is 14.44 s, with no time compression:
 
-Explore also downloaded the supplied park artwork as a 412,840-byte unoptimized PNG. It now uses Next's responsive image delivery with the original artwork and contain layout preserved.
+- Approximately 0–4.5 s: cold fresh entry, white launch and official logo rolling right, then sign-in.
+- Approximately 4.7–10.5 s: separate cold entry with an existing valid customer session; logo rolls and hands off to Explore without sign-in.
+- Approximately 10.5–14.4 s: Karak Corner → usable menu → one Add tap → quantity 1 and View order (1).
 
-[3D bundle audit](before/three-audit.json): no Three/R3F signatures in the 13 JavaScript chunks downloaded by these ordinary flows; no Map route or billboard texture requests. Existing lazy loading is retained.
+The saved session is obtained before filming and installed in the disposable browser; credentials are not filmed. Browser-frame monitoring found **zero sign-in frames during the English returning journey**, and the first-tap assertion verified both counters equal 1. [Recording assertions](local-interaction/results.json).
 
-## Launch diagnosis and interaction changes
+Actual extracted frames show the fresh logo moving about 30 px between 2.75 and 3.25 s; the returning logo also moves right before settling. **Remaining visible limitation:** the cold recording begins with about 1.5 s of white before the image appears under this throttle. The logo can also sit at its left starting position while client code loads. Neither is hidden or edited out of the clip. No minimum launch timer was added; the destination becomes interactive while the departing layer fades without intercepting input.
 
-The original CSS entrance ran immediately, independent of image loading, and the splash unmounted as soon as restoration completed. Warm sign-in could remove it before the entrance settled; the module-wide once flag could also suppress later splash instances. The original animation was not universally absent. [Actual baseline warm frames](before-fast/fresh-1-warm-filmstrip.png) show its short travel and abrupt handoff. Frame labels are relative to the trace's first screenshot, which can still show the previous warm page; `img.complete` is a load signal, not proof that an image was not already partially painted.
+[Fresh cold trace filmstrip](local-head/fresh-1-cold-filmstrip.png) · [Fresh warm filmstrip](local-head/fresh-1-warm-filmstrip.png) · [Returning filmstrip](local-head/returning-1-cold-filmstrip.png). Trace screenshot timestamps are relative to the first captured frame; warm traces can initially contain the previous page and can stop while the non-blocking handoff is still fading.
 
-The complete official logo now travels 32 px from the left on #FDFDFF, starting after image load, and eases once. Session restoration starts immediately. The destination mounts as soon as ready beneath a 180 ms fading layer with pointer events disabled; there is no minimum launch timer. Reduced motion keeps the logo static. Hosted first-frame confirmation remains pending.
+[Arabic 320 screenshot](local-interaction/320-ar-motion-added.png) · [Arabic 320 reduced-motion screenshot](local-interaction/320-ar-reduced-added.png) · [Reduced-motion recording](local-interaction/320-ar-reduced.webm). Both have scroll width 320 px, reachable cart controls and quantity/cart count 1. Reduced-motion acknowledgement durations are 0 s. Existing fixture checks verify a static launch and steady Ready notice. **No physical phone was available; physical-device performance is unverified.**
 
-Add now has immediate pressed-state feedback and a quantity acknowledgement. Quantity and cart still derive from the same existing account-scoped cart update; there is no extra request or optimistic database write.
+## Waterfall, trace and scope
 
-The confirmed Ready notice has a subtle 6 px entrance and contains Find my truck. Repeated Ready events leave it steady; reopening an already-Ready ticket does not replay it. Previewing a future stage never creates a Ready notice or changes the confirmed status.
+Each raw-run directory contains `.network.json`, `.trace.json.gz` (decompress and import into Chrome Performance), `.frames.json` and screenshots. These contain no request headers/bodies. The supplied park artwork now arrives as a responsive image: a representative candidate cold request transferred **28,318 bytes**, versus the prior Production's unoptimized **412,840-byte** PNG. Its source artwork and contain layout are unchanged. In the local base journey the large artwork transfer could still be unfinished when navigation left Explore.
 
-## Validation
+A representative warm menu's full RSC response took about 728 ms in base and 348 ms in the candidate, but the complete tap-to-usable measure did not materially improve. Additional route/prefetch requests and client work remain part of that journey; do not equate one faster response with a faster user interaction.
 
-- Lint and typecheck passed.
-- 108 unit tests passed.
-- 83 database assertions passed; **process exited successfully with code 0**, without an interrupt.
-- Production build passed locally and on Vercel.
-- Final full browser run: **34/34 passed**, exit 0. Covers fresh/returning launch, Arabic 320 reduced motion, live/repeated/reopened Ready, menu read concurrency, explicit payment choice, and existing map/interface checks at 320/390 in English/Arabic. Two initial new-test assertion failures were corrected before this final rerun.
-- Account isolation and slot-full/truck-closed recovery contracts passed in unit/database tests; those recovery paths were not re-driven in a hosted browser.
-- [Arabic 320 reduced-motion Ready fixture](fixtures/ready-ar-320-reduced.png), [English 390 Ready fixture](fixtures/live-ready-390-en.png), [Arabic 390 Ready fixture](fixtures/live-ready-390-ar.png). These are controlled local fixtures, not production tickets.
-- Browser fixtures override the Supabase origin to localhost; ticket transitions and checkout tests do not write to the shared hosted database.
-- Physical-device pinch and touch performance are unverified; no connected phone has been identified.
+[Base 3D loading audit](local-base/three-audit.json) · [Candidate audit](local-head/three-audit.json): no Three/R3F signatures in the ordinary-flow script chunks and no Map route or billboard texture requests. Lazy loading is preserved.
 
-## Remaining evidence
+The initial deployed baseline, collected before implementation, remains in [before/results.json](before/results.json) with traces and an [unthrottled warm-launch filmstrip](before-fast/fresh-1-warm-filmstrip.png). Those Production timings are **not** used as the before column above because their server environment differs from the local candidate.
 
-- Identically profiled hosted after timings, waterfall and trace.
-- Actual fresh/returning Preview first frames, including the fast warm handoff.
-- Original-speed 390 px launch → Explore → menu → Add recording.
-- Hosted Arabic 320 px screenshots and reduced-motion inspection.
+Implementation: parallel menu/truck/slot/closure reads remove the duplicate truck query; sin1 collocates Preview functions with the database; responsive Explore artwork reduces transfer. Launch starts its entrance after image load, retains the complete official logo on #FDFDFF and fades without blocking a ready destination. Add retains one account-scoped cart update with pressed-state feedback. The confirmed Ready notice has one subtle entrance and contains Find my truck; repeated Ready updates and reopening an already-Ready ticket do not replay it. Stage previews do not affect confirmed status or write to the database.
 
-Reproduce with `scripts/measure-mobile.mjs`; generate trace filmstrips with `scripts/launch-filmstrip.mjs`; record the hosted journey with `scripts/record-mobile-motion.mjs`. Credentials come from an ignored private handoff path via `PERF_HANDOFF`. Any approved temporary Preview access URL must be stored in an ignored local file, never passed into evidence or the PR.
+## Checks and remaining review
+
+The application at d5f47b4 passed lint, typecheck, production build, **108 unit tests**, **83 database assertions with successful exit 0**, and **34/34 browser tests**. Both local production builds also completed successfully for this comparison. No application code changed during evidence collection. Browser fixtures cover English/Arabic 320/390, reduced motion, live/repeated/reopened Ready, parallel reads, explicit payment selection and existing map/interface behavior. Account isolation and slot-full/truck-closed recovery contracts passed in unit/database tests; recovery was not re-driven in a hosted browser.
+
+[Arabic 320 reduced-motion Ready fixture](fixtures/ready-ar-320-reduced.png) · [English 390 Ready fixture](fixtures/live-ready-390-en.png). These are controlled fixtures, not production tickets.
+
+Remaining owner review: inspect the normal-speed clip and the cold white interval. Protected Preview end-to-end performance and physical-phone performance remain unverified. PR #16 stays open and draft; these results are not a merge recommendation.
+
+Reproduction scripts: `scripts/measure-mobile.mjs`, `scripts/summarize-mobile.mjs`, `scripts/record-mobile-motion.mjs`, `scripts/launch-filmstrip.mjs`, `scripts/audit-map-loading.mjs`. `PERF_HANDOFF` points to an ignored private credentials file; do not commit it.

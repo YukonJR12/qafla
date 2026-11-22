@@ -3,7 +3,7 @@ import { readFile, mkdir, writeFile, rename } from 'node:fs/promises';
 process.loadEnvFile('.env.local');
 const base = process.argv[2];
 if (!base) throw new Error('Pass the tested deployment URL');
-const out = 'docs/evidence/mobile-performance/interaction';
+const out = `docs/evidence/mobile-performance/${process.argv[3] || 'interaction'}`;
 await mkdir(out, { recursive: true });
 const { accounts } = JSON.parse(await readFile(process.env.PERF_HANDOFF, 'utf8'));
 const customer = accounts.find(a => a.label === 'Customer B');
@@ -30,13 +30,30 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: reduced ? 'reduce' : 'no-preference', recordVideo: { dir: `${out}/raw`, size: { width, height: 844 } } });
     await context.addCookies(previewCookies);
     await context.addCookies([{ name: 'qafla_locale', value: locale, url: base }]);
-    await context.addInitScript(({ key, session, origin }) => { if (location.origin === origin) localStorage.setItem(key, JSON.stringify(session)); }, { key, session, origin: new URL(base).origin });
     const page = await context.newPage();
     const cdp = await context.newCDPSession(page);
     await cdp.send('Network.enable');
     await cdp.send('Network.clearBrowserCache');
     await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 200000, uploadThroughput: 93750, connectionType: 'cellular4g' });
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    if (width === 390) {
+      // One continuous, original-speed clip: fresh entry, then saved-session entry.
+      await page.goto(base, { waitUntil: 'commit' });
+      await page.getByRole('button', { name: 'Sign in', exact: true }).waitFor({ timeout: 60000 });
+      await page.waitForTimeout(1200);
+      await page.screenshot({ path: `${out}/${id}-fresh-sign-in.png` });
+      await page.goto('about:blank');
+      await cdp.send('Network.clearBrowserCache');
+    }
+    await context.addInitScript(({ key, session, origin }) => { if (location.origin === origin) localStorage.setItem(key, JSON.stringify(session)); }, { key, session, origin: new URL(base).origin });
+    await context.addInitScript(() => {
+      window.returningSignInFrames = 0;
+      const inspect = () => {
+        if ([...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Sign in' && b.getBoundingClientRect().height > 0)) window.returningSignInFrames++;
+        requestAnimationFrame(inspect);
+      };
+      requestAnimationFrame(inspect);
+    });
     // No order or payment action; disposable local cart only.
     await page.goto(base, { waitUntil: 'commit' });
     const truck = page.locator('a[href="/trucks/T01"]').first();
@@ -57,7 +74,11 @@ try {
     await page.screenshot({ path: `${out}/${id}-added.png` });
     const result = await page.evaluate(() => ({ direction: document.documentElement.dir, width: innerWidth, scrollWidth: document.documentElement.scrollWidth, quantity: document.querySelector('.quantity-ack')?.textContent, animations: [...document.querySelectorAll('.quantity-ack,.bump')].map(e => getComputedStyle(e).animationDuration) }));
     if (result.scrollWidth > width) throw new Error(`Horizontal overflow: ${id}`);
-    results.push({ id, ...result, cartText: await cart.innerText(), cartBounds: await cart.boundingBox() });
+    const cartText = await cart.innerText();
+    const returningSignInFrames = await page.evaluate(() => window.returningSignInFrames);
+    if (result.quantity !== '1' || !cartText.includes('(1)')) throw new Error('First Add did not update quantity and cart together');
+    if (returningSignInFrames) throw new Error('Sign-in flashed during the returning launch');
+    results.push({ id, ...result, returningSignInFrames, cartText, cartBounds: await cart.boundingBox() });
     const video = page.video();
     await context.close();
     await rename(await video.path(), `${out}/${id}.webm`);
