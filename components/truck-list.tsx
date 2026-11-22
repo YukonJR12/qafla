@@ -136,6 +136,7 @@ export function TruckList({ trucks, dishes }: { trucks: TruckTonight[]; dishes: 
                         width={480}
                         height={480}
                         sizes="(min-width: 768px) 176px, 40vw"
+                        fetchPriority="low"
                         className={`size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-black/10 ${bookable ? "" : "opacity-60 grayscale"}`}
                       />
                     ) : (
