@@ -1,6 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { dictionary } from "../../lib/i18n";
 
+test("launch paints the official logo even while application JavaScript is unavailable", async ({ page }, info) => {
+  const imageRequests: string[] = [];
+  page.on("request", request => { if (request.resourceType() === "image") imageRequests.push(request.url()); });
+  await page.route("**/*.js", route => route.abort());
+  await page.goto("/");
+  const logo = page.locator(".launch img");
+  await expect(logo).toBeVisible();
+  await expect(logo).toHaveAttribute("src", /^data:image\/webp;base64,/);
+  expect(await logo.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth === 256)).toBe(true);
+  expect(imageRequests).toEqual([]);
+  await page.screenshot({ path: info.outputPath("launch-without-javascript.png") });
+});
+
 for (const reduced of [false, true]) for (const returning of [false, true]) {
   test(`launch ${returning ? "saved session" : "fresh"}, ${reduced ? "320 Arabic reduced" : "390 English motion"}`, async ({ page }, info) => {
     const locale = reduced ? "ar" : "en";

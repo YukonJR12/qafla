@@ -31,15 +31,22 @@ try {
       await page.goto((await readFile(process.env.PERF_PREVIEW_ACCESS, 'utf8')).trim());
       await page.goto('about:blank');
     }
-    await page.addInitScript(() => {
+    await page.addInitScript(({ returning }) => {
       window.launchFrames = [];
+      const visible = el => el && !el.disabled && el.getBoundingClientRect().height > 0;
+      document.addEventListener('pointerdown', event => {
+        if (event.target.closest('a')?.getAttribute('href') === '/trucks/T01') window.menuStarted = performance.now();
+      }, { capture: true });
       const frame = () => {
+        const destination = returning ? document.querySelector('a[href="/trucks/T01"]') : [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sign in');
+        if (window.usableAt === undefined && visible(destination)) window.usableAt = performance.now();
+        if (window.menuStarted && window.menuResult === undefined && visible(document.querySelector('button[aria-label="Add Karak tea"]'))) window.menuResult = performance.now() - window.menuStarted;
         const el = document.querySelector('.launch img');
         if (el) window.launchFrames.push({ t: performance.now(), complete: el.complete && el.naturalWidth > 0, transform: getComputedStyle(el).transform, animation: getComputedStyle(el).animationName });
         if (performance.now() < 15000) requestAnimationFrame(frame);
       };
       requestAnimationFrame(frame);
-    });
+    }, { returning });
     const cdp = await context.newCDPSession(page);
     await cdp.send('Network.enable');
     await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: fast ? 0 : 150, downloadThroughput: fast ? -1 : 1_600_000 / 8, uploadThroughput: fast ? -1 : 750_000 / 8, connectionType: 'cellular4g' });
@@ -53,20 +60,21 @@ try {
       const id = `${returning ? 'returning' : 'fresh'}-${pair}-${temperature}`;
       network = new Map();
       await cdp.send('Tracing.start', { categories: 'devtools.timeline,blink.user_timing,v8,disabled-by-default-devtools.timeline,disabled-by-default-devtools.screenshot', transferMode: 'ReturnAsStream' });
-      const start = Date.now();
       await page.goto(base, { waitUntil: 'commit' });
       const usable = returning ? page.getByRole('link', { name: /Karak Corner\. Next pickup/ }) : page.getByRole('button', { name: 'Sign in', exact: true });
-      await usable.waitFor({ state: 'visible', timeout: 60000 });
+      await page.waitForFunction(() => window.usableAt !== undefined, null, { timeout: 60000 });
       if (!await usable.isEnabled()) throw new Error('Destination is disabled');
-      const launchMs = Date.now() - start;
+      await page.waitForFunction(() => window.usableAt !== undefined);
+      const launchMs = await page.evaluate(() => window.usableAt);
       const frames = await page.evaluate(() => window.launchFrames);
       let menuMs = null, addMs = null;
       if (returning) {
-        const tap = Date.now(); await usable.tap();
+        await usable.tap();
         const add = page.getByRole('button', { name: 'Add Karak tea', exact: true });
         await add.waitFor({ state: 'visible', timeout: 60000 });
         if (!await add.isEnabled()) throw new Error('Menu Add unavailable');
-        menuMs = Date.now() - tap;
+        await page.waitForFunction(() => window.menuResult !== undefined);
+        menuMs = await page.evaluate(() => window.menuResult);
         await page.evaluate(() => {
           document.addEventListener('click', e => {
             if (e.target.closest('button')?.getAttribute('aria-label') !== 'Add Karak tea') return;

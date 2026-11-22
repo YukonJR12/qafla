@@ -29,7 +29,7 @@ import { primaryButton, secondaryButton } from "./ui";
  * the same phone every screen starts again from nothing: no list, form or
  * live connection of the previous person survives.
  */
-export function SessionGate({ children }: { children: React.ReactNode }) {
+export function SessionGate({ children, launchImage }: { children: React.ReactNode; launchImage: string }) {
   const { account } = useAccount();
   const { t } = useLocale();
   const path = usePathname();
@@ -37,7 +37,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
 
   const { view } = route(whoIs(account), path);
   const launching = view === "splash" || account.status === "restoring";
-  const launch = <Splash label={t.restoring} active={launching} />;
+  const launch = <Splash label={t.restoring} image={launchImage} active={launching} />;
 
   useEffect(() => {
     // The address's query is only known in the browser, so the redirect is

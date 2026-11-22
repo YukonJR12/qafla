@@ -158,7 +158,6 @@ dialog::backdrop {
   .launch-roll {
     animation: launch-roll 560ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
   }
-  .launch-pending { transform: translateX(-32px); }
   .launch-wait::after {
     animation: launch-slide 1100ms ease-in-out 700ms infinite;
   }
