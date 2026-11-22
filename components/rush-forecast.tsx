@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ForecastNumber } from "./forecast-number";
 import { useLocale } from "@/lib/locale";
 import { formatDay, formatSlot } from "@/lib/time";
 import { supabaseBrowser } from "@/lib/supabase";
@@ -56,6 +57,8 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
     const d=dashboard(history,day,now), f=d.risk[0] ?? d.window[0] ?? d.cells[0];
     return `${f.truck}/${f.slot}`;
   });
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [pinnedIndex, setPinnedIndex] = useState(0);
   const f = view.cells.find((c) => `${c.truck}/${c.slot}` === selection)!;
   const row = history.find(
     (r) => r.day === day && r.truck === f.truck && r.slot === f.slot,
@@ -84,11 +87,11 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
       risk: words("At risk", "معرّض للامتلاء"),
       open: words("Room expected", "أماكن متوقعة"),
     })[c.state];
-  function select(c: Forecast) {
+  function select(c: Forecast, scroll = true) {
     pending.current++;
     setLoading(false);
     setSelection(`${c.truck}/${c.slot}`);
-    requestAnimationFrame(() =>
+    if (scroll) requestAnimationFrame(() =>
       detail.current?.scrollIntoView({ block: "start", behavior: "instant" }),
     );
   }
@@ -125,14 +128,18 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
   const allSlots=[...new Set(view.cells.map(c=>c.slot))];
   const visibleSlots=historical ? allSlots.filter(s=>s>='19:15:00' && s<='20:30:00') : allSlots;
   const first = view.risk[0];
+  const ranked = (view.risk.length ? view.risk : view.window.slice(0, 3)).slice(0, 4);
+  // Keep the selected kitchen at its list position after its booking window closes.
+  if (!ranked.some(c => `${c.truck}/${c.slot}` === selection)) ranked.splice(Math.min(pinnedIndex, ranked.length), 0, f);
   return (
     <section className="rush" aria-labelledby="rush-title" data-now={now}>
       <div className="rush-clock">
         <div>
           <h2 id="rush-title">{words("Rush Forecast", "توقع الإقبال")}</h2>
           <p className="rush-demo">
-            {words("Booking history", "سجل الحجوزات")} · {formatDay(date,locale)}
+            {words("Demo forecast · simulated history", "توقع تجريبي · سجل محاكاة")}
           </p>
+          <small>{formatDay(date,locale)}</small>
         </div>
         <div>
           <div className="rush-times">
@@ -181,7 +188,7 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
           className="rush-kpi rush-risk"
         >
           <span>{words("Slots at risk", "فترات معرّضة للامتلاء")}</span>
-          <strong data-testid="risk-count">{view.risk.length}</strong>
+          <strong data-testid="risk-count" data-value={view.risk.length}><ForecastNumber value={view.risk.length} /></strong>
           <small>
             {first
               ? `${name(first.truck)} · ${formatSlot(first.slot, locale)}`
@@ -197,7 +204,7 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
           className="rush-kpi"
         >
           <span>{words("Expected new bookings", "حجوزات جديدة متوقعة")}</span>
-          <strong data-testid="expected-count">{number(view.expected)}</strong>
+          <strong data-testid="expected-count" data-value={number(view.expected)}><ForecastNumber value={view.expected} /></strong>
           <small>
             {words(
               "Orders · tap for truck breakdown",
@@ -215,13 +222,13 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
           <small>
             {view.busiest
               ? words(
-                  `${number(view.busiest.projected)} of ${view.busiest.capacity} places`,
-                  `${number(view.busiest.projected)} من ${view.busiest.capacity} مكاناً`,
+                  "Projected places: ", "الأماكن المتوقعة: ",
                 )
               : words(
                   "No bookable slots in the next hour",
                   "لا فترات متاحة للحجز خلال الساعة القادمة",
                 )}
+            {view.busiest && <bdi dir="ltr"><ForecastNumber value={view.busiest.projected} /> / {view.busiest.capacity}</bdi>}
           </small>
         </div>
       </div>
@@ -252,13 +259,13 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
       </details>
       <div className="rush-ranked">
         <h3>{words("Check these kitchens first", "راجع هذه المطابخ أولاً")}</h3>
-        {(view.risk.length ? view.risk : view.window.slice(0, 3))
-          .slice(0, 4)
-          .map((c) => (
+        {ranked.map((c, index) => (
+            <div key={c.truck + c.slot} className="rush-ranked-row" data-selected={selection === `${c.truck}/${c.slot}`}>
             <button
-              key={c.truck + c.slot}
-              onClick={() => select(c)}
+              onClick={() => { const id = `${c.truck}/${c.slot}`; select(c, false); setPinnedIndex(index); setExpanded(was => was === id ? null : id); }}
               aria-pressed={selection === `${c.truck}/${c.slot}`}
+              aria-expanded={expanded === `${c.truck}/${c.slot}`}
+              aria-controls={`risk-${c.truck}-${c.slot.replaceAll(":", "")}`}
             >
               <span>
                 <b>{name(c.truck)}</b>
@@ -278,6 +285,12 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
                 </small>
               </span>
             </button>
+            {expanded === `${c.truck}/${c.slot}` && <div id={`risk-${c.truck}-${c.slot.replaceAll(":", "")}`} className="rush-row-detail">
+              <p>{words(`${c.current} of ${c.capacity} booked now. Projected ${number(c.projected)}; likely range: `, `${c.current} من ${c.capacity} محجوزة الآن. المتوقع ${number(c.projected)}؛ النطاق: `)}<bdi>{c.low}–{c.high}</bdi> {words("orders.", "طلبات.")}</p>
+              <p>{c.state === "deadline_passed" || c.state === "truck_closed" ? words("Booking has closed; compare the earlier prediction with the outcome below.", "أُغلق الحجز؛ قارن التوقع السابق بالنتيجة أدناه.") : c.state === "full" ? words("This slot is now full.", "هذه الفترة ممتلئة الآن.") : c.high >= c.capacity ? words("Flagged because the likely range reaches capacity before booking closes.", "محددة لأن النطاق المتوقع يصل إلى السعة قبل إغلاق الحجز.") : words("The likely range leaves room before booking closes.", "يترك النطاق المتوقع أماكن قبل إغلاق الحجز.")}</p>
+              <button onClick={() => { detail.current?.scrollIntoView({ block: "start", behavior: "instant" }); detail.current?.focus({ preventScroll: true }); }}>{words("Inspect booking pace ↓", "افحص وتيرة الحجز ↓")}</button>
+            </div>}
+            </div>
           ))}
         {!view.window.length && (
           <p>
@@ -342,8 +355,22 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
                     return (
                       <td key={s}>
                         <button
+                          data-truck={c.truck}
+                          data-slot={c.slot}
+                          tabIndex={selection === `${c.truck}/${c.slot}` ? 0 : -1}
                           className={`rush-cell ${c.state}`}
                           onClick={() => select(c)}
+                          onKeyDown={event => {
+                            const dx = event.key === "ArrowRight" ? (ar ? -1 : 1) : event.key === "ArrowLeft" ? (ar ? 1 : -1) : 0;
+                            const dy = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+                            if (!dx && !dy && event.key !== "Home" && event.key !== "End") return;
+                            event.preventDefault();
+                            const rowIndex = Math.max(0, Math.min(TRUCKS.length - 1, TRUCKS.findIndex(truck => truck.id === c.truck) + dy));
+                            const colIndex = event.key === "Home" ? 0 : event.key === "End" ? visibleSlots.length - 1 : Math.max(0, Math.min(visibleSlots.length - 1, visibleSlots.indexOf(c.slot) + dx));
+                            const next = view.cells.find(cell => cell.truck === TRUCKS[rowIndex].id && cell.slot === visibleSlots[colIndex])!;
+                            select(next, false);
+                            event.currentTarget.closest("table")?.querySelector<HTMLButtonElement>(`[data-truck="${next.truck}"][data-slot="${next.slot}"]`)?.focus();
+                          }}
                           aria-pressed={selection === `${c.truck}/${c.slot}`}
                           aria-label={`${t[locale]} ${formatSlot(s, locale)} ${number(c.projected)}/${c.capacity} ${state(c)}`}
                         >
@@ -415,7 +442,7 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
                 "لا حجوزات جديدة متوقعة: نافذة الحجز هذه مغلقة.",
               )}
         </p>
-        <Pace row={row} f={f} earlier={earlier} locale={locale} />
+        <Pace key={`${selection}/${now}`} row={row} f={f} earlier={earlier} locale={locale} />
         {closed && (
           <p className="rush-outcome" role="status">
             {words(
@@ -458,7 +485,7 @@ function RushDashboard({token,data,date,historical,onMode}:{token:string;data:Ru
       </section>
       <section className="rush-performance">
         <h3>
-          {words("Model performance · historical backtest", "أداء النموذج · اختبار تاريخي")}
+          {words("Model performance · simulated backtest", "أداء النموذج · اختبار بالمحاكاة")}
         </h3>
         <p>
           {words(
@@ -503,8 +530,18 @@ function Pace({
   locale: "en" | "ar";
 }) {
   const ar = locale === "ar",
-    start = Math.min(f.now, f.cutoff) - 100,
+    start = Math.min(earlier.now, f.now, f.cutoff) - 100,
     end = Math.max(f.now, f.cutoff) + 5;
+  const [cursor, setCursor] = useState(Math.min(f.now, f.cutoff));
+  const at = Math.max(start, Math.min(f.cutoff, cursor));
+  const future = at > f.now;
+  const fraction = f.cutoff > f.now ? (at - f.now) / (f.cutoff - f.now) : 0;
+  const projected = f.current + Math.max(0, fraction) * (f.projected - f.current);
+  const low = f.current + Math.max(0, fraction) * (f.low - f.current);
+  const high = f.current + Math.max(0, fraction) * (f.high - f.current);
+  const inspection = `${formatSlot(timeString(at), locale)} · ${future
+    ? ar ? `توقع الوتيرة ${number(projected)}؛ النطاق من ${number(low)} إلى ${number(high)} طلبات` : `Projected pace ${number(projected)}; range ${number(low)}–${number(high)} orders`
+    : ar ? `المرصود ${known(row, at)} طلبات` : `Observed ${known(row, at)} orders`} · ${ar ? "السعة" : "Capacity"} ${f.capacity}`;
   const x = (m: number) => 42 + ((m - start) / (end - start)) * 470,
     y = (n: number) => 160 - (n / row.capacity) * 115;
   const observed = Array.from(
@@ -526,6 +563,16 @@ function Pace({
             : `Observed ${f.current}, projected ${number(f.projected)}, range ${f.low} to ${f.high}, capacity ${f.capacity}`
         }
         style={{ direction: "ltr" }}
+        onPointerDown={event => {
+          const box = event.currentTarget.getBoundingClientRect();
+          setCursor(Math.round((start + (((event.clientX - box.left) / box.width * 550 - 42) / 470) * (end - start)) / 5) * 5);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={event => {
+          if (event.pointerType !== "mouse" && !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          const box = event.currentTarget.getBoundingClientRect();
+          setCursor(Math.round((start + (((event.clientX - box.left) / box.width * 550 - 42) / 470) * (end - start)) / 5) * 5);
+        }}
       >
         <line
           x1="42"
@@ -601,11 +648,18 @@ function Pace({
         <text x="42" y="207">
           {formatSlot(timeString(start), locale)}
         </text>
-        <text x="515" y="207" textAnchor="end">
+        <text x={x(f.cutoff)} y="207" textAnchor="end">
           {formatSlot(timeString(f.cutoff), locale)} ·{" "}
           {ar ? "إغلاق الحجز" : "Cutoff"}
         </text>
+        <line x1={x(at)} x2={x(at)} y1="42" y2="165" stroke="#F42902" strokeWidth="1" />
+        <circle cx={x(at)} cy={y(future ? projected : known(row, at))} r="5" fill="#F42902" />
       </svg>
+      <label className="rush-scrub">
+        <span>{ar ? "افحص وقت الحجز" : "Inspect booking time"}</span>
+        <input type="range" min={start} max={f.cutoff} step={5} value={at} onChange={event => setCursor(Number(event.target.value))} aria-valuetext={inspection} dir="ltr" />
+      </label>
+      <p className="rush-inspection" aria-live="polite" aria-atomic="true">{inspection}</p>
       <p>
         {ar
           ? "خط متصل: المرصود · متقطع: التوقع · مظلل: النطاق"

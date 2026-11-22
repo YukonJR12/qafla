@@ -1,0 +1,316 @@
+{
+  "browser": "159.0.8154.6",
+  "environment": "Protected Vercel Preview; Chrome mobile/touch emulation, Windows; shared Production database read-only",
+  "results": [
+    {
+      "pr": 20,
+      "head": "0640cd04b9527ace85e7041f92fcdd01e71e2df5",
+      "preview": "https://qafla-rjqd-hlyviohew-ffalrefae-6713s-projects.vercel.app",
+      "role": "vendor",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "truck": "T02",
+      "dish": "M201",
+      "callsOnPhotoSelection": 0,
+      "explicitFixtureGenerations": 2,
+      "replacementClearedConfirmation": true,
+      "failedSave": {
+        "saved": "1.950",
+        "draft": "2.100",
+        "retryEnabled": true
+      },
+      "OpenRouter": "Not exercised; controlled Preview response fixture",
+      "saveFailure": "Controlled 503 before database; no write sent",
+      "sharedDatabaseWrites": 0
+    },
+    {
+      "pr": 20,
+      "head": "0640cd04b9527ace85e7041f92fcdd01e71e2df5",
+      "preview": "https://qafla-rjqd-hlyviohew-ffalrefae-6713s-projects.vercel.app",
+      "role": "vendor",
+      "width": 320,
+      "height": 844,
+      "locale": "ar",
+      "truck": "T02",
+      "dish": "M201",
+      "callsOnPhotoSelection": 0,
+      "explicitFixtureGenerations": 2,
+      "replacementClearedConfirmation": true,
+      "failedSave": {
+        "saved": "1.950",
+        "draft": "2.100",
+        "retryEnabled": true
+      },
+      "OpenRouter": "Not exercised; controlled Preview response fixture",
+      "saveFailure": "Controlled 503 before database; no write sent",
+      "sharedDatabaseWrites": 0
+    },
+    {
+      "pr": 19,
+      "head": "7e351205f19109bea3cc0007ac400b22db73ebf5",
+      "preview": "https://qafla-rjqd-qgkjh4c56-ffalrefae-6713s-projects.vercel.app",
+      "role": "customer",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "rapidTaps": 2,
+      "quantity": 2,
+      "cartCount": 2,
+      "cameraBefore": {
+        "angle": "-1.39926",
+        "zoom": "39.00000"
+      },
+      "cameraAfter": {
+        "angle": "-1.39938",
+        "zoom": "39.00000"
+      },
+      "existingTicket": "/orders/24697350-0448-4d5b-a53d-322a46b9ea33",
+      "receiptOnReopen": false,
+      "payment": "Preview UI with controlled verification responses, not MyFatoorah sandbox",
+      "verifyCalls": 4,
+      "paymentStartCalls": 0,
+      "sharedDatabaseWrites": 0
+    },
+    {
+      "pr": 19,
+      "head": "7e351205f19109bea3cc0007ac400b22db73ebf5",
+      "preview": "https://qafla-rjqd-qgkjh4c56-ffalrefae-6713s-projects.vercel.app",
+      "role": "customer",
+      "width": 320,
+      "height": 844,
+      "locale": "ar",
+      "rapidTaps": 2,
+      "quantity": 2,
+      "cartCount": 2,
+      "cameraBefore": {
+        "angle": "-1.12372",
+        "zoom": "32.00000"
+      },
+      "cameraAfter": {
+        "angle": "-1.12384",
+        "zoom": "32.00000"
+      },
+      "existingTicket": "/orders/24697350-0448-4d5b-a53d-322a46b9ea33",
+      "receiptOnReopen": false,
+      "payment": "Preview UI with controlled verification responses, not MyFatoorah sandbox",
+      "verifyCalls": 4,
+      "paymentStartCalls": 0,
+      "sharedDatabaseWrites": 0
+    },
+    {
+      "pr": 21,
+      "head": "c304fbde6d8f020e65ee5241db476b3f4b2db9e2",
+      "preview": "https://qafla-rjqd-rh2dkurub-ffalrefae-6713s-projects.vercel.app",
+      "role": "manager",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "data": "Authenticated Preview, shared database history; simulated seed provenance",
+      "date": "2026-11-21",
+      "truck": "T03",
+      "slot": "20:00:00",
+      "steps": [
+        {
+          "now": 1140,
+          "rewind": false,
+          "current": 5,
+          "capacity": 6,
+          "projected": 6,
+          "low": 5,
+          "high": 6,
+          "state": "likely",
+          "kpi": {
+            "risk": 9,
+            "expected": 35.3,
+            "busiest": {
+              "slot": "20:00:00",
+              "projected": 32.333333333333336,
+              "capacity": 43
+            }
+          },
+          "expandedText": "5 of 6 booked now. Projected 6; likely range: 5–6 orders.\n\nFlagged because the likely range reaches capacity before booking closes.\n\nInspect booking pace ↓",
+          "chart": "Observed 5, projected 6, range 5 to 6, capacity 6",
+          "cell": "6/6Likely to fill"
+        },
+        {
+          "now": 1155,
+          "rewind": false,
+          "current": 5,
+          "capacity": 6,
+          "projected": 6,
+          "low": 5,
+          "high": 6,
+          "state": "likely",
+          "kpi": {
+            "risk": 9,
+            "expected": 37.1,
+            "busiest": {
+              "slot": "19:30:00",
+              "projected": 29,
+              "capacity": 38
+            }
+          },
+          "expandedText": "5 of 6 booked now. Projected 6; likely range: 5–6 orders.\n\nFlagged because the likely range reaches capacity before booking closes.\n\nInspect booking pace ↓",
+          "chart": "Observed 5, projected 6, range 5 to 6, capacity 6",
+          "cell": "6/6Likely to fill"
+        },
+        {
+          "now": 1186,
+          "rewind": false,
+          "current": 6,
+          "capacity": 6,
+          "projected": 6,
+          "low": 6,
+          "high": 6,
+          "state": "deadline_passed",
+          "kpi": {
+            "risk": 6,
+            "expected": 34.3,
+            "busiest": {
+              "slot": "20:15:00",
+              "projected": 33.333333333333336,
+              "capacity": 43
+            }
+          },
+          "expandedText": "6 of 6 booked now. Projected 6; likely range: 6–6 orders.\n\nBooking has closed; compare the earlier prediction with the outcome below.\n\nInspect booking pace ↓",
+          "chart": "Observed 6, projected 6, range 6 to 6, capacity 6",
+          "cell": "6/6Booking closed"
+        },
+        {
+          "now": 1140,
+          "rewind": true,
+          "current": 5,
+          "capacity": 6,
+          "projected": 6,
+          "low": 5,
+          "high": 6,
+          "state": "likely",
+          "kpi": {
+            "risk": 9,
+            "expected": 35.3,
+            "busiest": {
+              "slot": "20:00:00",
+              "projected": 32.333333333333336,
+              "capacity": 43
+            }
+          },
+          "expandedText": "5 of 6 booked now. Projected 6; likely range: 5–6 orders.\n\nFlagged because the likely range reaches capacity before booking closes.\n\nInspect booking pace ↓",
+          "chart": "Observed 5, projected 6, range 5 to 6, capacity 6",
+          "cell": "6/6Likely to fill"
+        }
+      ],
+      "originalProjection": "6 / 6",
+      "comparison": "Taco Saha · 8:00 PM. At 7:00 PM: predicted 6. Actual at close: 6. Absolute error: 0 orders.",
+      "rewindIdentical": true,
+      "sharedDatabaseWrites": 0
+    },
+    {
+      "pr": 21,
+      "head": "c304fbde6d8f020e65ee5241db476b3f4b2db9e2",
+      "preview": "https://qafla-rjqd-rh2dkurub-ffalrefae-6713s-projects.vercel.app",
+      "role": "manager",
+      "width": 320,
+      "height": 844,
+      "locale": "ar",
+      "data": "Authenticated Preview, shared database history; simulated seed provenance",
+      "date": "2026-11-21",
+      "truck": "T03",
+      "slot": "20:00:00",
+      "steps": [
+        {
+          "now": 1140,
+          "rewind": false,
+          "current": 5,
+          "capacity": 6,
+          "projected": 6,
+          "low": 5,
+          "high": 6,
+          "state": "likely",
+          "kpi": {
+            "risk": 9,
+            "expected": 35.3,
+            "busiest": {
+              "slot": "20:00:00",
+              "projected": 32.333333333333336,
+              "capacity": 43
+            }
+          },
+          "expandedText": "5 من 6 محجوزة الآن. المتوقع 6؛ النطاق: 5–6 طلبات.\n\nمحددة لأن النطاق المتوقع يصل إلى السعة قبل إغلاق الحجز.\n\nافحص وتيرة الحجز ↓",
+          "chart": "المحجوز 5، المتوقع 6، النطاق 5 إلى 6، السعة 6",
+          "cell": "6/6مرجّح أن يمتلئ"
+        },
+        {
+          "now": 1155,
+          "rewind": false,
+          "current": 5,
+          "capacity": 6,
+          "projected": 6,
+          "low": 5,
+          "high": 6,
+          "state": "likely",
+          "kpi": {
+            "risk": 9,
+            "expected": 37.1,
+            "busiest": {
+              "slot": "19:30:00",
+              "projected": 29,
+              "capacity": 38
+            }
+          },
+          "expandedText": "5 من 6 محجوزة الآن. المتوقع 6؛ النطاق: 5–6 طلبات.\n\nمحددة لأن النطاق المتوقع يصل إلى السعة قبل إغلاق الحجز.\n\nافحص وتيرة الحجز ↓",
+          "chart": "المحجوز 5، المتوقع 6، النطاق 5 إلى 6، السعة 6",
+          "cell": "6/6مرجّح أن يمتلئ"
+        },
+        {
+          "now": 1186,
+          "rewind": false,
+          "current": 6,
+          "capacity": 6,
+          "projected": 6,
+          "low": 6,
+          "high": 6,
+          "state": "deadline_passed",
+          "kpi": {
+            "risk": 6,
+            "expected": 34.3,
+            "busiest": {
+              "slot": "20:15:00",
+              "projected": 33.333333333333336,
+              "capacity": 43
+            }
+          },
+          "expandedText": "6 من 6 محجوزة الآن. المتوقع 6؛ النطاق: 6–6 طلبات.\n\nأُغلق الحجز؛ قارن التوقع السابق بالنتيجة أدناه.\n\nافحص وتيرة الحجز ↓",
+          "chart": "المحجوز 6، المتوقع 6، النطاق 6 إلى 6، السعة 6",
+          "cell": "6/6الحجز مغلق"
+        },
+        {
+          "now": 1140,
+          "rewind": true,
+          "current": 5,
+          "capacity": 6,
+          "projected": 6,
+          "low": 5,
+          "high": 6,
+          "state": "likely",
+          "kpi": {
+            "risk": 9,
+            "expected": 35.3,
+            "busiest": {
+              "slot": "20:00:00",
+              "projected": 32.333333333333336,
+              "capacity": 43
+            }
+          },
+          "expandedText": "5 من 6 محجوزة الآن. المتوقع 6؛ النطاق: 5–6 طلبات.\n\nمحددة لأن النطاق المتوقع يصل إلى السعة قبل إغلاق الحجز.\n\nافحص وتيرة الحجز ↓",
+          "chart": "المحجوز 5، المتوقع 6، النطاق 5 إلى 6، السعة 6",
+          "cell": "6/6مرجّح أن يمتلئ"
+        }
+      ],
+      "originalProjection": "6 / 6",
+      "comparison": "تاكو ساحة · 8:00 م. عند 7:00 م: التوقع 6. الفعلي عند الإغلاق: 6. الخطأ المطلق: 0 طلبات.",
+      "rewindIdentical": true,
+      "sharedDatabaseWrites": 0
+    }
+  ]
+}
