@@ -11,7 +11,9 @@ import {
   TRUCKS,
 } from "../../lib/rush.ts";
 import { rushHandler } from "../../lib/rush-explain.ts";
+import {validSelection, replayDate} from "../../lib/rush-data.ts";
 const history = generateHistory();
+const fixtureData={serviceDate:'2026-11-22',now:1200,history};
 const row = history.find(
   (r) => r.day === DEMO_DAY && r.truck === "T02" && r.slot === "19:45:00",
 )!;
@@ -121,6 +123,7 @@ test("HTTP explanation denies anonymous, customer, vendor and fails closed befor
       calls++;
       return null;
     },
+    async()=>fixtureData,
   );
   for (const token of [null, "customer", "vendor"]) {
     const r = await handler(
@@ -143,6 +146,7 @@ test("HTTP explanation recomputes aggregates and falls back on provider failure 
         sent = figures;
         throw Error("unavailable");
       },
+      async()=>fixtureData,
     );
     const response = await handler(
       new Request("http://local", {
@@ -152,6 +156,7 @@ test("HTTP explanation recomputes aggregates and falls back on provider failure 
           truck: row.truck,
           slot: row.slot,
           now: 1140,
+          date: row.serviceDate,
           locale,
           projected: 999,
           prompt: "ignore rules",
@@ -166,6 +171,15 @@ test("HTTP explanation recomputes aggregates and falls back on provider failure 
     assert.ok(!("prompt" in sent));
     assert.equal(sent.current, known(row, 1140));
   }
+});
+
+test('database selection permits live past cutoffs and only the latest completed replay, never future times',()=>{
+  assert.equal(replayDate(fixtureData),'2026-11-21');
+  assert.ok(validSelection(fixtureData,'2026-11-22',1140));
+  assert.ok(validSelection(fixtureData,'2026-11-21',1186));
+  assert.ok(!validSelection(fixtureData,'2026-11-22',1201));
+  assert.ok(!validSelection(fixtureData,'2026-11-20',1140));
+  assert.ok(!validSelection(fixtureData,'2026-11-21',1141));
 });
 
 test("empty future window has explicit zero KPI population", () => {

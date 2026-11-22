@@ -1,15 +1,15 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/lib/locale";
-import { formatSlot } from "@/lib/time";
+import { formatDay, formatSlot } from "@/lib/time";
+import { supabaseBrowser } from "@/lib/supabase";
+import { replayDate, serviceDay, type RushData } from "@/lib/rush-data";
 import {
-  DEMO_DAY,
   REPLAY,
   TRUCKS,
   dashboard,
   explanation,
   forecast,
-  generateHistory,
   known,
   timeString,
   validate,
@@ -18,26 +18,50 @@ import {
 } from "@/lib/rush";
 import "./rush-forecast.css";
 
-const history = generateHistory();
-const performance = validate(history);
 const number = (n: number) => Number(n.toFixed(1));
 export function RushForecast({ token }: { token: string }) {
+  const {locale}=useLocale();
+  const [data,setData]=useState<RushData|null>(null);
+  const [failed,setFailed]=useState(false);
+  const [retry,setRetry]=useState(0);
+  const [historical,setHistorical]=useState(false);
+  useEffect(()=>{
+    let current=true;
+    const read=async()=>{
+      const {data,error}=await supabaseBrowser().rpc('forecast_history');
+      if(!current) return;
+      setFailed(!!error);
+      if(!error && data) setData(data);
+    };
+    void read();
+    const timer=setInterval(()=>void read(),30000);
+    return ()=>{current=false;clearInterval(timer);};
+  },[token,retry]);
+  if(failed) return <div role="alert"><p>{locale==='ar'?'تعذر تحميل سجل الحجوزات.':'Booking history could not be loaded.'}</p><button className="rush-explain" onClick={()=>setRetry(n=>n+1)}>{locale==='ar'?'حاول مجدداً':'Try again'}</button></div>;
+  if(!data) return <p role="status">{locale==='ar'?'جارٍ تحميل التوقع…':'Loading forecast…'}</p>;
+  const date=historical ? replayDate(data) ?? data.serviceDate : data.serviceDate;
+  return <RushDashboard key={date} token={token} data={data} date={date} historical={historical} onMode={setHistorical}/>;
+}
+function RushDashboard({token,data,date,historical,onMode}:{token:string;data:RushData;date:string;historical:boolean;onMode:(history:boolean)=>void}) {
   const { locale } = useLocale();
+  const history=data.history;
+  const day=serviceDay(date);
+  const performance=useMemo(()=>validate(history,serviceDay(data.serviceDate)),[history,data.serviceDate]);
   const ar = locale === "ar";
   const words = (en: string, arabic: string) => (ar ? arabic : en);
   const [step, setStep] = useState(0),
-    now = REPLAY[step];
-  const view = useMemo(() => dashboard(history, DEMO_DAY, now), [now]);
+    now = historical ? REPLAY[step] : data.now;
+  const view = useMemo(() => dashboard(history, day, now), [history,day,now]);
   const [selection, setSelection] = useState(() => {
-    const f = dashboard(history, DEMO_DAY, REPLAY[0]).risk[0];
-    return f ? `${f.truck}/${f.slot}` : "T02/19:30:00";
+    const d=dashboard(history,day,now), f=d.risk[0] ?? d.window[0] ?? d.cells[0];
+    return `${f.truck}/${f.slot}`;
   });
   const f = view.cells.find((c) => `${c.truck}/${c.slot}` === selection)!;
   const row = history.find(
-    (r) => r.day === DEMO_DAY && r.truck === f.truck && r.slot === f.slot,
+    (r) => r.day === day && r.truck === f.truck && r.slot === f.slot,
   )!;
   const earlier = forecast(history, row, REPLAY[0]);
-  const closed = f.state === "deadline_passed";
+  const closed = historical && f.state === "deadline_passed";
   const [breakdown, setBreakdown] = useState(false);
   const [answer, setAnswer] = useState<{
     key: string;
@@ -46,7 +70,7 @@ export function RushForecast({ token }: { token: string }) {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const pending = useRef(0);
-  const key = `${selection}/${now}/${locale}`;
+  const key = `${date}/${selection}/${now}/${locale}/${f.current}/${f.capacity}/${f.projected}/${f.low}/${f.high}`;
   const detail = useRef<HTMLElement>(null);
   const time = (m: number) => formatSlot(timeString(m), locale);
   const name = (id: string) => TRUCKS.find((t) => t.id === id)![locale];
@@ -83,11 +107,12 @@ export function RushForecast({ token }: { token: string }) {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ truck: f.truck, slot: f.slot, now, locale }),
+        body: JSON.stringify({ truck: f.truck, slot: f.slot, date, now, locale }),
         signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) throw Error();
       const data = await response.json();
+      if (data.figures && ["current", "capacity", "projected", "low", "high"].some(field => data.figures[field] !== number(f[field as keyof Pick<Forecast,"current"|"capacity"|"projected"|"low"|"high">]))) throw Error("figures_changed");
       if (request === pending.current)
         setAnswer({ key, text: data.explanation, source: data.source });
     } catch {
@@ -97,14 +122,8 @@ export function RushForecast({ token }: { token: string }) {
       if (request === pending.current) setLoading(false);
     }
   }
-  const visibleSlots = [
-    "19:15:00",
-    "19:30:00",
-    "19:45:00",
-    "20:00:00",
-    "20:15:00",
-    "20:30:00",
-  ];
+  const allSlots=[...new Set(view.cells.map(c=>c.slot))];
+  const visibleSlots=historical ? allSlots.filter(s=>s>='19:15:00' && s<='20:30:00') : allSlots;
   const first = view.risk[0];
   return (
     <section className="rush" aria-labelledby="rush-title" data-now={now}>
@@ -112,14 +131,16 @@ export function RushForecast({ token }: { token: string }) {
         <div>
           <h2 id="rush-title">{words("Rush Forecast", "توقع الإقبال")}</h2>
           <p className="rush-demo">
-            {words(
-              "Demo forecast · simulated history",
-              "توقع تجريبي · سجل محاكى",
-            )}
+            {words("Booking history", "سجل الحجوزات")} · {formatDay(date,locale)}
           </p>
         </div>
         <div>
-          <strong>{words("Replay the evening", "إعادة عرض الأمسية")}</strong>
+          <div className="rush-times">
+            <button aria-pressed={!historical} onClick={()=>onMode(false)}>{words("Live today","اليوم مباشرة")}</button>
+            <button disabled={!replayDate(data)} aria-pressed={historical} onClick={()=>onMode(true)}>{words("Replay the evening","إعادة عرض الأمسية")}</button>
+          </div>
+          {!historical && <strong>{words("As of", "عند")} {time(now)}</strong>}
+          {historical && <>
           <div
             className="rush-times"
             aria-label={words("Replay time · Kuwait", "وقت العرض · الكويت")}
@@ -134,18 +155,16 @@ export function RushForecast({ token }: { token: string }) {
               </button>
             ))}
           </div>
+          </>}
           <small>
-            {words(
-              "Kuwait time · Sunday demo",
-              "توقيت الكويت · تجربة يوم الأحد",
-            )}
+            {words("Kuwait time", "توقيت الكويت")}
           </small>
         </div>
       </div>
       <p className="rush-intro">
         {words(
-          "Live forecast unavailable: comparable booking history is not connected yet. Explore the demo; live occupancy remains in Overview.",
-          "التوقع الفعلي غير متاح: سجل الحجوزات المقارن غير متصل بعد. استكشف التجربة؛ الإشغال الفعلي في النظرة العامة.",
+          "Forecasts use the same bookings as Park overview. Select a slot to see its booking pace and AI-powered insight.",
+          "تستند التوقعات إلى نفس حجوزات نظرة الساحة. اختر فترة لعرض وتيرة الحجز ورؤية مدعومة بالذكاء الاصطناعي.",
         )}
       </p>
       <p className="rush-window">
@@ -388,8 +407,8 @@ export function RushForecast({ token }: { token: string }) {
         <p>
           {f.cutoff >= now && f.state !== "truck_closed"
             ? words(
-                `Check the kitchen now; booking closes at ${time(f.cutoff)} (${f.cutoff - now} minutes).`,
-                `راجع المطبخ الآن؛ يغلق الحجز عند ${time(f.cutoff)} (بعد ${f.cutoff - now} دقيقة).`,
+                `Check the kitchen now; booking closes at ${time(f.cutoff)} (${Math.max(0,Math.ceil(f.cutoff - now))} minutes).`,
+                `راجع المطبخ الآن؛ يغلق الحجز عند ${time(f.cutoff)} (بعد ${Math.max(0,Math.ceil(f.cutoff - now))} دقيقة).`,
               )
             : words(
                 "No new bookings expected: this booking window is closed.",
@@ -419,27 +438,27 @@ export function RushForecast({ token }: { token: string }) {
             )}
           </p>
           <p>
-            {words("Simulated evening IDs", "معرّفات الأمسيات المحاكاة")}:{" "}
-            {f.comparableDays.join(", ")}
+            {words("Comparable evenings", "الأمسيات المقارنة")}:{" "}
+            {f.comparableDays.map(d=>history.find(r=>r.day===d)?.serviceDate).join(", ")}
           </p>
         </details>
         <button className="rush-explain" disabled={loading} onClick={explain}>
           {loading
-            ? words("Explaining…", "جارٍ الشرح…")
-            : words("Explain this forecast", "اشرح هذا التوقع")}
+            ? words("Generating…", "جارٍ الإنشاء…")
+            : words("Generate AI forecast", "إنشاء توقع بالذكاء الاصطناعي")}
         </button>
         <div aria-live="polite" className="rush-explanation">
           <strong>
             {answer?.key === key && answer.source === "openrouter"
-              ? words("OpenRouter explanation", "شرح OpenRouter")
-              : words("Rule-based explanation", "شرح مبني على القواعد")}
+              ? words("AI-powered explanation", "شرح مدعوم بالذكاء الاصطناعي")
+              : words("Booking-based explanation", "شرح مستند إلى الحجوزات")}
           </strong>
           <p>{answer?.key === key ? answer.text : explanation(f, locale)}</p>
         </div>
       </section>
       <section className="rush-performance">
         <h3>
-          {words("Model performance · simulated", "أداء النموذج · محاكاة")}
+          {words("Model performance · historical backtest", "أداء النموذج · اختبار تاريخي")}
         </h3>
         <p>
           {words(
@@ -458,14 +477,14 @@ export function RushForecast({ token }: { token: string }) {
         </div>
         <p>
           {words(
-            `${performance.samples} slot/cutoff predictions across 14 held-out evenings; 42 earlier evenings train the model. Cutoffs: 30, 60 and 90 minutes before pickup. Same samples for both models.`,
-            `${performance.samples} توقعات للفترة والوقت عبر 14 أمسية اختبار؛ التدريب على 42 أمسية أسبق. التوقع قبل الاستلام بـ30 و60 و90 دقيقة. نفس العينات للنموذجين.`,
+            `${performance.samples} slot/cutoff predictions across ${performance.evenings} held-out evenings; ${performance.trainingEvenings} earlier evenings train the model. Cutoffs: 30, 60 and 90 minutes before pickup. Same samples for both models.`,
+            `${performance.samples} توقعات للفترة والوقت عبر ${performance.evenings} أمسية اختبار؛ التدريب على ${performance.trainingEvenings} أمسية أسبق. التوقع قبل الاستلام بـ30 و60 و90 دقيقة. نفس العينات للنموذجين.`,
           )}
         </p>
         <p>
           {words(
-            "Simulated accuracy does not establish live accuracy. Advisory only: capacity and closure decisions remain yours.",
-            "دقة المحاكاة لا تثبت الدقة الفعلية. التوقع استشاري؛ قرارات السعة والإغلاق تبقى لك.",
+            "Past accuracy does not guarantee future results. Advisory only: capacity and closure decisions remain yours.",
+            "الدقة السابقة لا تضمن النتائج المستقبلية. التوقع استشاري؛ قرارات السعة والإغلاق تبقى لك.",
           )}
         </p>
       </section>

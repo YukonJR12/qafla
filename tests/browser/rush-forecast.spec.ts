@@ -2,13 +2,14 @@ import { test, expect, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import {
   dashboard,
-  DEMO_DAY,
   generateHistory,
   TRUCKS,
   REPLAY,
   validate,
 } from "../../lib/rush";
-const out = "docs/evidence/rush-forecast";
+const out = "docs/evidence/rush-shared-data";
+const fixtureHistory=generateHistory().map(r=>({...r,day:Math.round((Date.parse(r.serviceDate+"T00:00:00Z")-Date.parse("1970-01-04T00:00:00Z"))/86400000)}));
+const fixtureData={serviceDate:"2026-11-23",now:1140,history:fixtureHistory.concat(fixtureHistory.filter(r=>r.serviceDate==="2026-11-22").map(r=>({...r,day:r.day+1,serviceDate:"2026-11-23"})))};
 async function fixture(page: Page, locale: string, role = "manager") {
   await page
     .context()
@@ -47,6 +48,7 @@ async function fixture(page: Page, locale: string, role = "manager") {
           blurb: "",
         })),
       });
+    if (url.pathname.endsWith("/forecast_history")) return route.fulfill({json:fixtureData});
     if (url.pathname.endsWith("/slot_usage"))
       return route.fulfill({ json: [] });
     if (
@@ -73,10 +75,11 @@ for (const width of [320, 390, 1440])
         })
         .click();
       await expect(page.locator(".rush")).toBeVisible();
+      await page.getByRole("button", {name: locale === "ar" ? "إعادة عرض الأمسية" : "Replay the evening",exact:true}).click();
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
       for (let i = 0; i < REPLAY.length; i++) {
-        await page.locator(".rush-times button").nth(i).press("Enter");
-        const expected = dashboard(generateHistory(), DEMO_DAY, REPLAY[i]);
+        await page.locator(".rush-times[aria-label] button").nth(i).press("Enter");
+        const expected = dashboard(fixtureHistory, fixtureHistory.at(-1)!.day, REPLAY[i]);
         await expect(page.getByTestId("risk-count")).toHaveText(
           String(expected.risk.length),
         );
@@ -106,7 +109,7 @@ for (const width of [320, 390, 1440])
         path: `${out}/${width}-${locale}-outcome.png`,
         fullPage: true,
       });
-      await page.locator(".rush-times button").first().click();
+      await page.locator(".rush-times[aria-label] button").first().click();
       if (width < 768) {
         await page.locator(".rush-ranked button").first().tap();
       } else {
@@ -135,7 +138,7 @@ for (const width of [320, 390, 1440])
       await page.locator(".rush-explain").press("Enter");
       await expect(page.locator(".rush-explain")).toBeEnabled();
       await expect(page.locator(".rush-explanation")).toContainText(
-        locale === "ar" ? "توقع تجريبي" : "Demo forecast",
+        locale === "ar" ? "شرح مستند إلى الحجوزات" : "Booking-based explanation",
       );
       await page.screenshot({
         path: `${out}/${width}-${locale}.png`,
@@ -187,15 +190,16 @@ test("20-second mobile replay walkthrough", async ({ browser }) => {
   await fixture(page, "en");
   await page.goto("/manager?view=forecast");
   await expect(page.locator(".rush")).toBeVisible();
+  await page.getByRole("button",{name:"Replay the evening",exact:true}).click();
   await page.screenshot({ path: `${out}/mobile-start.png` });
   await page.waitForTimeout(2500);
   await page.locator(".rush-ranked").scrollIntoViewIfNeeded();
   await page.waitForTimeout(2500);
   await page.locator(".rush-ranked button").first().tap();
   await page.waitForTimeout(4500);
-  await page.locator(".rush-times button").nth(1).tap();
+  await page.locator(".rush-times[aria-label] button").nth(1).tap();
   await page.waitForTimeout(3000);
-  await page.locator(".rush-times button").nth(2).tap();
+  await page.locator(".rush-times[aria-label] button").nth(2).tap();
   await page.locator(".rush-outcome").scrollIntoViewIfNeeded();
   await page.waitForTimeout(6000);
   await page.screenshot({ path: `${out}/mobile-result.png` });
