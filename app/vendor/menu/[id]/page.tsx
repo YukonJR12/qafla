@@ -3,6 +3,8 @@
 import { useParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-header";
+import { AllergenConfirmation } from "@/components/allergen-confirmation";
+import { MorphingButton } from "@/components/morphing-button";
 import { LoadError } from "@/components/cart-states";
 import { CameraIcon, CheckIcon, Money, primaryButton, secondaryButton } from "@/components/ui";
 import { useAccount } from "@/lib/account";
@@ -44,6 +46,7 @@ export default function DishEditorPage() {
   // Price and availability. Each has its own save and its own message.
   const [priceDraft, setPriceDraft] = useState("");
   const [priceBusy, setPriceBusy] = useState(false);
+  const priceInFlight = useRef(false);
   const [priceNote, setPriceNote] = useState<{ kind: "saved"; price: string } | { kind: "problem"; problem: string } | { kind: "failed" } | { kind: "not_yours" } | null>(null);
   const [stockBusy, setStockBusy] = useState(false);
   const [stockNote, setStockNote] = useState<"out" | "back" | "failed" | "not_yours" | null>(null);
@@ -77,6 +80,8 @@ export default function DishEditorPage() {
   // The photo and what came back for it.
   const [photo, setPhoto] = useState<{ blob: Blob; url: string } | null>(null);
   const [asking, setAsking] = useState(false);
+  const suggestionInFlight = useRef(false);
+  const photoSequence = useRef(0);
   const [answer, setAnswer] = useState<SuggestResult | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -91,7 +96,9 @@ export default function DishEditorPage() {
 
   async function choosePhoto(file: File | undefined) {
     if (!file) return;
+    const sequence = ++photoSequence.current;
     const blob = await shrinkPhoto(file);
+    if (sequence !== photoSequence.current) return;
     setPhoto({ blob, url: URL.createObjectURL(blob) });
     setAnswer(null);
     setNote(null);
@@ -100,14 +107,17 @@ export default function DishEditorPage() {
   // Sends the photo for a draft. Whatever happens, the two fields the vendor
   // has been typing in are not touched here.
   async function suggest() {
-    if (!photo || asking) return;
+    if (!photo || suggestionInFlight.current) return;
+    suggestionInFlight.current = true;
     setAsking(true);
+    setConfirmed(false);
     setAnswer(null);
     setNote(null);
     const result = await requestSuggestion(id, photo.blob);
     if (result.remaining !== null) setRemaining(result.remaining);
     setAnswer(result);
     setAsking(false);
+    suggestionInFlight.current = false;
   }
 
   // Only the fields that changed are replaced on screen, so a description
@@ -118,10 +128,11 @@ export default function DishEditorPage() {
 
   async function savePrice(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!saved || priceBusy) return;
+    if (!saved || priceInFlight.current) return;
     const parsed = parsePrice(priceDraft);
     if (!parsed.ok) return setPriceNote({ kind: "problem", problem: parsed.problem });
     if (parsed.price === priceText(saved.price_kwd)) return setPriceDraft(parsed.price);
+    priceInFlight.current = true;
     setPriceBusy(true);
     setPriceNote(null);
     try {
@@ -134,6 +145,7 @@ export default function DishEditorPage() {
     } catch (error) {
       setPriceNote({ kind: error instanceof Error && error.message === "not_your_dish" ? "not_yours" : "failed" });
     } finally {
+      priceInFlight.current = false;
       setPriceBusy(false);
     }
   }
@@ -247,7 +259,7 @@ export default function DishEditorPage() {
                 <label htmlFor={`${formId}-price`} className="block text-sm font-semibold">
                   {t.priceLabel}
                 </label>
-                <div className="mt-1 flex flex-wrap items-start gap-2">
+                <div className="mt-1 grid items-start gap-2 sm:flex">
                   <input
                     id={`${formId}-price`}
                     type="text"
@@ -261,18 +273,18 @@ export default function DishEditorPage() {
                     }}
                     aria-invalid={priceNote?.kind === "problem" ? true : undefined}
                     aria-describedby={`${formId}-price-help`}
-                    className={`block min-h-12 w-36 rounded-control border bg-snowy-white px-3 py-2 text-lg font-bold text-ink tabular-nums ${
+                    className={`block min-h-12 w-full sm:w-36 rounded-control border bg-snowy-white px-3 py-2 text-lg font-bold text-ink tabular-nums ${
                       priceNote?.kind === "problem" ? "border-error" : "border-outline"
                     }`}
                   />
-                  <button
+                  <MorphingButton
                     type="submit"
                     disabled={!priceChanged || priceBusy}
                     aria-busy={priceBusy}
-                    className={`${primaryButton} w-auto! min-w-32 flex-1 sm:flex-none`}
-                  >
-                    <span aria-live="polite">{priceBusy ? t.saving : t.savePrice}</span>
-                  </button>
+                    className={`${primaryButton} sm:w-auto! sm:min-w-56`}
+                    state={priceBusy ? "pending" : priceNote?.kind === "saved" ? "success" : priceNote?.kind === "failed" ? "retry" : "idle"}
+                    labels={{ idle: t.savePrice, pending: t.saving, success: locale === "ar" ? "تم حفظ السعر" : "Price saved", retry: `${t.retry}: ${t.savePrice}` }}
+                  />
                 </div>
                 <p id={`${formId}-price-help`} className="mt-1 text-sm">
                   {priceNote?.kind === "problem" ? (
@@ -283,7 +295,7 @@ export default function DishEditorPage() {
                 </p>
                 <div role="status">
                   {priceNote?.kind === "saved" && (
-                    <p className="reveal-up mt-2 flex items-start gap-2 rounded-control bg-ink p-3 font-semibold text-snowy-white">
+                    <p className="mt-2 flex items-start gap-2 rounded-control bg-ink p-3 font-semibold text-snowy-white">
                       <CheckIcon className="mt-0.5 size-5" />
                       <span>{t.priceSaved(formatKwd(priceNote.price, locale))}</span>
                     </p>
@@ -345,7 +357,7 @@ export default function DishEditorPage() {
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 {photo && (
                   // eslint-disable-next-line @next/next/no-img-element -- a local preview of the vendor's own file
-                  <img src={photo.url} alt={t.photoChosen} className="size-24 rounded-control border border-divider object-cover" />
+                  <img key={photo.url} src={photo.url} alt={t.photoChosen} className="vendor-photo size-24 rounded-control border border-divider object-cover" />
                 )}
                 <div className="min-w-0 flex-1 space-y-2">
                   <label className={`${secondaryButton} relative cursor-pointer has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink`}>
@@ -354,15 +366,23 @@ export default function DishEditorPage() {
                     <input
                       ref={fileInput}
                       type="file"
+                      disabled={asking}
                       accept={PHOTO_TYPES.join(",")}
                       onChange={(event) => choosePhoto(event.target.files?.[0])}
                       className="absolute inset-0 cursor-pointer opacity-0"
                     />
                   </label>
                   {photo && (
-                    <button type="button" onClick={suggest} disabled={asking} aria-busy={asking} className={primaryButton}>
-                      <span aria-live="polite">{asking ? t.suggesting : t.suggest}</span>
-                    </button>
+                    <>
+                      <button type="button" disabled={asking} className={`${secondaryButton} text-sm`} onClick={() => {
+                        ++photoSequence.current;
+                        setPhoto(null); setAnswer(null);
+                        if (fileInput.current) fileInput.current.value = "";
+                      }}>{locale === "ar" ? "إزالة الصورة" : "Remove photo"}</button>
+                      <button type="button" onClick={suggest} disabled={asking} aria-busy={asking} className={primaryButton}>
+                        <span aria-live="polite">{asking ? (locale === "ar" ? "جارٍ إنشاء المسودة…" : "Generating draft…") : t.suggest}</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -427,6 +447,7 @@ export default function DishEditorPage() {
                 value={description}
                 onChange={(event) => {
                   setDescription(event.target.value);
+                  setConfirmed(false);
                   setNote(null);
                 }}
                 aria-describedby={`${formId}-left`}
@@ -471,15 +492,7 @@ export default function DishEditorPage() {
               <div className="mt-4 rounded-panel bg-warning-surface p-4 text-warning">
                 <p className="font-extrabold">{t.checkAllergensTitle}</p>
                 <p className="mt-1 text-sm">{t.checkAllergensBody}</p>
-                <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 font-bold text-ink">
-                  <input
-                    type="checkbox"
-                    checked={confirmed}
-                    onChange={(event) => setConfirmed(event.target.checked)}
-                    className="size-6 shrink-0 accent-ink"
-                  />
-                  {t.confirmAllergens}
-                </label>
+                <AllergenConfirmation checked={confirmed} onChange={setConfirmed} label={t.confirmAllergens} />
               </div>
 
               <div role="status">

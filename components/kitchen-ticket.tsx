@@ -8,7 +8,8 @@ import { useLocale } from "@/lib/locale";
 import { canAccept, paymentView } from "@/lib/payments";
 import { supabaseBrowser } from "@/lib/supabase";
 import { formatSlot } from "@/lib/time";
-import { CheckIcon, Isolate, Money, primaryButtonSplit, secondaryButton, primaryButton } from "./ui";
+import { Isolate, Money, primaryButtonSplit, secondaryButton, primaryButton } from "./ui";
+import { MorphingButton } from "./morphing-button";
 
 /** How each kitchen status looks. The word is always shown; colour only supports it. */
 const STATUS_STYLE: Record<string, string> = {
@@ -57,6 +58,8 @@ export function KitchenTicket({
 }) {
   const { locale, t } = useLocale();
   const [busy, setBusy] = useState<OrderStatus | null>(null);
+  const inFlight = useRef(false);
+  const [confirmedStatus, setConfirmedStatus] = useState<string | null>(null);
   const [problem, setProblem] = useState<
     { kind: "failed"; target: OrderStatus; reason?: string } | { kind: "changed" } | null
   >(null);
@@ -71,11 +74,14 @@ export function KitchenTicket({
   const time = formatSlot(order.slot_start, locale);
 
   async function move(target: OrderStatus, reason?: string) {
-    if (busy) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(target);
     setProblem(null);
     try {
-      onConfirmed(await setOrderStatus(supabaseBrowser(), order.id, target, reason));
+      const saved = await setOrderStatus(supabaseBrowser(), order.id, target, reason);
+      setConfirmedStatus(saved.status);
+      onConfirmed(saved);
     } catch (error) {
       if (STALE.has(error instanceof Error ? error.message : "")) {
         setProblem({ kind: "changed" });
@@ -85,6 +91,7 @@ export function KitchenTicket({
         setProblem({ kind: "failed", target, reason });
       }
     } finally {
+      inFlight.current = false;
       setBusy(null);
     }
   }
@@ -167,22 +174,15 @@ export function KitchenTicket({
             </button>
           )}
           {/* The one next kitchen action. Its width never changes while it saves. */}
-          <button
+          <MorphingButton
             type="button"
             disabled={busy !== null || waitingForPayment}
             aria-busy={busy === next}
             onClick={() => move(next)}
             className={`${primaryButtonSplit} w-auto! grow-[3] basis-44`}
-          >
-            <span aria-live="polite">
-              {busy === next
-                ? t.saving
-                : problem?.kind === "failed" && problem.target === next
-                  ? `${t.retry}: ${t.kitchenAction[next]}`
-                  : t.kitchenAction[next]}
-            </span>
-            {next === "ready" && <CheckIcon className="size-5" />}
-          </button>
+            state={busy === next ? "pending" : problem?.kind === "failed" && problem.target === next ? "retry" : confirmedStatus === order.status ? "success" : "idle"}
+            labels={{ idle: t.kitchenAction[next], pending: t.saving, success: t.kitchenAction[next], retry: `${t.retry}: ${t.kitchenAction[next]}` }}
+          />
           {/* A rejection that did not save can be sent again with the same reason. */}
           {problem?.kind === "failed" && problem.target === "rejected" && order.status === "placed" && (
             <button
