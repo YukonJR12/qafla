@@ -2,7 +2,7 @@
 
 Candidate: **Faisal Alrefae**. Prepared: 22 November 2026.
 Deadline: **Monday, 23 November 2026, 11:59 PM Kuwait time (UTC+3)**.
-Status: shipped app; submission evidence package still needs the items marked pending below.
+Status: vendor account setup and the five-round isolated recording are complete and reverified. Submission still requires the assessment-specific live observations and owner actions marked below. Refreshed against Production a1881ec (PR #16), 22 November 2026.
 
 ## Mobile demo — shipped 3D Park Guide
 
@@ -12,21 +12,27 @@ Status: shipped app; submission evidence package still needs the items marked pe
 
 Open Map → rotate the park → select branded Karak Corner → see its information sheet → open a Ready Dune Burgers ticket → Find my truck selects T02, even while it is paused for new orders. The recording starts from Account's shared Map navigation, not Explore. Explore → Map is also a verified Production journey.
 
-This is reused controlled-fixture evidence from commit 3ca0776: local production build, Chromium 159, 390 × 844 touch emulation, fake customer and Ready ticket FIXTURE-READY-T02. It is not footage of a real Production order. The feature shipped in PR #13; current Production also includes PR #14. [Evidence and limits](docs/screenshots/park-3d/README.md).
+This is reused controlled-fixture evidence from commit 3ca0776: local production build, Chromium 159, 390 × 844 touch emulation, fake customer and Ready ticket FIXTURE-READY-T02. It is not footage of a real Production order. The feature shipped in PR #13; current Production includes PR #14 and PR #16 (a1881ec). [Evidence and limits](docs/screenshots/park-3d/README.md).
 
 **Phone checks are Chrome emulation:** 320/390 px, English/Arabic. Physical-device pinch smoothness remains unverified. The recorded 1.62-second Map load is a local desktop measurement, not mobile-network performance.
 
+## Latest shipped customer verification
+
+PR #16 is merged and deployed. Fresh launch, actual customer sign-in, returning-session launch, truck menu opening and first Add passed on Production in **English/Arabic at 320 and 390 px**. No orders or payments were created. [Production assertions and screenshots](docs/evidence/production-pr16/README.md) · [Commit-pinned evidence](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/production-pr16/README.md).
+
+[Updated 13.9-second customer-flow clip](docs/evidence/mobile-performance/final-interaction/390-en-motion.webm) shows the same shipped application changes in a **local production build**, not Production footage. [Timing methodology and remaining warm-launch tradeoff](docs/evidence/mobile-performance/README.md).
+
 ## Five-round last-slot recording
 
-[Watch the two-session race](docs/evidence/submission-race/five-round-race.webm) · [Commit-pinned GitHub copy](https://github.com/YukonJR12/qafla/blob/28f5d748f3e5492d9037051857f7bde83e2eeab2/docs/evidence/submission-race/five-round-race.webm) · [Setup and per-round data](docs/evidence/submission-race/README.md)
+[Watch the two-session race](docs/evidence/submission-race/five-round-race.webm) · [Commit-pinned GitHub copy](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/submission-race/five-round-race.webm) · [Setup and per-round data](docs/evidence/submission-race/README.md)
 
-22.2 seconds, A on the left and B on the right. Five rounds: one confirmed ticket, one slot-full recovery, and exactly one extra order per slot (5→6). **Isolated local production build, real PostgreSQL 17, test auth/HTTP adapter. Not the live deployment.** The assessment's live-link observation remains pending unless this environment is accepted. No Production orders or payments were created.
+**Refreshed on the latest shipped code: 20.8 seconds**, A on the left and B on the right. Five rounds: one confirmed ticket, one slot-full recovery, and exactly one extra order per slot (5→6). **Isolated local production build, real PostgreSQL 17, test auth/HTTP adapter. Not the live deployment.** The assessment's live-link observation remains pending unless this environment is accepted. The rerun passed in 41.6 seconds including build and exited 0 without an interrupt. Original A/B videos, before/after screenshots and per-round JSON are retained. No Production orders or payments were created.
 
 ## Links the panel can open
 
 | Material | Link | Access / status |
 | --- | --- | --- |
-| Live app | https://qafla-rjqd.vercel.app | Public sign-in page; all nine demo logins verified on Production, 22 Nov |
+| Live app | https://qafla-rjqd.vercel.app | Public sign-in page; all nine demo logins reverified on Production a1881ec, 22 Nov |
 | Repository | https://github.com/YukonJR12/qafla | **Private. Anonymous access returns 404. Panel invitation or attached evidence required.** |
 | Schema and reasoning | [decisions.md](decisions.md) | Prepared from code and existing evidence; candidate review needed |
 | Tampering evidence inventory | [tampering_test.md](tampering_test.md) | Incomplete live report; gaps explicitly marked |
@@ -53,7 +59,7 @@ Do not publish passwords in Git. Supply disposable panel credentials privately i
 | Lugaimat vendor | vendor | T06 Lugaimat & Co | qafla.panel.t06.20261122@example.com: fresh sign-in → Lugaimat & Co kitchen; Account confirms vendor and truck | New credentials are in the private handoff |
 | Park manager | manager | none | qafla.manager.mwnh12fm@example.com: fresh sign-in → Tonight across the park; Account says Park manager | Pass verified credentials privately to panel |
 
-All five required panel identities are verified. At Faisal's subsequent request, separate vendor accounts were also created and assigned to previously unassigned T01, T03, T04 and T05. Each signed into its matching kitchen and showed the correct vendor/truck in Account. T02 and all existing passwords were preserved. See the [complete nine-account inventory](docs/evidence/panel-access/README.md). Passwords live only in the Git-ignored private handoff.
+**No account or assignment is missing.** All five required panel identities and all six vendor logins were reverified on Production a1881ec. At Faisal's subsequent request, separate vendor accounts were also created and assigned to previously unassigned T01, T03, T04 and T05. Each signed into its matching kitchen and showed the correct vendor/truck in Account. T02 and all existing passwords were preserved. No duplicate accounts, password changes or reassignments were needed in this refresh. See the [complete nine-account inventory](docs/evidence/panel-access/README.md) and [current verified roles/assignments](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/panel-access/current/results.json). Passwords live only in the Git-ignored private handoff.
 
 ## Assessment audit and levels
 
@@ -73,7 +79,7 @@ Checked against the supplied assessment PDF (pages 2–6), owner brief and start
 
 **Do not mark Core/Premium/Elite fully evidenced yet.** The shipped features and their local/Preview checks are distinct from the assessment's complete live evidence package.
 
-Validation on this PR: lint, typecheck, production build, 108/108 unit tests, the five-round browser race, and 83/83 database checks passed. Both race and database processes exited 0 without interruption. All new relative evidence links were checked locally. Nine fresh Production logins and all six vendor assignments were verified. The evidence attachment contains no passwords; credentials must be delivered separately.
+Validation after bringing PR #15 up to current main: lint, typecheck, production build, 108/108 unit tests, the refreshed five-round browser race, and 83/83 database checks passed. Both race and database processes exited 0 without interruption. All new relative evidence links were checked locally. Nine fresh Production logins and all six vendor assignments were reverified against the shipped PR #16 build. The evidence attachment contains no passwords; credentials must be delivered separately.
 
 ## Inputs needed before sending
 

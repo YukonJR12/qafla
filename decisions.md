@@ -2,7 +2,7 @@
 
 Candidate: Faisal Alrefae. Repository: https://github.com/YukonJR12/qafla
 Submission deadline: Monday, 23 November 2026, 11:59 PM Kuwait time (UTC+3).
-Prepared from shipped source and recorded evidence, 22 November 2026. Candidate must review and be able to explain these decisions.
+Prepared from shipped source and recorded evidence, refreshed against Production a1881ec (PR #16), 22 November 2026. Candidate must review and be able to explain these decisions.
 
 ## Customer problem: recognizing the pickup counter
 
@@ -11,6 +11,8 @@ Someone arriving at a six-truck park needs to recognize their pickup counter bef
 Physical positions do not mirror in Arabic: the park is the same place, while controls and labels localize. A searchable list supports keyboard access and WebGL failure. Three.js loads only when Map opens, geometry/materials are reused and demand rendering stops once motion settles. Reduced motion skips camera animation.
 
 The [14.6-second recording](docs/screenshots/park-3d/park-interaction-390-en.webm) already verifies Ready → T02 using a controlled fixture; no new order was needed. The recorded route starts at Account → Map. Production Explore → Map was separately checked. All phone checks were Chrome emulation at 320/390 px in EN/AR. Physical-device pinch smoothness is unverified; 1.62 seconds is the local recorded load, not a handset benchmark.
+
+The current submission also includes the [refreshed five-round isolated PostgreSQL race](docs/evidence/submission-race/README.md), [all nine current Production demo logins](docs/evidence/panel-access/README.md), and [latest customer Production checks](docs/evidence/production-pr16/README.md). No vendor account remains missing. The local race is not represented as a live-deployment assessment run.
 
 ## Tables and relationships
 
