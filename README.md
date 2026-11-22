@@ -365,3 +365,10 @@ where id = (select id from auth.users where email = 'dana@example.com');
 update public.trucks set vendor_id = (select id from auth.users where email = 'vendor@example.com')
 where id = 'T02';
 ```
+
+
+## Rush Forecast (manager demo)
+
+Park overview → **Forecast** opens a bilingual, advisory replay alongside real live occupancy. Synthetic history stays outside the database and is labelled throughout. The 7:00 / 7:15 / 7:31 PM replay shows next-hour risk, expected bookings, a truck/time heatmap, booking pace and the earlier prediction versus actual at cutoff. OpenRouter explains aggregate signals through a manager-verified server route using the existing `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`; a deterministic explanation works without either setting. No additional environment variables or migrations are needed.
+
+See [model decisions](decisions.md) and [recording, measured simulated accuracy and test evidence](docs/evidence/rush-forecast/README.md). A live forecast is not yet connected to validated historical booking events.
