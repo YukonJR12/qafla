@@ -540,7 +540,7 @@ function Pace({
   const low = f.current + Math.max(0, fraction) * (f.low - f.current);
   const high = f.current + Math.max(0, fraction) * (f.high - f.current);
   const inspection = `${formatSlot(timeString(at), locale)} · ${future
-    ? ar ? `توقع الوتيرة ${number(projected)}؛ النطاق ${number(low)}–${number(high)} طلبات` : `Projected pace ${number(projected)}; range ${number(low)}–${number(high)} orders`
+    ? ar ? `توقع الوتيرة ${number(projected)}؛ النطاق من ${number(low)} إلى ${number(high)} طلبات` : `Projected pace ${number(projected)}; range ${number(low)}–${number(high)} orders`
     : ar ? `المرصود ${known(row, at)} طلبات` : `Observed ${known(row, at)} orders`} · ${ar ? "السعة" : "Capacity"} ${f.capacity}`;
   const x = (m: number) => 42 + ((m - start) / (end - start)) * 470,
     y = (n: number) => 160 - (n / row.capacity) * 115;
@@ -648,7 +648,7 @@ function Pace({
         <text x="42" y="207">
           {formatSlot(timeString(start), locale)}
         </text>
-        <text x="515" y="207" textAnchor="end">
+        <text x={x(f.cutoff)} y="207" textAnchor="end">
           {formatSlot(timeString(f.cutoff), locale)} ·{" "}
           {ar ? "إغلاق الحجز" : "Cutoff"}
         </text>
