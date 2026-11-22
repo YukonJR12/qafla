@@ -28,14 +28,14 @@
       "played": true
     },
     {
-      "file": "docs/evidence/submission-race/five-round-race.webm",
+      "file": "five-round-race-isolated-postgresql.webm",
       "width": 780,
       "height": 874,
       "duration": 20.8,
       "played": true
     },
     {
-      "file": "docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "file": "park-guide-controlled-fixture.webm",
       "width": 390,
       "height": 844,
       "duration": 14.6,
@@ -98,7 +98,7 @@
     {
       "label": "Park clip private GitHub",
       "url": "https://github.com/YukonJR12/qafla/blob/c2c5be938c60a5d94b2928287ba81ae1944d4b06/docs/screenshots/park-3d/park-interaction-390-en.webm",
-      "status": 404,
+      "status": 429,
       "signedOut": true,
       "finalUrl": "https://github.com/YukonJR12/qafla/blob/c2c5be938c60a5d94b2928287ba81ae1944d4b06/docs/screenshots/park-3d/park-interaction-390-en.webm"
     },
@@ -170,34 +170,10 @@
       "finalUrl": "https://easyui.site/components/stepper"
     },
     {
-      "url": "https://qafla-rjqd-qgkjh4c56-ffalrefae-6713s-projects.vercel.app",
-      "status": 200,
-      "signedOut": true,
-      "finalUrl": "https://vercel.com/login"
-    },
-    {
       "url": "https://easyui.site/components/stat-card",
       "status": 200,
       "signedOut": true,
       "finalUrl": "https://easyui.site/components/stat-card"
-    },
-    {
-      "url": "https://easyui.site/components/activity-heatmap",
-      "status": 200,
-      "signedOut": true,
-      "finalUrl": "https://easyui.site/components/activity-heatmap"
-    },
-    {
-      "url": "https://qafla-rjqd-rh2dkurub-ffalrefae-6713s-projects.vercel.app",
-      "status": 200,
-      "signedOut": true,
-      "finalUrl": "https://vercel.com/login"
-    },
-    {
-      "url": "https://easyui.site/components/interactive-area-chart",
-      "status": 200,
-      "signedOut": true,
-      "finalUrl": "https://easyui.site/components/interactive-area-chart"
     },
     {
       "url": "https://easyui.site/components/animated-number",
@@ -206,13 +182,37 @@
       "finalUrl": "https://easyui.site/components/animated-number"
     },
     {
+      "url": "https://easyui.site/components/activity-heatmap",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/activity-heatmap"
+    },
+    {
+      "url": "https://easyui.site/components/interactive-area-chart",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://easyui.site/components/interactive-area-chart"
+    },
+    {
       "url": "https://easyui.site/components/expandable-data-row",
       "status": 200,
       "signedOut": true,
       "finalUrl": "https://easyui.site/components/expandable-data-row"
     },
     {
+      "url": "https://qafla-rjqd-qgkjh4c56-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://vercel.com/login"
+    },
+    {
       "url": "https://qafla-rjqd-hlyviohew-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "signedOut": true,
+      "finalUrl": "https://vercel.com/login"
+    },
+    {
+      "url": "https://qafla-rjqd-rh2dkurub-ffalrefae-6713s-projects.vercel.app",
       "status": 200,
       "signedOut": true,
       "finalUrl": "https://vercel.com/login"
