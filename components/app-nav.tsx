@@ -35,10 +35,13 @@ export function hidesBottomBar(path: string): boolean {
  * line under it, and aria-current, so it does not rely on colour alone.
  */
 export function BottomBar({ role }: { role: Role }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const path = usePathname();
   const search = useSearchParams().toString();
   const active = activeNav(role, path, search);
+  const destinations = navFor(role);
+  const activeIndex = destinations.findIndex(item => item.key === active);
+  const visualIndex = locale === "ar" ? destinations.length - 1 - activeIndex : activeIndex;
   if (hidesBottomBar(path)) return null;
 
   return (
@@ -46,8 +49,8 @@ export function BottomBar({ role }: { role: Role }) {
       aria-label={t.navLabel}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-divider bg-snowy-white pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="mx-auto flex max-w-xl">
-        {navFor(role).map((item) => {
+      <ul className="relative mx-auto flex max-w-xl">
+        {destinations.map((item) => {
           const Icon = ICONS[item.key];
           const here = item.key === active;
           return (
@@ -62,11 +65,12 @@ export function BottomBar({ role }: { role: Role }) {
               >
                 <Icon className={`size-6 ${here ? "text-red-orange" : ""}`} />
                 <span className="max-w-full truncate">{t.nav[item.key]}</span>
-                {here && <span aria-hidden className="absolute inset-x-5 bottom-1.5 h-[3px] rounded-full bg-red-orange" />}
+                {role !== "customer" && here && <span aria-hidden className="absolute inset-x-5 bottom-1.5 h-[3px] rounded-full bg-red-orange" />}
               </Link>
             </li>
           );
         })}
+        {role === "customer" && activeIndex >= 0 && <li aria-hidden className="nav-indicator pointer-events-none absolute bottom-1.5 left-0 px-5" style={{ width: `${100 / destinations.length}%`, transform: `translateX(${visualIndex * 100}%)` }}><span className="block h-[3px] rounded-full bg-red-orange" /></li>}
       </ul>
     </nav>
   );
@@ -122,8 +126,7 @@ export function TopBar({ role }: { role: Role }) {
             {t.cart}
             {count > 0 && (
               <span
-                key={count}
-                className="bump inline-flex size-7 items-center justify-center rounded-full border border-ink bg-yellow-punk text-sm font-extrabold tabular-nums"
+                className="inline-flex size-7 items-center justify-center rounded-full border border-ink bg-yellow-punk text-sm font-extrabold tabular-nums"
               >
                 {count}
               </span>

@@ -16,7 +16,7 @@ export function QuantityStepper({
 }: {
   name: string;
   quantity: number;
-  onChange: (quantity: number) => void;
+  onChange: (quantity: (current: number) => number) => void;
 }) {
   const { t } = useLocale();
   const button =
@@ -27,19 +27,19 @@ export function QuantityStepper({
       <button
         type="button"
         aria-label={quantity === 1 ? t.remove(name) : t.decrease(name)}
-        onClick={() => onChange(quantity - 1)}
+        onClick={() => onChange((current) => current - 1)}
         className={button}
       >
         <MinusIcon className="size-5" />
       </button>
-      <span key={quantity} aria-hidden className="quantity-ack w-5 rounded-full text-center text-base font-extrabold tabular-nums">
+      <span aria-hidden className="w-5 rounded-full text-center text-base font-extrabold tabular-nums">
         {quantity}
       </span>
       <button
         type="button"
         aria-label={t.increase(name)}
         disabled={quantity >= MAX_QUANTITY}
-        onClick={() => onChange(quantity + 1)}
+        onClick={() => onChange((current) => current + 1)}
         className={button}
       >
         <PlusIcon className="size-5" />

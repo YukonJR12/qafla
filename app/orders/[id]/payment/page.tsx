@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-header";
-import { CheckIcon, Isolate, Money, primaryButton, secondaryButton } from "@/components/ui";
+import { CheckIcon, ClockIcon, CardIcon, XIcon, Isolate, Money, primaryButton, secondaryButton } from "@/components/ui";
 import { fetchOrder, type Order } from "@/lib/data";
 import { truckName } from "@/lib/i18n";
 import { useLocale } from "@/lib/locale";
@@ -33,6 +33,7 @@ export default function PaymentPage() {
   });
   const [busy, setBusy] = useState(false);
   const ran = useRef(false);
+  const inFlight = useRef(false);
 
   const refreshOrder = useCallback(async () => {
     const fresh = await fetchOrder(supabaseBrowser(), id).catch(() => null);
@@ -42,6 +43,8 @@ export default function PaymentPage() {
 
   /** Sends the customer to the gateway's page for this order. */
   const pay = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setState({ phase: "starting" });
     const started = await startPayment(id, locale);
@@ -52,17 +55,21 @@ export default function PaymentPage() {
     await refreshOrder();
     setState({ phase: "done", outcome: started.outcome, reference: started.reference });
     setBusy(false);
+    inFlight.current = false;
   }, [id, locale, refreshOrder]);
 
   /** Asks the server what happened. Repeating it changes nothing. */
   const check = useCallback(
     async (paymentId: string | null) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
       setBusy(true);
       setState({ phase: "confirming" });
       const result = await verifyPayment(id, paymentId);
       await refreshOrder();
       setState({ phase: "done", outcome: result.outcome, reference: result.reference });
       setBusy(false);
+      inFlight.current = false;
     },
     [id, refreshOrder],
   );
@@ -106,14 +113,17 @@ export default function PaymentPage() {
           </section>
         )}
 
-        <div role="status" className="mt-5">
+        {/* EasyUI Payment Status's explicit lifecycle visual, driven only by the verified response. */}
+        <div role="status" aria-atomic="true" className="mt-5">
           {!done ? (
-            <p className="min-h-24 text-lg font-bold" aria-busy>
-              {state.phase === "starting" ? t.paymentStarting : t.paymentConfirming}
-            </p>
+            <div className="rounded-panel border border-divider bg-subtle p-4" aria-busy="true">
+              <span aria-hidden className="mb-3 flex size-12 items-center justify-center rounded-full border border-outline"><CardIcon className="size-6" /></span>
+              <h2 className="text-xl font-extrabold">{state.phase === "starting" ? t.paymentStarting : t.paymentConfirming}</h2>
+              <p className="mt-1 text-sm">{locale === "ar" ? "ننتظر تأكيد الدفع من الخادم. لا تحتاج لإرسال الطلب مرة ثانية." : "Waiting for the server to confirm payment. You do not need to place the order again."}</p>
+            </div>
           ) : (
             <div
-              className={`reveal-up rounded-panel p-4 ${
+              className={`rounded-panel p-4 ${
                 good
                   ? "border border-ink bg-yellow-punk"
                   : done.outcome === "awaiting" || done.outcome === "refund_due"
@@ -121,8 +131,10 @@ export default function PaymentPage() {
                     : "bg-error-surface text-error"
               }`}
             >
-              <h2 className="flex items-start gap-2 text-xl leading-snug font-extrabold">
-                {good && <CheckIcon className="mt-0.5 size-6" />}
+              <span aria-hidden className="mb-3 flex size-12 items-center justify-center rounded-full border border-current">
+                {good ? <CheckIcon className="size-6 stage-check" /> : done.outcome === "awaiting" || done.outcome === "refund_due" ? <ClockIcon className="size-6" /> : <XIcon className="size-6" />}
+              </span>
+              <h2 className="text-xl leading-snug font-extrabold">
                 {words!.title}
               </h2>
               <p className="mt-1">{words!.body(ref)}</p>

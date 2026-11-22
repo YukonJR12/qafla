@@ -1,5 +1,7 @@
 "use client";
 
+import { markNewTicket } from "@/lib/new-ticket";
+
 import Image from "next/image";
 import { truckLogo } from "@/lib/images";
 import Link from "next/link";
@@ -337,6 +339,7 @@ export default function CheckoutPage() {
       // What happens next follows the SAVED order, not the button that was tapped:
       // an unpaid online order goes to its payment screen, anything else to its ticket.
       const toPay = data.payment_method === "online" && data.payment_status === "unpaid";
+      markNewTicket(userId, data.id);
       router.replace(toPay ? `/orders/${data.id}/payment?start=1` : `/orders/${data.id}`);
       return;
     }

@@ -25,6 +25,7 @@ import { CheckIcon, StageIcon } from "./ui";
 export function PickupTimeline({ status, truck }: { status: string; truck: string }) {
   const { t } = useLocale();
   const captionId = useId();
+  const [initialStatus] = useState(status);
   const [selection, setSelection] = useState<{ status: string; stage: Stage | null }>({ status, stage: null });
   // Reset before committing a render, so a live update replaces a preview in
   // one announcement. Re-reading the same status leaves the preview alone.
@@ -37,12 +38,13 @@ export function PickupTimeline({ status, truck }: { status: string; truck: strin
   return (
     <div>
       <ol aria-label={t.orderProgress} className="grid grid-cols-5 gap-1.5 sm:gap-2.5">
-        {stages.map(({ stage, state }) => {
+        {stages.map(({ stage, state }, index) => {
           const name = t.statusName[stage] ?? stage;
           // The tile's own label is the short one ("Ready"), so five fit across a phone.
           const label = t.stageLabel[stage] ?? name;
           return (
-            <li key={stage} className="min-w-0">
+            <li key={stage} className="relative min-w-0">
+              {index < stages.length - 1 && <span aria-hidden className="stage-connector absolute top-6 start-full h-0.5 w-1.5 overflow-hidden bg-divider sm:w-2.5"><span className="block h-full bg-ink" style={{ transform: `scaleX(${state === "done" ? 1 : 0})` }} /></span>}
               <button
                 type="button"
                 aria-current={state === "current" ? "step" : undefined}
@@ -57,7 +59,7 @@ export function PickupTimeline({ status, truck }: { status: string; truck: strin
                   key={state}
                   className={`relative flex h-12 w-full items-center justify-center rounded-panel border transition-colors duration-[180ms] ease-out ${
                     state === "current"
-                      ? "bump border-ink bg-ink text-yellow-punk"
+                      ? "border-ink bg-ink text-yellow-punk"
                       : state === "done"
                         ? "border-ink bg-snowy-white text-ink"
                         : "border-outline bg-snowy-white text-ink"
@@ -66,7 +68,7 @@ export function PickupTimeline({ status, truck }: { status: string; truck: strin
                   <StageIcon stage={stage} className="size-6" />
                   {state === "done" && (
                     <span className="absolute -end-1 -top-1 flex size-4.5 items-center justify-center rounded-full bg-ink text-snowy-white">
-                      <CheckIcon className="size-3" />
+                      <CheckIcon className={`size-3 ${timeline(initialStatus)?.[index]?.state !== "done" ? "stage-check" : ""}`} />
                     </span>
                   )}
                 </span>

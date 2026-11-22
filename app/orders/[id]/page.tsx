@@ -20,6 +20,7 @@ import { canCancel } from "@/lib/ticket";
 import { formatSlot } from "@/lib/time";
 import { useLiveOrders } from "@/lib/use-live-orders";
 import { useSession } from "@/lib/use-session";
+import { consumeNewTicket } from "@/lib/new-ticket";
 
 // The confirmed order ticket. Everything on it is read back from the
 // database by the order's ID, so refreshing shows the same saved order and
@@ -36,9 +37,10 @@ export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
   const { locale, t } = useLocale();
   const { loading: sessionLoading, session } = useSession();
+  const userId = session?.user.id;
   // `opened` is the status the ticket had when this screen first read it.
   // It tells "became ready while I was watching" from "was already ready".
-  const [state, setState] = useState<{ loaded: boolean; order: Order | null; opened?: string }>({ loaded: false, order: null });
+  const [state, setState] = useState<{ loaded: boolean; order: Order | null; opened?: string; entrance?: boolean }>({ loaded: false, order: null });
   const [checking, setChecking] = useState(false);
   // What happened when the customer tried to cancel, said once in words.
   const [cancelNote, setCancelNote] = useState<"cancelled" | "too_late" | null>(null);
@@ -49,10 +51,12 @@ export default function OrderPage() {
   const reread = useCallback(async () => {
     const mine = ++readNumber.current;
     const order = await fetchOrder(supabaseBrowser(), id);
-    if (mine === readNumber.current) setState((was) => ({ loaded: true, order, opened: was.opened ?? order?.status }));
-  }, [id]);
+    if (mine === readNumber.current) {
+      const entrance = order && userId ? consumeNewTicket(userId, id) : false;
+      setState((was) => ({ loaded: true, order, opened: was.opened ?? order?.status, entrance: was.entrance ?? entrance }));
+    }
+  }, [id, userId]);
 
-  const userId = session?.user.id;
   useEffect(() => {
     if (sessionLoading) return;
     // Only the very first read may conclude "not found"; later failures keep the ticket.
@@ -137,7 +141,8 @@ export default function OrderPage() {
             </div>
 
             {/* The black ticket: truck, status, the pickup time above all, and the reference on the stub. */}
-            <TicketCard truck={truck} slot={order.slot_start} status={order.status}>
+            <TicketCard truck={truck} slot={order.slot_start} status={order.status} entrance={state.entrance}>
+              {state.entrance && <p className="mb-2 font-bold">{locale === "ar" ? "تم تأكيد الطلب" : "Order placed"}</p>}
               <p className="flex flex-wrap items-baseline justify-between gap-x-3 font-bold">
                 <span className="text-sm font-normal">{t.orderRef}</span>
                 <Isolate className="font-normal">{order.ticket_ref}</Isolate>
