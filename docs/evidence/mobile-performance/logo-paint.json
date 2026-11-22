@@ -1,0 +1,65 @@
+{
+  "method": "First captured Chrome trace screenshot with the official logo red pixels in the central launch area, relative to document request start. Cold runs only; inspected filmstrips corroborate the pixel scan.",
+  "results": [
+    {
+      "label": "revision-base",
+      "run": "fresh-1-cold",
+      "firstCapturedLogoMs": 1042
+    },
+    {
+      "label": "revision-base",
+      "run": "fresh-2-cold",
+      "firstCapturedLogoMs": 1041
+    },
+    {
+      "label": "revision-base",
+      "run": "fresh-3-cold",
+      "firstCapturedLogoMs": 1030
+    },
+    {
+      "label": "revision-base",
+      "run": "returning-1-cold",
+      "firstCapturedLogoMs": 1050
+    },
+    {
+      "label": "revision-base",
+      "run": "returning-2-cold",
+      "firstCapturedLogoMs": 1057
+    },
+    {
+      "label": "revision-base",
+      "run": "returning-3-cold",
+      "firstCapturedLogoMs": 1038
+    },
+    {
+      "label": "final-head",
+      "run": "fresh-1-cold",
+      "firstCapturedLogoMs": 851
+    },
+    {
+      "label": "final-head",
+      "run": "fresh-2-cold",
+      "firstCapturedLogoMs": 834
+    },
+    {
+      "label": "final-head",
+      "run": "fresh-3-cold",
+      "firstCapturedLogoMs": 837
+    },
+    {
+      "label": "final-head",
+      "run": "returning-1-cold",
+      "firstCapturedLogoMs": 846
+    },
+    {
+      "label": "final-head",
+      "run": "returning-2-cold",
+      "firstCapturedLogoMs": 835
+    },
+    {
+      "label": "final-head",
+      "run": "returning-3-cold",
+      "firstCapturedLogoMs": 834
+    }
+  ]
+}

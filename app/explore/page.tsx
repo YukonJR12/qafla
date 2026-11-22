@@ -46,7 +46,7 @@ export default async function Explore() {
             <p className="text-[clamp(1.125rem,5vw,1.7rem)] leading-[1.05] font-extrabold tracking-tight text-balance">{t.parkName}</p>
             <p className="mt-1.5 text-[clamp(0.75rem,3.4vw,1rem)]">{t.parkHoursShort}</p>
           </div>
-          <Image src="/brand/qafla-park-art.png" alt="" width={1942} height={809} unoptimized className="pointer-events-none h-auto max-h-28 w-full object-contain" />
+          <Image src="/brand/qafla-park-art.png" alt="" width={1942} height={809} sizes="(min-width: 640px) 280px, 46vw" className="pointer-events-none h-auto max-h-28 w-full object-contain" />
         </div>
 
         <div className="mt-4 flex items-baseline justify-between gap-3">

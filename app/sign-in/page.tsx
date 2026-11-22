@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 import { LanguageSwitch } from "@/components/language-switch";
-import { ParkLineArt } from "@/components/line-art";
 import { CheckIcon, EyeIcon, LockIcon, MailIcon, primaryButton, TruckIcon, UserIcon } from "@/components/ui";
 import { useLocale } from "@/lib/locale";
 import { signupRole, type SignupRole } from "@/lib/routes";
@@ -28,7 +27,7 @@ type AuthProblem = "invalidLogin" | "emailTaken" | "weakPassword" | "confirmEmai
 // "no truck assigned" screen. The manager's account is only ever set in the
 // database.
 export default function SignInPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [mode, setMode] = useState<Mode>("sign-in");
   const [role, setRole] = useState<SignupRole>("customer");
   const [busy, setBusy] = useState(false);
@@ -85,13 +84,13 @@ export default function SignInPage() {
         <LanguageSwitch />
       </div>
 
-      {/* The black banner names the screen. Its line art is decoration. */}
-      <div className="relative mt-2 flex min-h-28 items-center overflow-hidden rounded-poster bg-ink px-5 py-4 text-snowy-white">
-        <ParkLineArt className="pointer-events-none absolute end-1 bottom-0 h-[4.5rem] w-auto text-snowy-white/45 sm:h-24" />
-        <h1 className="relative max-w-[58%] text-[1.75rem] leading-tight font-extrabold text-balance">
+      {/* Artwork keeps its physical orientation; title and form remain live UI. */}
+      <div dir="ltr" className="mt-2 grid min-h-28 grid-cols-2 items-center gap-2 rounded-poster bg-ink px-4 py-3 text-snowy-white">
+        <h1 dir={locale === "ar" ? "rtl" : "ltr"} className="min-w-0 text-[1.75rem] leading-tight font-extrabold text-balance">
           {mode === "sign-in" ? t.signIn : t.createAccount}
           <span aria-hidden className="mt-2 block h-1 w-12 rounded-full bg-yellow-punk" />
         </h1>
+        <Image src="/brand/qafla-account-art.png" alt="" width={1902} height={827} sizes="(min-width: 448px) 184px, 44vw" className="pointer-events-none h-auto w-full object-contain" />
       </div>
 
       {mode === "sign-in" && <p className="mt-4 text-muted">{t.signInFor}</p>}

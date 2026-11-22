@@ -5,17 +5,20 @@ import { AccountProvider } from "@/lib/account";
 import { CartProvider } from "@/lib/cart";
 import { LocaleProvider } from "@/lib/locale";
 import { getLocale } from "@/lib/locale-server";
+import { launchLogo } from "@/lib/launch-logo";
 import "./globals.css";
 
 // Brand fonts from DESIGN.md. next/font downloads them at build time and
 // serves them from our own domain, exposing each one as a CSS variable.
 const archivoBlack = Archivo_Black({
+  preload: false,
   weight: "400",
   subsets: ["latin"],
   variable: "--font-archivo-black",
 });
 
 const dmSans = DM_Sans({
+  preload: false,
   subsets: ["latin"],
   variable: "--font-dm-sans",
 });
@@ -23,6 +26,7 @@ const dmSans = DM_Sans({
 // Alexandria is a variable font, so every weight is available. The Latin
 // subset is included so digits and "KWD" match the Arabic letters.
 const alexandria = Alexandria({
+  preload: false,
   subsets: ["arabic", "latin"],
   variable: "--font-alexandria",
 });
@@ -57,7 +61,7 @@ export default async function RootLayout({
           {/* Who is signed in, then that account's cart, then the gate that picks the screen. */}
           <AccountProvider>
             <CartProvider>
-              <SessionGate>{children}</SessionGate>
+              <SessionGate launchImage={launchLogo}>{children}</SessionGate>
             </CartProvider>
           </AccountProvider>
         </LocaleProvider>

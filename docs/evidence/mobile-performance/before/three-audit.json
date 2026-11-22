@@ -1,0 +1,71 @@
+{
+  "scripts": [
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/222hra1148xtb.js",
+      "bytes": 13638,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/01r5m29qen36s.js",
+      "bytes": 22394,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0hzimmfcp9x2s.js",
+      "bytes": 159603,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0745g8ez5ma__.js",
+      "bytes": 207263,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/20a9-omjjfwi9.js",
+      "bytes": 31101,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/turbopack-3xd-7z66s-4wg.js",
+      "bytes": 9974,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0iu60j-pefc8q.js",
+      "bytes": 22899,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/0its-vpyjd_t5.js",
+      "bytes": 55083,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/1wyo38rtpjr44.js",
+      "bytes": 36559,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/290mbcqaq19zj.js",
+      "bytes": 253496,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/1t21vfql1_h_4.js",
+      "bytes": 6845,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/1sn40qmazt-nu.js",
+      "bytes": 11187,
+      "threeMarkers": false
+    },
+    {
+      "url": "https://qafla-rjqd.vercel.app/_next/static/immutable/chunks/2bzqti4h15kxn.js",
+      "bytes": 11611,
+      "threeMarkers": false
+    }
+  ],
+  "mapTexturesRequested": false,
+  "note": "Waterfalls contain no /map route or /park/coded-bootcamp.png; truck logos are shared ordinary UI assets."
+}
