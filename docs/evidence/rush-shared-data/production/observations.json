@@ -1,0 +1,46 @@
+{
+  "deployment": "dpl_yXdzJn49zSd4zq8hJyz3tPXp55Cj",
+  "commit": "53f593a409fbaa8a0973155bb04682edf9ed05b0",
+  "date": "2026-11-22",
+  "browser": "ChatGPT in-app Chromium, responsive viewport override",
+  "height": 844,
+  "liveMatch": {
+    "truck": "T02 Dune Burgers",
+    "serviceDate": "2026-11-22",
+    "pickup": "17:00",
+    "overview": 2,
+    "forecast": 2,
+    "capacity": 6
+  },
+  "replay": {
+    "serviceDate": "2026-11-21",
+    "truck": "T03 Taco Saha",
+    "pickup": "20:00",
+    "replay": "19:00",
+    "current": 5,
+    "capacity": 6,
+    "additional": 1,
+    "projected": 6,
+    "range": [
+      5,
+      6
+    ],
+    "cutoff": "19:45",
+    "advancedTo": "19:46",
+    "actual": 6,
+    "error": 0
+  },
+  "explanations": {
+    "en390": "Taco Saha · 8:00 PM\n\nLikely to fill · As of 7:00 PM\n\n0 places likely left\n\n5 of 6 booked. About 1 more orders expected before booking closes.\n\nProjected occupancy: 6 / 6 · Likely range: 5–6\n\nCheck the kitchen now; booking closes at 7:45 PM (45 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:45 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nGenerate AI forecast\nAI-powered explanation\n\nThe strongest signal is that the projected count of 6 reaches the capacity of 6, so the evening is likely to be full, though this is an advisory estimate based on the 12 historical data points.",
+    "en320": "Taco Saha · 8:00 PM\n\nLikely to fill · As of 7:00 PM\n\n0 places likely left\n\n5 of 6 booked. About 1 more orders expected before booking closes.\n\nProjected occupancy: 6 / 6 · Likely range: 5–6\n\nCheck the kitchen now; booking closes at 7:45 PM (45 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:45 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nGenerate AI forecast\nAI-powered explanation\n\nThe strongest signal is that the projected count of 6 reaches the capacity of 6, so the evening is likely to be full with little room for further bookings.",
+    "ar320": "تاكو ساحة · 8:00 م\n\nمرجّح أن يمتلئ · عند 7:00 م\n\n0 أماكن متوقعة متبقية\n\n5 من 6 محجوزة. نتوقع نحو 1 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 6 / 6 · النطاق المتوقع: 5–6\n\nراجع المطبخ الآن؛ يغلق الحجز عند 7:45 م (بعد 45 دقيقة).\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:20 م\n7:45 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nافحص النموذج والأمسيات المشابهة\nإنشاء توقع بالذكاء الاصطناعي\nشرح مدعوم بالذكاء الاصطناعي\n\nالإشارة الأقوى أن الحجوزات المتوقعة تصل إلى السعة الكاملة (6 من 6) بحجز إضافي واحد متوقع من 5 حجوزات حالية، ضمن نطاق يتراوح بين 5 و6، مع بقاء 45 دقيقة قبل الإغلاق.",
+    "ar390": "تاكو ساحة · 8:00 م\n\nمرجّح أن يمتلئ · عند 7:00 م\n\n0 أماكن متوقعة متبقية\n\n5 من 6 محجوزة. نتوقع نحو 1 طلبات إضافية قبل إغلاق الحجز.\n\nالإشغال المتوقع: 6 / 6 · النطاق المتوقع: 5–6\n\nراجع المطبخ الآن؛ يغلق الحجز عند 7:45 م (بعد 45 دقيقة).\n\nوتيرة الحجز · طلبات\nالسعة 6\n0\n3\nالآن\n5:20 م\n7:45 م · إغلاق الحجز\n\nخط متصل: المرصود · متقطع: التوقع · مظلل: النطاق\n\nافحص النموذج والأمسيات المشابهة\nإنشاء توقع بالذكاء الاصطناعي\nشرح مدعوم بالذكاء الاصطناعي\n\nالإشارة الأقوى أن الحجوزات المتوقعة تصل إلى السعة الكاملة (6 من 6) بحجز إضافي واحد متوقع من 5 حجوزات حالية، ضمن نطاق يتراوح بين 5 و6، مع بقاء 45 دقيقة قبل الإغلاق."
+  },
+  "checks": [
+    "EN390 AI provider answered, comparison and exact rewind passed",
+    "EN320 AI provider answered, comparison and exact rewind passed",
+    "AR320 AI provider answered, comparison and exact rewind passed",
+    "AR390 AI provider answered, comparison and exact rewind passed",
+    "No document horizontal overflow in all four combinations"
+  ]
+}

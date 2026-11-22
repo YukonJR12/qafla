@@ -2,6 +2,8 @@
 
 [Mobile replay](mobile-replay.webm) · [320 Arabic](320-ar-dashboard.png) · [390 English](390-en-dashboard.png) · [Desktop](1440-en.png)
 
+[Released Production verification](production/README.md): English/Arabic at 320 and 390 px, matching Overview/Forecast counts, generated AI explanations and identical replay rewind on commit `53f593a`.
+
 This follows the owner's request to treat the entire Qafla deployment as a populated demo. Synthetic records are stored in the same order tables as the original test orders, marked `fixture_batch = rush-demo-v1` and assigned to a dedicated fixture customer with no sign-in credentials. They are generated test fixtures, not real purchases or evidence of genuine demand. The product shows **Booking history** with the service date; this evidence retains provenance.
 
 Forecast now opens **Live today** using database time and the same order counts as Overview. Its manager-only RPC returns aggregate booking timestamps, cancellation timestamps and capacities without customer IDs, names, ticket references or payment details. A separate dated **Replay the evening** uses the latest completed service date. It cannot reveal future bookings at an earlier cutoff.
