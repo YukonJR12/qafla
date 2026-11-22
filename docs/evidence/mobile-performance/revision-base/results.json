@@ -1,0 +1,81 @@
+{
+  "base": "http://127.0.0.1:3103",
+  "browser": "159.0.8154.6",
+  "viewport": "390x844",
+  "profile": "150ms RTT, 1.6 Mbps down, 750 Kbps up; CPU 4x",
+  "cache": "Cold: new context and cleared HTTP cache; warm: same context HTTP cache. No Map visit. Server/CDN cache uncontrolled.",
+  "runs": [
+    {
+      "id": "fresh-1-cold",
+      "launchMs": 2915.7999999998137,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-1-warm",
+      "launchMs": 495.89999999990687,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-1-cold",
+      "launchMs": 4779.300000000279,
+      "menuMs": 1170.7000000001863,
+      "addMs": 24.899999999906868
+    },
+    {
+      "id": "returning-1-warm",
+      "launchMs": 1466.5,
+      "menuMs": 1314.7999999998137,
+      "addMs": 26.90000000037253
+    },
+    {
+      "id": "fresh-2-cold",
+      "launchMs": 2954.5999999996275,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-2-warm",
+      "launchMs": 489.1999999997206,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-2-cold",
+      "launchMs": 4742.899999999907,
+      "menuMs": 1179.5,
+      "addMs": 24
+    },
+    {
+      "id": "returning-2-warm",
+      "launchMs": 2024.5,
+      "menuMs": 767.6000000000931,
+      "addMs": 26.899999999906868
+    },
+    {
+      "id": "fresh-3-cold",
+      "launchMs": 2910.0999999996275,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "fresh-3-warm",
+      "launchMs": 473.29999999981374,
+      "menuMs": null,
+      "addMs": null
+    },
+    {
+      "id": "returning-3-cold",
+      "launchMs": 4743.5,
+      "menuMs": 1249.7999999998137,
+      "addMs": 25.5
+    },
+    {
+      "id": "returning-3-warm",
+      "launchMs": 2141.100000000093,
+      "menuMs": 753.2999999998137,
+      "addMs": 26.299999999813735
+    }
+  ]
+}

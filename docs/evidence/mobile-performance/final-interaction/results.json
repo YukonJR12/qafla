@@ -1,0 +1,71 @@
+{
+  "base": "http://127.0.0.1:3103",
+  "browser": "159.0.8154.6",
+  "device": "Chrome mobile emulation on Windows; no physical phone",
+  "playback": "Original normal-speed Playwright capture",
+  "results": [
+    {
+      "id": "390-en-motion",
+      "direction": "ltr",
+      "width": 390,
+      "scrollWidth": 390,
+      "quantity": "1",
+      "animations": [
+        "0.18s",
+        "0.22s",
+        "0.18s",
+        "0.18s"
+      ],
+      "returningSignInFrames": 0,
+      "cartText": "View order (1)\n0.200 KWD",
+      "cartBounds": {
+        "x": 16,
+        "y": 720,
+        "width": 358,
+        "height": 48
+      }
+    },
+    {
+      "id": "320-ar-motion",
+      "direction": "rtl",
+      "width": 320,
+      "scrollWidth": 320,
+      "quantity": "1",
+      "animations": [
+        "0.18s",
+        "0.22s",
+        "0.18s",
+        "0.18s"
+      ],
+      "returningSignInFrames": 0,
+      "cartText": "عرض الطلب (1)\n0.200 د.ك.",
+      "cartBounds": {
+        "x": 16,
+        "y": 704,
+        "width": 288,
+        "height": 64
+      }
+    },
+    {
+      "id": "320-ar-reduced",
+      "direction": "rtl",
+      "width": 320,
+      "scrollWidth": 320,
+      "quantity": "1",
+      "animations": [
+        "0s",
+        "0s",
+        "0s",
+        "0s"
+      ],
+      "returningSignInFrames": 0,
+      "cartText": "عرض الطلب (1)\n0.200 د.ك.",
+      "cartBounds": {
+        "x": 16,
+        "y": 704,
+        "width": 288,
+        "height": 64
+      }
+    }
+  ]
+}

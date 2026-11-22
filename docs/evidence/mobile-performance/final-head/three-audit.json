@@ -1,0 +1,70 @@
+{
+  "scripts": [
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/08y4y_7fcbayh.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/1a-_bd7djag95.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/3yi3vzcz6ofi4.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/3pq119q2m88wa.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/1eunqk01pweux.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/turbopack-2u1d16houkiyo.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/034vv5tv2-gkq.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/2edq0crlcbp_p.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/3ir2qtpvtrkxc.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/1-la7wcqsxf5w.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/2g-i2207i0_bc.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/1w5wb07f9rbqk.js",
+      "status": 200,
+      "threeSignature": false
+    },
+    {
+      "url": "http://127.0.0.1:3103/_next/static/chunks/2n7hazgya0fs4.js",
+      "status": 200,
+      "threeSignature": false
+    }
+  ],
+  "mapRequests": []
+}
