@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadError } from "@/components/cart-states";
+import { MorphingButton } from "@/components/morphing-button";
 import { LanguageSwitch } from "@/components/language-switch";
 import { ArrowBack, CheckIcon, Isolate, MinusIcon, PlusIcon, primaryButton } from "@/components/ui";
 import { useAccount } from "@/lib/account";
@@ -82,6 +83,7 @@ export default function CapacitySettingsPage() {
   const changed = value !== saved;
 
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
   const [result, setResult] = useState<{ kind: "saved"; capacity: number } | { kind: "failed" } | { kind: "not_yours" } | null>(null);
 
   function step(by: number) {
@@ -90,7 +92,8 @@ export default function CapacitySettingsPage() {
   }
 
   async function save() {
-    if (!truck || busy || !changed) return;
+    if (!truck || inFlight.current || !changed) return;
+    inFlight.current = true;
     setBusy(true);
     setResult(null);
     try {
@@ -106,6 +109,7 @@ export default function CapacitySettingsPage() {
     } catch (error) {
       setResult({ kind: error instanceof Error && error.message === "not_your_truck" ? "not_yours" : "failed" });
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
@@ -238,18 +242,16 @@ export default function CapacitySettingsPage() {
                   {result.kind === "not_yours" ? t.capacityNotYours : t.capacityFailed(saved)}
                 </p>
               )}
-              <button
+              <MorphingButton
                 type="button"
                 disabled={busy || !changed}
                 aria-busy={busy}
                 aria-describedby={changed ? undefined : "capacity-unchanged"}
                 onClick={save}
                 className={`${primaryButton} mt-4`}
-              >
-                <span aria-live="polite">
-                  {busy ? t.saving : result?.kind === "failed" ? `${t.retry}: ${t.capacitySave(name)}` : t.capacitySave(name)}
-                </span>
-              </button>
+                state={busy ? "pending" : result?.kind === "saved" ? "success" : result?.kind === "failed" ? "retry" : "idle"}
+                labels={{ idle: t.capacitySave(name), pending: t.saving, success: locale === "ar" ? "تم تحديث الطاقة" : "Capacity updated", retry: `${t.retry}: ${t.capacitySave(name)}` }}
+              />
               {!changed && result?.kind !== "saved" && (
                 <p id="capacity-unchanged" className="mt-2 text-sm text-muted">
                   {t.capacityUnchanged}

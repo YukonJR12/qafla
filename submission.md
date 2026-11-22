@@ -1,103 +1,79 @@
-# Qafla Pickup — submission preparation
+# Qafla Pickup — submission
 
-Candidate: **Faisal Alrefae**. Prepared: 22 November 2026.
-Deadline: **Monday, 23 November 2026, 11:59 PM Kuwait time (UTC+3)**.
-Status: vendor account setup and the five-round isolated recording are complete and reverified. Submission still requires the assessment-specific live observations and owner actions marked below. Refreshed against Production a1881ec (PR #16), 22 November 2026.
+**Candidate:** Faisal Alrefae · **Prepared:** 22 November 2026
+**Deadline:** Monday, 23 November 2026 at 11:59 PM Kuwait time (UTC+3).
 
-## Mobile demo — shipped 3D Park Guide
+| Open first | Location |
+| --- | --- |
+| Live app | [Qafla Pickup on Production](https://qafla-rjqd.vercel.app) |
+| Repository | [YukonJR12/qafla](https://github.com/YukonJR12/qafla) — private; panel GitHub invitation is still required for full source access |
+| Production build | `8ed79b4e7b8d4cbf48bf9b03838d582bd31bda4b`; Vercel READY, Production alias confirmed 22 November |
+| Required write-ups | [decisions.md](decisions.md) · [tampering_test.md](tampering_test.md) |
+| Login details | The separate **private-demo-logins.md** handoff; passwords are deliberately excluded from this repository |
 
-[Play the 14.6-second mobile clip](docs/screenshots/park-3d/park-interaction-390-en.webm) · [Download from GitHub](https://github.com/YukonJR12/qafla/raw/12870f381535368cb9b50059b2b835cf3c202277/docs/screenshots/park-3d/park-interaction-390-en.webm)
+## Demo accounts and a short panel walkthrough
 
-<video controls width="390" src="docs/screenshots/park-3d/park-interaction-390-en.webm" poster="docs/screenshots/park-3d/karak-sheet-390-en.png"></video>
+| Panel identity | Email | Expected landing / assignment |
+| --- | --- | --- |
+| Customer A | qafla.customer.mwng8ynl@example.com | Explore; customer, no truck assignment |
+| Customer B | qafla.ui.mwngu7ha@example.com | Explore; separate customer identity |
+| T02 vendor | qafla.vendor.mwng8ynl@example.com | Dune Burgers Kitchen; T02 |
+| T06 vendor | qafla.panel.t06.20261122@example.com | Lugaimat & Co Kitchen; T06 |
+| Park manager | qafla.manager.mwnh12fm@example.com | Park overview; all six trucks |
 
-Open Map → rotate the park → select branded Karak Corner → see its information sheet → open a Ready Dune Burgers ticket → Find my truck selects T02, even while it is paused for new orders. The recording starts from Account's shared Map navigation, not Explore. Explore → Map is also a verified Production journey.
+1. **Customer A:** Explore → Karak Corner menu → Map. Rotate the park, tap the branded truck and open its information sheet. Open an existing order to inspect its ticket. The Ready → correct truck shortcut is demonstrated in the controlled clip below if no Ready ticket is currently available.
+2. **Customer B:** use a separate browser profile/incognito session. Open Explore → Orders → Account to confirm the distinct customer identity. This read-only tour does not substitute for the cross-account direct-request test.
+3. **T02 and T06 vendors:** sign into each account separately. Check its own Kitchen and Menu, then the truck assignment on Account. Do not advance orders during the introductory tour.
+4. **Manager:** Park overview → Rush Forecast → Replay the evening. Select Taco Saha's 8:00 PM slot, inspect the booking pace, advance from 7:00 PM to 7:46 PM, compare the earlier forecast with the final simulated count, then rewind. The replay uses the latest completed evening, so its service date can move after midnight.
 
-This is reused controlled-fixture evidence from commit 3ca0776: local production build, Chromium 159, 390 × 844 touch emulation, fake customer and Ready ticket FIXTURE-READY-T02. It is not footage of a real Production order. The feature shipped in PR #13; current Production includes PR #14 and PR #16 (a1881ec). [Evidence and limits](docs/screenshots/park-3d/README.md).
+All five panel logins and assignments have a [current Production access record](docs/evidence/submission-final-access/README.md). No account is missing. Customer, vendor and manager polish from PRs #19–21 is merged; this submission freezes feature development.
 
-**Phone checks are Chrome emulation:** 320/390 px, English/Arabic. Physical-device pinch smoothness remains unverified. The recorded 1.62-second Map load is a local desktop measurement, not mobile-network performance.
+## Shipped stretch features
 
-## Panel starting path — five accounts
+**3D Park Guide — recognize the pickup counter before walking over.** [Play the 14.6-second mobile clip](docs/screenshots/park-3d/park-interaction-390-en.webm). It shows Map → rotate → branded Karak Corner → information sheet, then a Ready Dune Burgers ticket opening T02 even when paused for new orders. This reused local production-build **controlled fixture** uses `FIXTURE-READY-T02`; it is not a real Production order. Its starting navigation is Account → Map; Explore → Map is separately verified. [Setup and limits](docs/screenshots/park-3d/README.md).
 
-Open [Production](https://qafla-rjqd.vercel.app). Use the matching credentials from the **private panel handoff**; no passwords are in these files. Keep Customer A and B in separate browser profiles/incognito sessions. This starting path is read-only: no order placement, payment, status changes or truck closures.
+**Rush Forecast — which kitchen should Dana check next?** [Play the mobile replay](docs/evidence/easyui-forecast/mobile-replay.webm) · [deployed prediction beside outcome](docs/evidence/preview-approval-19-21/21-390-en-comparison.png). The numerical model uses booking timestamps and comparable earlier evenings; the AI explains selected aggregates, with a deterministic fallback. “Demo forecast · simulated history” and the replay clock stay visible. The shared database contains explicitly marked generated demo history, not genuine demand.
 
-1. **Customer A:** sign in → Explore → a branded truck menu → Map → rotate/select a truck and view its sheet. Open Orders to inspect an existing ticket; use Find my truck only if a Ready ticket exists. The Park Guide clip supplies the controlled Ready → T02 demonstration if none exists live.
-2. **Customer B:** in the second session, sign in → Explore → Orders → Account. Confirm a distinct customer identity and its own order list. This UI check is not a substitute for the cross-account direct-request evidence in tampering_test.md.
-3. **T02 vendor:** sign in → Dune Burgers Kitchen → inspect existing tickets and Account's truck assignment. Do not advance orders during this read-only tour.
-4. **T06 vendor:** sign in → Lugaimat & Co Kitchen → inspect its own board and Account assignment. An empty board is valid; do not create an order to fill it.
-5. **Manager:** sign in → Tonight across the park → inspect all six trucks/slot usage → Account confirms Park manager. Finish with the five-round recording and its per-round counts; it is isolated evidence, not a Production race.
+Latest retained **simulated** validation: **0.8923 orders/slot** mean absolute error versus **2.0552** for no-more-bookings, over **5,906** predictions on **14** held-out evenings (43 training evenings). [Exact results](docs/evidence/easyui-forecast/validation.json). This establishes simulated behavior, not real-world forecast accuracy. The reused local replay clip and [deployed observations](docs/evidence/preview-approval-19-21/README.md) have separate provenance; OpenRouter was not called in that deployed UI check.
 
-The account emails and verified landing screens are listed below. Account provisioning is complete; private credential delivery and reviewer repository access are still owner actions.
+**Phone checks are Chrome emulation**, English/Arabic at 320/390 px with desktop checks. Physical-device pinch smoothness remains unverified. The recorded 1.62-second Map opening is a local desktop result, not a mobile-network benchmark.
 
-## Latest shipped customer verification
+## Levels and evidence status
 
-PR #16 is merged and deployed. Fresh launch, actual customer sign-in, returning-session launch, truck menu opening and first Add passed on Production in **English/Arabic at 320 and 390 px**. No orders or payments were created. [Production assertions and screenshots](docs/evidence/production-pr16/README.md) · [Commit-pinned evidence](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/production-pr16/README.md).
+Levels count in order; Core plus the live Tampering Test is the assessment pass bar. Representative screenshots demonstrate the stated capabilities; they do not certify a whole level when live observations remain pending.
 
-[Updated 13.9-second customer-flow clip](docs/evidence/mobile-performance/final-interaction/390-en-motion.webm) shows the same shipped application changes in a **local production build**, not Production footage. [Timing methodology and remaining warm-launch tradeoff](docs/evidence/mobile-performance/README.md).
+- [ ] **Core + Tampering Test:** app features shipped; live direct-request criteria 1–5 and signed-in key inspection remain pending as individually enumerated in tampering_test.md. The 1a screenshot proves a 3.200 KWD baseline/cancelled attempt; isolated PostgreSQL proves repricing. Neither is the missing Production price-tampering observation.
+- [ ] **Level 2 · Premium:** historical MyFatoorah sandbox payment, fake-success rejection and refund-due evidence exists. Current live fake-success observation and signed-in gateway-key inspection remain pending. No real-money payment is part of this submission.
+- [ ] **Level 3 · Elite:** five-round isolated race, real-model injection result and Preview forced-error screenshot/log are packaged. The stated live-link race requirement is not yet evidenced unless CODED accepts the isolated setup; an independent new-TA clean setup rehearsal is also unverified.
+- [x] **Stretch implementation:** 3D Park Guide, bilingual experience and Rush Forecast are shipped. Numerical forecast validation is simulated. This does not bypass the earlier level gates.
 
 ## Five-round last-slot recording
 
-[Watch the two-session race](docs/evidence/submission-race/five-round-race.webm) · [Commit-pinned GitHub copy](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/submission-race/five-round-race.webm) · [Setup and per-round data](docs/evidence/submission-race/README.md)
+[Open the 20.8-second side-by-side recording](docs/evidence/submission-race/five-round-race.webm) · [setup, original recordings and screenshots](docs/evidence/submission-race/README.md) · [resulting data](docs/evidence/submission-race/results.json).
 
-**Refreshed on the latest shipped code: 20.8 seconds**, A on the left and B on the right. Five rounds: one confirmed ticket, one slot-full recovery, and exactly one extra order per slot (5→6). **Isolated local production build, real PostgreSQL 17, test auth/HTTP adapter. Not the live deployment.** The assessment's live-link observation remains pending unless this environment is accepted. The rerun passed in 41.6 seconds including build and exited 0 without an interrupt. Original A/B videos, before/after screenshots and per-round JSON are retained. No Production orders or payments were created.
+**Environment: isolated local production build, real PostgreSQL 17, test auth/clock and HTTP adapter. Not Production or hosted Supabase.** Refreshed on 22 November against application `a1881ec` in PR15 checkout `d4bb42d`; it has not been relabelled as an 8ed79b4 run. Five slots each began at 5/6. Two independent browser sessions submitted together; every round produced one confirmed ticket, one `slot_full` recovery with preserved cart, and exactly one extra order (6/6, never 7/6). Outcomes come from real PostgreSQL locking, not fabricated successful/refused responses. The 5 fps composition preserves elapsed speed; originals are retained. Runner exit 0, no interrupt.
 
-## Links the panel can open
+## Attachment package
 
-| Material | Link | Access / status |
-| --- | --- | --- |
-| Live app | https://qafla-rjqd.vercel.app | Public sign-in page; all nine demo logins reverified on Production a1881ec, 22 Nov |
-| Repository | https://github.com/YukonJR12/qafla | **Private. Anonymous access returns 404. Panel invitation or attached evidence required.** |
-| Schema and reasoning | [decisions.md](decisions.md) | Prepared from code and existing evidence; candidate review needed |
-| Tampering evidence inventory | [tampering_test.md](tampering_test.md) | Incomplete live report; gaps explicitly marked |
-| Setup / handover | [README](README.md), [.env.example](.env.example), [migrations](supabase/migrations), [seed builder](scripts/build-seed.mjs) | Files present; fresh-machine handover not independently rerun |
-| Core screenshot | [Collected ticket and rating](docs/screenshots/pickup-ticket/collected-rating-en-320.jpg) | Existing screenshot; capture provenance not established by this audit |
-| Premium screenshot | [Payment confirmed](docs/evidence/payments/preview-04-payment-confirmed.jpg) | Historical sandbox Preview evidence |
-| Elite race | [Two-session recording](docs/evidence/submission-race/five-round-race.webm), [results and setup](docs/evidence/submission-race/README.md) | Five rounds passed on isolated PostgreSQL; not the submitted live deployment |
-| Elite supporting screenshot | [Forced AI error](docs/evidence/ai-menu/forced-error-preview.jpg) | Historical Preview evidence |
-| AI injection result | [Write-up](docs/evidence/ai-menu/injection-card-local.md) | Real OpenRouter, local production build, 20 Nov |
-| Forced AI failure | [Screenshot](docs/evidence/ai-menu/forced-error-preview.jpg), [matching log](docs/evidence/ai-menu/forced-error-preview-log.txt) | Missing-key failure; not an invalid-key rejection |
-| Payment evidence | [Preview sandbox run](docs/evidence/payments/preview-sandbox-run.md) | Paid/unpaid, fake success, failure and refund-due evidence; documented limits retained |
+The three root Markdown files are supplied directly. **qafla-evidence.zip** contains the same files and all of their local evidence/source references with relative paths preserved, so the private GitHub links are not the only way to inspect the evidence. Unzip before following local links. The private login handoff is separate and excluded from this evidence archive.
 
-**Reviewer-access check, 22 November:** fresh signed-out Chromium with no owner GitHub cookies reached Production (HTTP 200) and displayed usable sign-in. The exact pinned Park Guide download and five-round recording links both returned **404**. Both files were retrievable through the **owner-authorized GitHub connector only**; that confirms the files exist, not that a panel member can open them. No panel GitHub identity/invitation was available to verify authenticated reviewer access. [Statuses, URLs and screenshot](docs/evidence/submission-access/README.md).
+| Representative attachment | What it substantiates / environment |
+| --- | --- |
+| `level-1-core-menu.png` | Current Production 8ed79b4 customer menu with seeded branding, menu prices and Add controls; 390 px Chrome emulation |
+| `level-2-premium-payment.jpg` | Historical MyFatoorah sandbox Preview payment confirmation; not a new Production payment |
+| `level-3-elite-forced-error.jpg` | Historical Preview missing-key failure with preserved edit and matching log reference; not an invalid-key rejection |
+| `stretch-park-guide.png` | Current Production 3D Park Guide at 390 px Chrome emulation |
 
-Before delivery, invite the panel's GitHub accounts and have one confirm both clips open, or privately attach the clips and referenced evidence directories alongside the Markdown files. Do not rely on private GitHub URLs alone. No sharing settings were changed and no attachments were sent.
+Elite extras are also supplied directly: `five-round-race.webm`, `injection-card-result.md`, `injection-card-result.jpg`, and `forced-error-log.txt`. The forced-error representative screenshot above doubles as the required error screenshot. The archive preserves the 1a baseline, original race videos, per-round before/after screenshots and counts, the Park Guide/replay clips, sandbox and injection write-ups, and source rules linked by the Markdown files. [Packaging and access record](docs/evidence/submission-final-access/README.md).
 
-## Five demo accounts — release gate
+## Reviewer access and scope
 
-Do not publish passwords in Git. Supply disposable panel credentials privately in the assessment email or its private attachment. The blank starter template is not a usable credential handover.
+Fresh browser sessions with no owner GitHub cookies can reach Production and sign into the five panel accounts. The repository and pinned recording links return **404 without repository access**. Their presence is confirmed from the owner checkout; that does not establish authenticated panel GitHub access. Local copies in the evidence archive remove that barrier for the attachments. Faisal must still invite the GitHub identity supplied by Ahmad for full repository review. No sharing settings were changed and no email was sent.
 
-| Panel identity | Required database role | Required assignment | Current verification | Faisal action |
-| --- | --- | --- | --- | --- |
-| Customer A | customer | none | qafla.customer.mwng8ynl@example.com: fresh sign-in → Explore; Account says Customer | Pass verified credentials privately to panel |
-| Customer B | customer | none, distinct account | qafla.ui.mwngu7ha@example.com: fresh sign-in → Explore; Account says Customer | Pass verified credentials privately to panel |
-| Dune vendor | vendor | T02 Dune Burgers | qafla.vendor.mwng8ynl@example.com: fresh sign-in → Dune Burgers kitchen; Account says Truck vendor · Dune Burgers | Pass verified credentials privately to panel |
-| Lugaimat vendor | vendor | T06 Lugaimat & Co | qafla.panel.t06.20261122@example.com: fresh sign-in → Lugaimat & Co kitchen; Account confirms vendor and truck | New credentials are in the private handoff |
-| Park manager | manager | none | qafla.manager.mwnh12fm@example.com: fresh sign-in → Tonight across the park; Account says Park manager | Pass verified credentials privately to panel |
+Existing checks are reused with their original build/environment labels: the customer suite reports 118 unit, 57 browser and 86 isolated database checks; vendor 117/55/86; forecast final code passed 34 combined focused journeys after its earlier 43-test browser run. Database processes exited 0 normally. This documentation reconciliation changes no shipped application code, dependencies or migrations. It preserves the race test and evidence from PR15. No new Production orders, payments, closures or menu edits were made.
 
-**No account or assignment is missing.** All five required panel identities and all six vendor logins were reverified on Production a1881ec. At Faisal's subsequent request, separate vendor accounts were also created and assigned to previously unassigned T01, T03, T04 and T05. Each signed into its matching kitchen and showed the correct vendor/truck in Account. T02 and all existing passwords were preserved. No duplicate accounts, password changes or reassignments were needed in this refresh. See the [complete nine-account inventory](docs/evidence/panel-access/README.md) and [current verified roles/assignments](https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/panel-access/current/results.json). Passwords live only in the Git-ignored private handoff.
+## Before sending
 
-## Assessment audit and levels
+The single remaining-manual-observation checklist is in [tampering_test.md](tampering_test.md#manual-observations-still-owed-by-faisal). Complete the chosen live attempts, insert sanitized responses and data-after evidence, and update level claims before declaring the pass bar complete. If sending before completion, keep those limitations explicit.
 
-Checked against the supplied assessment PDF (pages 2–6), owner brief and starter templates. Levels count in order, with Core plus live Tampering Test the pass bar.
-
-| Requirement | Actual submission evidence | Remaining gap |
-| --- | --- | --- |
-| Core app and six direct-request attacks | Shipped app, migrations, 108 unit tests and 83 isolated database checks; live report now has an inventory | Criteria 1–5 need the enumerated manual Production responses and data-after captures; criterion 6 has signed-out Production evidence, but signed-in network/bundle inspection remains pending |
-| Premium | MyFatoorah sandbox Preview evidence and fake-return results | Repository access for panel; signed-in gateway-key network/bundle inspection remains pending |
-| Elite race | Two independent customer browser contexts; five recorded rounds, one saved ticket and one slot_full each; database count 5→6 each round | Isolated local production build, real PostgreSQL with auth/HTTP adapter; the assessment asks for the live link, so live-deployment observation remains pending |
-| Elite injection | Local real-model result and screenshot exist | Clearly label local provenance; do not present as Production execution |
-| Elite forced error | Preview missing-key screenshot/log share reference 238caf74 | Keep precise description of missing-key failure |
-| Elite handover | README, env names, ordered migrations and generated seed present | Independent clean setup rehearsal still unverified |
-| Stretch | 3D Park Guide shipped; bilingual customer UI | Physical phone pinch smoothness unverified |
-| Required write-ups | Root submission.md, decisions.md, tampering_test.md prepared; name, deadline and demo logins confirmed | Live tampering details, personal failure stories and level claims need sign-off |
-| Presentation | Assessment requests 7-minute demo, 8-minute walkthrough, 5-minute teach-back, 5-minute Q&A | Deadline above confirmed; presentation slot and rehearsal still needed; no deck required by the PDF |
-
-**Do not mark Core/Premium/Elite fully evidenced yet.** The shipped features and their local/Preview checks are distinct from the assessment's complete live evidence package.
-
-Validation after bringing PR #15 up to current main: lint, typecheck, production build, 108/108 unit tests, the refreshed five-round browser race, and 83/83 database checks passed. Both race and database processes exited 0 without interruption. All new relative evidence links were checked locally. Nine fresh Production logins and all six vendor assignments were reverified against the shipped PR #16 build. Tracked evidence contains no passwords; credentials must be delivered separately. This is not a claim that an attachment has been sent.
-
-## Inputs needed before sending
-
-1. Confirm the presentation slot and keep the app live through the session. Candidate name and submission deadline are set above.
-2. Deliver the private credential handoff (two customers, all six vendors and manager). No account or assignment still needs setup. Invite the panel's GitHub accounts or attach the evidence package. No password is in this repository.
-3. Finish the missing live observations in tampering_test.md. The authorized race now has isolated evidence; obtain CODED's agreement to that environment or arrange a dedicated deployed test database for a live rerun. Preview shares Production's database; no Production orders or payments were created here.
-4. Review decisions.md in your own voice, especially the two failure stories. Review the final level claims and send the package in the original assessment email thread. Nothing has been emailed.
+Faisal must review/approve PR #15 and these write-ups in his own voice, arrange panel GitHub access, approve private demo-login delivery, and confirm onboarding/presentation availability personally. Keep the app live through the panel session. The local reply to Ahmad is a draft only; sending and availability confirmation remain Faisal's actions.

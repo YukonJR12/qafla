@@ -1,0 +1,670 @@
+"use client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ForecastNumber } from "./forecast-number";
+import { useLocale } from "@/lib/locale";
+import { formatDay, formatSlot } from "@/lib/time";
+import { supabaseBrowser } from "@/lib/supabase";
+import { replayDate, serviceDay, type RushData } from "@/lib/rush-data";
+import {
+  REPLAY,
+  TRUCKS,
+  dashboard,
+  explanation,
+  forecast,
+  known,
+  timeString,
+  validate,
+  type Forecast,
+  type Evening,
+} from "@/lib/rush";
+import "./rush-forecast.css";
+
+const number = (n: number) => Number(n.toFixed(1));
+export function RushForecast({ token }: { token: string }) {
+  const {locale}=useLocale();
+  const [data,setData]=useState<RushData|null>(null);
+  const [failed,setFailed]=useState(false);
+  const [retry,setRetry]=useState(0);
+  const [historical,setHistorical]=useState(false);
+  useEffect(()=>{
+    let current=true;
+    const read=async()=>{
+      const {data,error}=await supabaseBrowser().rpc('forecast_history');
+      if(!current) return;
+      setFailed(!!error);
+      if(!error && data) setData(data);
+    };
+    void read();
+    const timer=setInterval(()=>void read(),30000);
+    return ()=>{current=false;clearInterval(timer);};
+  },[token,retry]);
+  if(failed) return <div role="alert"><p>{locale==='ar'?'تعذر تحميل سجل الحجوزات.':'Booking history could not be loaded.'}</p><button className="rush-explain" onClick={()=>setRetry(n=>n+1)}>{locale==='ar'?'حاول مجدداً':'Try again'}</button></div>;
+  if(!data) return <p role="status">{locale==='ar'?'جارٍ تحميل التوقع…':'Loading forecast…'}</p>;
+  const date=historical ? replayDate(data) ?? data.serviceDate : data.serviceDate;
+  return <RushDashboard key={date} token={token} data={data} date={date} historical={historical} onMode={setHistorical}/>;
+}
+function RushDashboard({token,data,date,historical,onMode}:{token:string;data:RushData;date:string;historical:boolean;onMode:(history:boolean)=>void}) {
+  const { locale } = useLocale();
+  const history=data.history;
+  const day=serviceDay(date);
+  const performance=useMemo(()=>validate(history,serviceDay(data.serviceDate)),[history,data.serviceDate]);
+  const ar = locale === "ar";
+  const words = (en: string, arabic: string) => (ar ? arabic : en);
+  const [step, setStep] = useState(0),
+    now = historical ? REPLAY[step] : data.now;
+  const view = useMemo(() => dashboard(history, day, now), [history,day,now]);
+  const [selection, setSelection] = useState(() => {
+    const d=dashboard(history,day,now), f=d.risk[0] ?? d.window[0] ?? d.cells[0];
+    return `${f.truck}/${f.slot}`;
+  });
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [pinnedIndex, setPinnedIndex] = useState(0);
+  const f = view.cells.find((c) => `${c.truck}/${c.slot}` === selection)!;
+  const row = history.find(
+    (r) => r.day === day && r.truck === f.truck && r.slot === f.slot,
+  )!;
+  const earlier = forecast(history, row, REPLAY[0]);
+  const closed = historical && f.state === "deadline_passed";
+  const [breakdown, setBreakdown] = useState(false);
+  const [answer, setAnswer] = useState<{
+    key: string;
+    text: string;
+    source: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const pending = useRef(0);
+  const key = `${date}/${selection}/${now}/${locale}/${f.current}/${f.capacity}/${f.projected}/${f.low}/${f.high}`;
+  const detail = useRef<HTMLElement>(null);
+  const time = (m: number) => formatSlot(timeString(m), locale);
+  const name = (id: string) => TRUCKS.find((t) => t.id === id)![locale];
+  const state = (c: Forecast) =>
+    ({
+      full: words("Full", "ممتلئ"),
+      truck_closed: words("Truck closed", "العربة مغلقة"),
+      deadline_passed: words("Booking closed", "الحجز مغلق"),
+      limited: words("Limited history", "سجل محدود"),
+      likely: words("Likely to fill", "مرجّح أن يمتلئ"),
+      risk: words("At risk", "معرّض للامتلاء"),
+      open: words("Room expected", "أماكن متوقعة"),
+    })[c.state];
+  function select(c: Forecast, scroll = true) {
+    pending.current++;
+    setLoading(false);
+    setSelection(`${c.truck}/${c.slot}`);
+    if (scroll) requestAnimationFrame(() =>
+      detail.current?.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
+  }
+  function replay(index: number) {
+    pending.current++;
+    setLoading(false);
+    setStep(index);
+  }
+  async function explain() {
+    const request = ++pending.current;
+    setLoading(true);
+    try {
+      const response = await fetch("/api/manager/forecast/explain", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ truck: f.truck, slot: f.slot, date, now, locale }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) throw Error();
+      const data = await response.json();
+      if (data.figures && ["current", "capacity", "projected", "low", "high"].some(field => data.figures[field] !== number(f[field as keyof Pick<Forecast,"current"|"capacity"|"projected"|"low"|"high">]))) throw Error("figures_changed");
+      if (request === pending.current)
+        setAnswer({ key, text: data.explanation, source: data.source });
+    } catch {
+      if (request === pending.current)
+        setAnswer({ key, text: explanation(f, locale), source: "fallback" });
+    } finally {
+      if (request === pending.current) setLoading(false);
+    }
+  }
+  const allSlots=[...new Set(view.cells.map(c=>c.slot))];
+  const visibleSlots=historical ? allSlots.filter(s=>s>='19:15:00' && s<='20:30:00') : allSlots;
+  const first = view.risk[0];
+  const ranked = (view.risk.length ? view.risk : view.window.slice(0, 3)).slice(0, 4);
+  // Keep the selected kitchen at its list position after its booking window closes.
+  if (!ranked.some(c => `${c.truck}/${c.slot}` === selection)) ranked.splice(Math.min(pinnedIndex, ranked.length), 0, f);
+  return (
+    <section className="rush" aria-labelledby="rush-title" data-now={now}>
+      <div className="rush-clock">
+        <div>
+          <h2 id="rush-title">{words("Rush Forecast", "توقع الإقبال")}</h2>
+          <p className="rush-demo">
+            {words("Demo forecast · simulated history", "توقع تجريبي · سجل محاكاة")}
+          </p>
+          <small>{formatDay(date,locale)}</small>
+        </div>
+        <div>
+          <div className="rush-times">
+            <button aria-pressed={!historical} onClick={()=>onMode(false)}>{words("Live today","اليوم مباشرة")}</button>
+            <button disabled={!replayDate(data)} aria-pressed={historical} onClick={()=>onMode(true)}>{words("Replay the evening","إعادة عرض الأمسية")}</button>
+          </div>
+          {!historical && <strong>{words("As of", "عند")} {time(now)}</strong>}
+          {historical && <>
+          <div
+            className="rush-times"
+            aria-label={words("Replay time · Kuwait", "وقت العرض · الكويت")}
+          >
+            {REPLAY.map((m, i) => (
+              <button
+                key={m}
+                aria-pressed={step === i}
+                onClick={() => replay(i)}
+              >
+                {time(m)}
+              </button>
+            ))}
+          </div>
+          </>}
+          <small>
+            {words("Kuwait time", "توقيت الكويت")}
+          </small>
+        </div>
+      </div>
+      <p className="rush-intro">
+        {words(
+          "Forecasts use the same bookings as Park overview. Select a slot to see its booking pace and AI-powered insight.",
+          "تستند التوقعات إلى نفس حجوزات نظرة الساحة. اختر فترة لعرض وتيرة الحجز ورؤية مدعومة بالذكاء الاصطناعي.",
+        )}
+      </p>
+      <p className="rush-window">
+        {words(
+          "Next 60 minutes · slots still open for booking",
+          "الـ60 دقيقة القادمة · الفترات المتاحة للحجز",
+        )}
+      </p>
+      <div className="rush-kpis">
+        <button
+          onClick={() => {
+            if (first) select(first);
+          }}
+          className="rush-kpi rush-risk"
+        >
+          <span>{words("Slots at risk", "فترات معرّضة للامتلاء")}</span>
+          <strong data-testid="risk-count" data-value={view.risk.length}><ForecastNumber value={view.risk.length} /></strong>
+          <small>
+            {first
+              ? `${name(first.truck)} · ${formatSlot(first.slot, locale)}`
+              : words(
+                  "No open slots reach capacity in the range",
+                  "لا فترات مفتوحة يصل نطاقها إلى السعة",
+                )}
+          </small>
+        </button>
+        <button
+          onClick={() => setBreakdown((v) => !v)}
+          aria-expanded={breakdown}
+          className="rush-kpi"
+        >
+          <span>{words("Expected new bookings", "حجوزات جديدة متوقعة")}</span>
+          <strong data-testid="expected-count" data-value={number(view.expected)}><ForecastNumber value={view.expected} /></strong>
+          <small>
+            {words(
+              "Orders · tap for truck breakdown",
+              "طلبات · اضغط للتفصيل حسب العربة",
+            )}
+          </small>
+        </button>
+        <div className="rush-kpi">
+          <span>
+            {words("Busiest upcoming window", "أكثر فترة قادمة ازدحاماً")}
+          </span>
+          <strong>
+            {view.busiest ? formatSlot(view.busiest.slot, locale) : "—"}
+          </strong>
+          <small>
+            {view.busiest
+              ? words(
+                  "Projected places: ", "الأماكن المتوقعة: ",
+                )
+              : words(
+                  "No bookable slots in the next hour",
+                  "لا فترات متاحة للحجز خلال الساعة القادمة",
+                )}
+            {view.busiest && <bdi dir="ltr"><ForecastNumber value={view.busiest.projected} /> / {view.busiest.capacity}</bdi>}
+          </small>
+        </div>
+      </div>
+      {breakdown && (
+        <ul className="rush-breakdown">
+          {TRUCKS.map((t) => (
+            <li key={t.id}>
+              {t[locale]}{" "}
+              <b>
+                {number(
+                  view.window
+                    .filter((f) => f.truck === t.id)
+                    .reduce((n, f) => n + f.additional, 0),
+                )}
+              </b>
+            </li>
+          ))}
+        </ul>
+      )}
+      <details className="rush-method">
+        <summary>{words("How are slots ranked?", "كيف تُرتّب الفترات؟")}</summary>
+        <p>
+          {words(
+            "Room now, but the likely range reaches capacity. Rank by the share of similar evenings that would fill the remaining places, then earliest booking cutoff, then projected occupancy. Check the first kitchen now, before the cutoff—not a preparation-time estimate. Busiest window uses projected occupancy as a share of still-bookable capacity; full and closed slots are excluded from these KPIs.",
+            "أماكن متاحة الآن لكن النطاق المتوقع يصل إلى السعة. الترتيب حسب نسبة الأمسيات المشابهة التي تملأ الأماكن المتبقية، ثم أقرب موعد لإغلاق الحجز، ثم الإشغال المتوقع. راجع المطبخ الأول الآن قبل الإغلاق؛ هذا ليس تقديراً لوقت التحضير. تعتمد الفترة الأشد ازدحاماً على نسبة الإشغال للسعة المتاحة للحجز؛ تُستبعد الفترات الممتلئة والمغلقة من المؤشرات.",
+          )}
+        </p>
+      </details>
+      <div className="rush-ranked">
+        <h3>{words("Check these kitchens first", "راجع هذه المطابخ أولاً")}</h3>
+        {ranked.map((c, index) => (
+            <div key={c.truck + c.slot} className="rush-ranked-row" data-selected={selection === `${c.truck}/${c.slot}`}>
+            <button
+              onClick={() => { const id = `${c.truck}/${c.slot}`; select(c, false); setPinnedIndex(index); setExpanded(was => was === id ? null : id); }}
+              aria-pressed={selection === `${c.truck}/${c.slot}`}
+              aria-expanded={expanded === `${c.truck}/${c.slot}`}
+              aria-controls={`risk-${c.truck}-${c.slot.replaceAll(":", "")}`}
+            >
+              <span>
+                <b>{name(c.truck)}</b>
+                <small>
+                  {formatSlot(c.slot, locale)} · {state(c)}
+                </small>
+              </span>
+              <span>
+                <b>
+                  {number(c.projected)}/{c.capacity}
+                </b>
+                <small>
+                  {words(
+                    `${number(c.capacity - c.projected)} places left`,
+                    `${number(c.capacity - c.projected)} أماكن متبقية`,
+                  )}
+                </small>
+              </span>
+            </button>
+            {expanded === `${c.truck}/${c.slot}` && <div id={`risk-${c.truck}-${c.slot.replaceAll(":", "")}`} className="rush-row-detail">
+              <p>{words(`${c.current} of ${c.capacity} booked now. Projected ${number(c.projected)}; likely range: `, `${c.current} من ${c.capacity} محجوزة الآن. المتوقع ${number(c.projected)}؛ النطاق: `)}<bdi>{c.low}–{c.high}</bdi> {words("orders.", "طلبات.")}</p>
+              <p>{c.state === "deadline_passed" || c.state === "truck_closed" ? words("Booking has closed; compare the earlier prediction with the outcome below.", "أُغلق الحجز؛ قارن التوقع السابق بالنتيجة أدناه.") : c.state === "full" ? words("This slot is now full.", "هذه الفترة ممتلئة الآن.") : c.high >= c.capacity ? words("Flagged because the likely range reaches capacity before booking closes.", "محددة لأن النطاق المتوقع يصل إلى السعة قبل إغلاق الحجز.") : words("The likely range leaves room before booking closes.", "يترك النطاق المتوقع أماكن قبل إغلاق الحجز.")}</p>
+              <button onClick={() => { detail.current?.scrollIntoView({ block: "start", behavior: "instant" }); detail.current?.focus({ preventScroll: true }); }}>{words("Inspect booking pace ↓", "افحص وتيرة الحجز ↓")}</button>
+            </div>}
+            </div>
+          ))}
+        {!view.window.length && (
+          <p>
+            {words(
+              "No slots are open in this hour.",
+              "لا فترات مفتوحة في هذه الساعة.",
+            )}
+          </p>
+        )}
+      </div>
+      <label className="rush-mobile-select">
+        {words("Inspect any slot", "افحص أي فترة")}
+        <select
+          value={selection}
+          onChange={(e) =>
+            select(
+              view.cells.find(
+                (c) => `${c.truck}/${c.slot}` === e.target.value,
+              )!,
+            )
+          }
+        >
+          {view.cells
+            .filter((c) => visibleSlots.includes(c.slot))
+            .map((c) => (
+              <option key={c.truck + c.slot} value={`${c.truck}/${c.slot}`}>
+                {name(c.truck)} · {formatSlot(c.slot, locale)} · {state(c)}
+              </option>
+            ))}
+        </select>
+      </label>
+      <div className="rush-matrix">
+        <h3>
+          {words("Projected bookings / capacity", "الحجوزات المتوقعة / السعة")}
+        </h3>
+        <div
+          role="region"
+          aria-label={words(
+            "Truck by pickup time forecast",
+            "توقع العربة حسب وقت الاستلام",
+          )}
+          tabIndex={0}
+          className="rush-table-scroll"
+        >
+          <table>
+            <thead>
+              <tr>
+                <th>{words("Truck", "العربة")}</th>
+                {visibleSlots.map((s) => (
+                  <th key={s}>{formatSlot(s, locale)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {TRUCKS.map((t) => (
+                <tr key={t.id}>
+                  <th>{t[locale]}</th>
+                  {visibleSlots.map((s) => {
+                    const c = view.cells.find(
+                      (f) => f.truck === t.id && f.slot === s,
+                    )!;
+                    return (
+                      <td key={s}>
+                        <button
+                          data-truck={c.truck}
+                          data-slot={c.slot}
+                          tabIndex={selection === `${c.truck}/${c.slot}` ? 0 : -1}
+                          className={`rush-cell ${c.state}`}
+                          onClick={() => select(c)}
+                          onKeyDown={event => {
+                            const dx = event.key === "ArrowRight" ? (ar ? -1 : 1) : event.key === "ArrowLeft" ? (ar ? 1 : -1) : 0;
+                            const dy = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+                            if (!dx && !dy && event.key !== "Home" && event.key !== "End") return;
+                            event.preventDefault();
+                            const rowIndex = Math.max(0, Math.min(TRUCKS.length - 1, TRUCKS.findIndex(truck => truck.id === c.truck) + dy));
+                            const colIndex = event.key === "Home" ? 0 : event.key === "End" ? visibleSlots.length - 1 : Math.max(0, Math.min(visibleSlots.length - 1, visibleSlots.indexOf(c.slot) + dx));
+                            const next = view.cells.find(cell => cell.truck === TRUCKS[rowIndex].id && cell.slot === visibleSlots[colIndex])!;
+                            select(next, false);
+                            event.currentTarget.closest("table")?.querySelector<HTMLButtonElement>(`[data-truck="${next.truck}"][data-slot="${next.slot}"]`)?.focus();
+                          }}
+                          aria-pressed={selection === `${c.truck}/${c.slot}`}
+                          aria-label={`${t[locale]} ${formatSlot(s, locale)} ${number(c.projected)}/${c.capacity} ${state(c)}`}
+                        >
+                          <b>
+                            {number(c.projected)}/{c.capacity}
+                          </b>
+                          <small>{state(c)}</small>
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <section
+        ref={detail}
+        tabIndex={-1}
+        className="rush-detail"
+        aria-labelledby="rush-selected"
+        data-testid="forecast-detail"
+        data-truck={f.truck}
+        data-slot={f.slot}
+      >
+        <div className="rush-detail-heading">
+          <div>
+            <h3 id="rush-selected">
+              {name(f.truck)} · {formatSlot(f.slot, locale)}
+            </h3>
+            <p>
+              {state(f)} · {words("As of", "عند")} {time(now)}
+            </p>
+          </div>
+          <b className="rush-remaining">
+            {words(
+              `${number(f.capacity - f.projected)} places likely left`,
+              `${number(f.capacity - f.projected)} أماكن متوقعة متبقية`,
+            )}
+          </b>
+        </div>
+        <p>
+          {words(
+            `${f.current} of ${f.capacity} booked. About ${number(f.additional)} more orders expected before booking closes.`,
+            `${f.current} من ${f.capacity} محجوزة. نتوقع نحو ${number(f.additional)} طلبات إضافية قبل إغلاق الحجز.`,
+          )}
+        </p>
+        <p className="rush-projection">
+          {words("Projected occupancy", "الإشغال المتوقع")}:{" "}
+          <b data-testid="projection">
+            {number(f.projected)} / {f.capacity}
+          </b>{" "}
+          · {words("Likely range", "النطاق المتوقع")}:{" "}
+          <b>
+            <bdi>
+              {f.low}–{f.high}
+            </bdi>
+          </b>
+        </p>
+        <p>
+          {f.cutoff >= now && f.state !== "truck_closed"
+            ? words(
+                `Check the kitchen now; booking closes at ${time(f.cutoff)} (${Math.max(0,Math.ceil(f.cutoff - now))} minutes).`,
+                `راجع المطبخ الآن؛ يغلق الحجز عند ${time(f.cutoff)} (بعد ${Math.max(0,Math.ceil(f.cutoff - now))} دقيقة).`,
+              )
+            : words(
+                "No new bookings expected: this booking window is closed.",
+                "لا حجوزات جديدة متوقعة: نافذة الحجز هذه مغلقة.",
+              )}
+        </p>
+        <Pace key={`${selection}/${now}`} row={row} f={f} earlier={earlier} locale={locale} />
+        {closed && (
+          <p className="rush-outcome" role="status">
+            {words(
+              `${name(f.truck)} · ${formatSlot(f.slot, locale)}. At ${time(REPLAY[0])}: predicted ${number(earlier.projected)}. Actual at close: ${known(row, f.cutoff)}. Absolute error: ${number(Math.abs(earlier.projected - known(row, f.cutoff)))} orders.`,
+              `${name(f.truck)} · ${formatSlot(f.slot, locale)}. عند ${time(REPLAY[0])}: التوقع ${number(earlier.projected)}. الفعلي عند الإغلاق: ${known(row, f.cutoff)}. الخطأ المطلق: ${number(Math.abs(earlier.projected - known(row, f.cutoff)))} طلبات.`,
+            )}
+          </p>
+        )}
+        <details>
+          <summary>
+            {words(
+              "Inspect the model and comparable evenings",
+              "افحص النموذج والأمسيات المشابهة",
+            )}
+          </summary>
+          <p>
+            {words(
+              `Same truck, pickup slot and evening group (Thu/Fri or other days). Select up to 12 past evenings with the closest booked count at this time. ${f.n} evenings contribute; their mean additional bookings is ${number(f.mean)}. The 10th–90th empirical percentile is a likely range, not a calibrated guarantee. Successful bookings cannot reveal lost demand after sell-out.`,
+              `نفس العربة والفترة ومجموعة الأيام (الخميس والجمعة أو بقية الأيام). نختار حتى 12 أمسية سابقة بأقرب عدد حجوزات عند هذا الوقت. تساهم ${f.n} أمسيات بمتوسط ${number(f.mean)} حجوزات إضافية. النطاق بين المئينين 10 و90 تجريبي وليس ضماناً. الحجوزات الناجحة لا تكشف الطلب المفقود بعد الامتلاء.`,
+            )}
+          </p>
+          <p>
+            {words("Comparable evenings", "الأمسيات المقارنة")}:{" "}
+            {f.comparableDays.map(d=>history.find(r=>r.day===d)?.serviceDate).join(", ")}
+          </p>
+        </details>
+        <button className="rush-explain" disabled={loading} onClick={explain}>
+          {loading
+            ? words("Generating…", "جارٍ الإنشاء…")
+            : words("Generate AI forecast", "إنشاء توقع بالذكاء الاصطناعي")}
+        </button>
+        <div aria-live="polite" className="rush-explanation">
+          <strong>
+            {answer?.key === key && answer.source === "openrouter"
+              ? words("AI-powered explanation", "شرح مدعوم بالذكاء الاصطناعي")
+              : words("Booking-based explanation", "شرح مستند إلى الحجوزات")}
+          </strong>
+          <p>{answer?.key === key ? answer.text : explanation(f, locale)}</p>
+        </div>
+      </section>
+      <section className="rush-performance">
+        <h3>
+          {words("Model performance · simulated backtest", "أداء النموذج · اختبار بالمحاكاة")}
+        </h3>
+        <p>
+          {words(
+            "Average absolute error · orders per slot",
+            "متوسط الخطأ المطلق · طلبات لكل فترة",
+          )}
+        </p>
+        <div>
+          <b>
+            {words("Forecast", "التوقع")}: {performance.modelMAE.toFixed(2)}
+          </b>
+          <b>
+            {words("No-more-bookings baseline", "خط الأساس: لا حجوزات إضافية")}:{" "}
+            {performance.baselineMAE.toFixed(2)}
+          </b>
+        </div>
+        <p>
+          {words(
+            `${performance.samples} slot/cutoff predictions across ${performance.evenings} held-out evenings; ${performance.trainingEvenings} earlier evenings train the model. Cutoffs: 30, 60 and 90 minutes before pickup. Same samples for both models.`,
+            `${performance.samples} توقعات للفترة والوقت عبر ${performance.evenings} أمسية اختبار؛ التدريب على ${performance.trainingEvenings} أمسية أسبق. التوقع قبل الاستلام بـ30 و60 و90 دقيقة. نفس العينات للنموذجين.`,
+          )}
+        </p>
+        <p>
+          {words(
+            "Past accuracy does not guarantee future results. Advisory only: capacity and closure decisions remain yours.",
+            "الدقة السابقة لا تضمن النتائج المستقبلية. التوقع استشاري؛ قرارات السعة والإغلاق تبقى لك.",
+          )}
+        </p>
+      </section>
+    </section>
+  );
+}
+function Pace({
+  row,
+  f,
+  earlier,
+  locale,
+}: {
+  row: Evening;
+  f: Forecast;
+  earlier: Forecast;
+  locale: "en" | "ar";
+}) {
+  const ar = locale === "ar",
+    start = Math.min(earlier.now, f.now, f.cutoff) - 100,
+    end = Math.max(f.now, f.cutoff) + 5;
+  const [cursor, setCursor] = useState(Math.min(f.now, f.cutoff));
+  const at = Math.max(start, Math.min(f.cutoff, cursor));
+  const future = at > f.now;
+  const fraction = f.cutoff > f.now ? (at - f.now) / (f.cutoff - f.now) : 0;
+  const projected = f.current + Math.max(0, fraction) * (f.projected - f.current);
+  const low = f.current + Math.max(0, fraction) * (f.low - f.current);
+  const high = f.current + Math.max(0, fraction) * (f.high - f.current);
+  const inspection = `${formatSlot(timeString(at), locale)} · ${future
+    ? ar ? `توقع الوتيرة ${number(projected)}؛ النطاق من ${number(low)} إلى ${number(high)} طلبات` : `Projected pace ${number(projected)}; range ${number(low)}–${number(high)} orders`
+    : ar ? `المرصود ${known(row, at)} طلبات` : `Observed ${known(row, at)} orders`} · ${ar ? "السعة" : "Capacity"} ${f.capacity}`;
+  const x = (m: number) => 42 + ((m - start) / (end - start)) * 470,
+    y = (n: number) => 160 - (n / row.capacity) * 115;
+  const observed = Array.from(
+    { length: Math.ceil((Math.min(f.now, f.cutoff) - start) / 5) + 1 },
+    (_, i) => Math.min(f.now, f.cutoff, start + i * 5),
+  );
+  const points = observed.map((m) => `${x(m)},${y(known(row, m))}`).join(" ");
+  return (
+    <figure className="rush-pace">
+      <figcaption>
+        {ar ? "وتيرة الحجز · طلبات" : "Booking pace · orders"}
+      </figcaption>
+      <svg
+        viewBox="0 0 550 215"
+        role="img"
+        aria-label={
+          ar
+            ? `المحجوز ${f.current}، المتوقع ${number(f.projected)}، النطاق ${f.low} إلى ${f.high}، السعة ${f.capacity}`
+            : `Observed ${f.current}, projected ${number(f.projected)}, range ${f.low} to ${f.high}, capacity ${f.capacity}`
+        }
+        style={{ direction: "ltr" }}
+        onPointerDown={event => {
+          const box = event.currentTarget.getBoundingClientRect();
+          setCursor(Math.round((start + (((event.clientX - box.left) / box.width * 550 - 42) / 470) * (end - start)) / 5) * 5);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={event => {
+          if (event.pointerType !== "mouse" && !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          const box = event.currentTarget.getBoundingClientRect();
+          setCursor(Math.round((start + (((event.clientX - box.left) / box.width * 550 - 42) / 470) * (end - start)) / 5) * 5);
+        }}
+      >
+        <line
+          x1="42"
+          y1={y(row.capacity)}
+          x2="520"
+          y2={y(row.capacity)}
+          stroke="#6F4100"
+          strokeWidth="2"
+        />
+        <text x="44" y="30">
+          {ar ? "السعة" : "Capacity"} {row.capacity}
+        </text>
+        {[0, Math.floor(row.capacity / 2)].map((n) => (
+          <g key={n}>
+            <line x1="42" x2="520" y1={y(n)} y2={y(n)} stroke="#D9D7DD" />
+            <text x="14" y={y(n) + 5}>
+              {n}
+            </text>
+          </g>
+        ))}
+        {f.now <= f.cutoff && (
+          <>
+            <polygon
+              points={`${x(f.now)},${y(f.current)} ${x(f.cutoff)},${y(f.high)} ${x(f.cutoff)},${y(f.low)}`}
+              fill="#C6F900"
+              fillOpacity=".5"
+            />
+            <line
+              x1={x(f.now)}
+              y1={y(f.current)}
+              x2={x(f.cutoff)}
+              y2={y(f.projected)}
+              stroke="#101010"
+              strokeWidth="3"
+              strokeDasharray="6 4"
+            />
+          </>
+        )}
+        {f.now > f.cutoff && (
+          <line
+            x1={x(earlier.now)}
+            y1={y(earlier.current)}
+            x2={x(f.cutoff)}
+            y2={y(earlier.projected)}
+            stroke="#767277"
+            strokeWidth="2"
+            strokeDasharray="6 4"
+          />
+        )}
+        <polyline
+          points={points}
+          fill="none"
+          stroke="#101010"
+          strokeWidth="3"
+        />
+        <circle
+          cx={x(Math.min(f.now, f.cutoff))}
+          cy={y(f.current)}
+          r="4"
+          fill="#F42902"
+        />
+        <line
+          x1={x(f.now)}
+          x2={x(f.now)}
+          y1="40"
+          y2="165"
+          stroke="#8B1830"
+          strokeDasharray="3 3"
+        />
+        <text x={Math.min(490, x(f.now))} y="20" textAnchor="middle">
+          {ar ? "الآن" : "Now"}
+        </text>
+        <text x="42" y="207">
+          {formatSlot(timeString(start), locale)}
+        </text>
+        <text x={x(f.cutoff)} y="207" textAnchor="end">
+          {formatSlot(timeString(f.cutoff), locale)} ·{" "}
+          {ar ? "إغلاق الحجز" : "Cutoff"}
+        </text>
+        <line x1={x(at)} x2={x(at)} y1="42" y2="165" stroke="#F42902" strokeWidth="1" />
+        <circle cx={x(at)} cy={y(future ? projected : known(row, at))} r="5" fill="#F42902" />
+      </svg>
+      <label className="rush-scrub">
+        <span>{ar ? "افحص وقت الحجز" : "Inspect booking time"}</span>
+        <input type="range" min={start} max={f.cutoff} step={5} value={at} onChange={event => setCursor(Number(event.target.value))} aria-valuetext={inspection} dir="ltr" />
+      </label>
+      <p className="rush-inspection" aria-live="polite" aria-atomic="true">{inspection}</p>
+      <p>
+        {ar
+          ? "خط متصل: المرصود · متقطع: التوقع · مظلل: النطاق"
+          : "Solid: observed · dashed: projection · shaded: range"}
+      </p>
+    </figure>
+  );
+}

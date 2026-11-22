@@ -2071,6 +2071,34 @@ try {
     return "own name tidied and saved, 61 characters refused, empty clears it; direct updates of name or role are still refused (42501); anon is refused";
   });
 
+  section("Forecast: same booking data and manager-only history");
+  await setClock("23:59");
+  await check("forecast history rejects anonymous, customer and vendor callers", async()=>{
+    for (const user of [null,aisha,tacoVendor]) await rejects(asUser(c1,user,c=>c.query('select public.forecast_history()')), '42501');
+  });
+  await check("forecast current counts equal slot_usage and expose no customer identities", async()=>{
+    const data=(await asUser(c1,dana,c=>c.query('select public.forecast_history() as data'))).rows[0].data;
+    assert.equal(data.serviceDate,today);
+    assert.ok(!JSON.stringify(data).includes('customer_id'));
+    assert.ok(!JSON.stringify(data).includes('ticket_ref'));
+    for(const truck of ['T01','T02','T03','T04','T05','T06']){
+      const slots=(await asUser(c1,dana,c=>c.query('select * from public.slot_usage($1)',[truck]))).rows;
+      for(const slot of slots){
+        const row=data.history.find(r=>r.serviceDate===today && r.truck===truck && r.slot===slot.slot_start);
+        const count=row.bookings.filter(b=>b.madeAt<=data.now && (b.removedAt===undefined || b.removedAt>data.now)).length;
+        assert.equal(count,Number(slot.booked));
+      }
+    }
+  });
+  await check("future-dated booking cannot change an earlier database forecast snapshot",async()=>{
+    await setClock('20:00:30');
+    const read=async()=>(await asUser(c1,dana,c=>c.query('select public.forecast_history() as data'))).rows[0].data;
+    const before=await read();
+    const future=(await admin.query(`insert into public.orders(ticket_ref,customer_id,truck_id,service_date,slot_start,total_kwd,placed_at,updated_at)
+      values('FUTURE-FORECAST-TEST',$1,'T06',$2::date,'22:00',0,($2::date+time '20:01') at time zone 'Asia/Kuwait',($2::date+time '20:01') at time zone 'Asia/Kuwait') returning id`,[aisha,today])).rows[0].id;
+    assert.deepEqual(await read(),before);
+    await admin.query('delete from public.orders where id=$1',[future]);
+  });
   console.log(`\n${passedCount()} checks passed.`);
 } catch (error) {
   failed = true;

@@ -1,0 +1,80 @@
+{
+  "production": "https://qafla-rjqd.vercel.app",
+  "commit": "8ed79b4e7b8d4cbf48bf9b03838d582bd31bda4b",
+  "browser": "159.0.8154.6",
+  "viewport": "390x844 Chrome touch emulation, Windows, DPR 1",
+  "links": [
+    {
+      "label": "Production",
+      "url": "https://qafla-rjqd.vercel.app",
+      "status": 200,
+      "ownerCookies": false
+    },
+    {
+      "label": "Repository",
+      "url": "https://github.com/YukonJR12/qafla",
+      "status": 404,
+      "ownerCookies": false
+    },
+    {
+      "label": "Park Guide clip",
+      "url": "https://github.com/YukonJR12/qafla/raw/12870f381535368cb9b50059b2b835cf3c202277/docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "status": 404,
+      "ownerCookies": false
+    },
+    {
+      "label": "Five-round clip",
+      "url": "https://github.com/YukonJR12/qafla/blob/605cee70174878da1705c9931c3076ec0bb0f95d/docs/evidence/submission-race/five-round-race.webm",
+      "status": 404,
+      "ownerCookies": false
+    }
+  ],
+  "accounts": [
+    {
+      "id": "customer-a",
+      "email": "qafla.customer.mwng8ynl@example.com",
+      "role": "Customer",
+      "truck": null,
+      "landing": "/explore",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "customer-b",
+      "email": "qafla.ui.mwngu7ha@example.com",
+      "role": "Customer",
+      "truck": null,
+      "landing": "/explore",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t02",
+      "email": "qafla.vendor.mwng8ynl@example.com",
+      "role": "Truck vendor",
+      "truck": "Dune Burgers",
+      "landing": "/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t06",
+      "email": "qafla.panel.t06.20261122@example.com",
+      "role": "Truck vendor",
+      "truck": "Lugaimat & Co",
+      "landing": "/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "manager",
+      "email": "qafla.manager.mwnh12fm@example.com",
+      "role": "Park manager",
+      "truck": null,
+      "landing": "/manager",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    }
+  ],
+  "writes": 0
+}

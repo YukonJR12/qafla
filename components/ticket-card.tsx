@@ -23,25 +23,26 @@ export function TicketCard({
   truck,
   slot,
   status,
+  entrance = false,
   children,
 }: {
   truck: { id: string; name: string };
   slot: string;
   status: string;
+  entrance?: boolean;
   /** The stub under the dashed line. */
   children: React.ReactNode;
 }) {
   const { locale, t } = useLocale();
   const over = status === "cancelled" || status === "rejected";
   return (
-    <div className="relative rounded-poster bg-ink p-4 text-snowy-white sm:p-5">
+    <div className={`relative rounded-poster bg-ink p-4 text-snowy-white sm:p-5 ${entrance ? "receipt-arrive" : ""}`}>
       <div className="flex items-center gap-3">
         <TruckLogo truck={truck} className="size-11 border-0!" sizes="44px" />
         <p className="min-w-0 flex-1 leading-tight font-bold text-balance">{truckName(truck, locale)}</p>
         {/* Re-keyed by status, so a live change gives the label a short bump. */}
         <span
-          key={status}
-          className={`bump shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${
+          className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${
             status === "ready" ? "bg-yellow-punk text-ink" : "bg-snowy-white text-ink"
           }`}
         >

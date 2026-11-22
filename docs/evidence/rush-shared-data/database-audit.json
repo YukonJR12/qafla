@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-11-22T13:44:00.308Z",
+  "serviceDate": "2026-11-22",
+  "source": "Owner-authorized synthetic fixtures in shared demo database",
+  "counts": [
+    {
+      "truck_id": "T01",
+      "historical": 6835,
+      "today": 6
+    },
+    {
+      "truck_id": "T02",
+      "historical": 4135,
+      "today": 6
+    },
+    {
+      "truck_id": "T03",
+      "historical": 4135,
+      "today": 6
+    },
+    {
+      "truck_id": "T04",
+      "historical": 3275,
+      "today": 6
+    },
+    {
+      "truck_id": "T05",
+      "historical": 5469,
+      "today": 6
+    },
+    {
+      "truck_id": "T06",
+      "historical": 5264,
+      "today": 6
+    }
+  ],
+  "matchingOccupancyCells": 144,
+  "validation": {
+    "modelMAE": 0.8984304806828407,
+    "baselineMAE": 2.0625,
+    "samples": 5936,
+    "evenings": 14,
+    "trainingEvenings": 42
+  },
+  "replayDate": "2026-11-21",
+  "replay": {
+    "truck": "T03",
+    "slot": "20:00:00",
+    "current": 5,
+    "capacity": 6,
+    "projected": 6,
+    "range": [
+      5,
+      6
+    ],
+    "final": 6
+  },
+  "payments": 0
+}

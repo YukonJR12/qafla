@@ -39,7 +39,7 @@ export function CartBar({
 
   return (
     <div
-      className={`reveal-up fixed inset-x-0 bottom-(--nav-h) z-30 border-t border-divider bg-snowy-white md:pb-[env(safe-area-inset-bottom)] ${className}`}
+      className={`fixed inset-x-0 bottom-(--nav-h) z-30 border-t border-divider bg-snowy-white md:pb-[env(safe-area-inset-bottom)] ${className}`}
     >
       <div className="mx-auto max-w-xl px-4 py-3 md:px-6">
         <Link href="/cart" className={primaryButtonSplit}>
@@ -47,7 +47,7 @@ export function CartBar({
             <BagIcon className="size-5" />
             <span className="min-w-0 text-start leading-tight">
               {/* Re-keyed by the count, so it bumps each time a dish is added or removed. */}
-              <span key={count} className="bump inline-block">
+              <span className="inline-block" aria-live="polite" aria-atomic="true">
                 {t.viewOrder(count)}
               </span>
               {showTruck && (
@@ -102,7 +102,7 @@ export function CartSummary() {
           <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-dashed border-outline pt-3">
             <p>
               <span className="font-bold">{t.total}</span>{" "}
-              <span key={count} className="bump inline-block text-sm text-muted">
+              <span className="inline-block text-sm text-muted">
                 · {t.itemCount(count)}
               </span>
             </p>

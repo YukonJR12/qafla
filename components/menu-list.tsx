@@ -51,7 +51,7 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
       dialog.current?.showModal();
       return;
     }
-    setQuantity(truck, item.id, 1);
+    setQuantity(truck, item.id, (current) => current + 1);
   }
 
   return (
@@ -113,7 +113,8 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
           // words readable at 320 px in English and Arabic.
           if (photo) {
             return (
-              <li key={item.id} className="flex items-center gap-2.5 py-3 min-[360px]:gap-3">
+              <li key={item.id} className="py-3">
+                <div className="flex items-start gap-3">
                 {/* The supplied photo of this dish. Its name is right beside it, so the image stays silent. */}
                 <Image
                   src={photo}
@@ -129,23 +130,22 @@ export function MenuList({ truck, items, closed }: { truck: Truck; items: MenuIt
                   {title}
                   {description && <p className="text-sm text-muted">{description}</p>}
                   {mayContain}
-                  <p className="mt-0.5 font-semibold">{price}</p>
                 </div>
-                {control}
+                </div>
+                <div className="mt-2 flex min-h-11 items-center justify-between gap-2"><p className="font-semibold">{price}</p>{control}</div>
               </li>
             );
           }
 
           // Without a photo, a simple row completes the layout (DESIGN.md).
           return (
-            <li key={item.id} className="flex items-center justify-between gap-3 py-4">
+            <li key={item.id} className="py-4">
               <div className="min-w-0">
                 {title}
                 {description && <p className="text-sm text-muted">{description}</p>}
                 {mayContain}
-                <p className="mt-1 font-bold">{price}</p>
               </div>
-              {control}
+              <div className="mt-2 flex min-h-11 items-center justify-between gap-2"><p className="font-bold">{price}</p>{control}</div>
             </li>
           );
         })}

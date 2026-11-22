@@ -1,0 +1,345 @@
+{
+  "browser": "159.0.8154.6",
+  "scope": "Local offline evidence, no owner cookies; each image decoded and each video played",
+  "observations": [
+    {
+      "file": "docs/evidence/submission-race/customer-a.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 21.6,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/submission-race/customer-b.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 21.88,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/submission-race/five-round-race.webm",
+      "width": 780,
+      "height": 874,
+      "duration": 20.8,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/submission-race/round-1-a-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-1-a-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-1-b-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-1-b-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-2-a-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-2-a-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-2-b-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-2-b-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-3-a-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-3-a-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-3-b-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-3-b-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-4-a-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-4-a-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-4-b-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-4-b-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-5-a-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-5-a-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-5-b-after.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-race/round-5-b-before.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/screenshots/park-3d/park-interaction-390-en.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 14.6,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/easyui-forecast/mobile-replay.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 22.04,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/21-390-en-comparison.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/payments/preview-14-failed-vendor-cannot-accept.jpg",
+      "width": 1120,
+      "height": 1064
+    },
+    {
+      "file": "docs/evidence/submission-access/production-signed-out.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/submission-access/1a-menu-baseline.png",
+      "width": 1291,
+      "height": 1069
+    },
+    {
+      "file": "docs/evidence/ai-menu/forced-error-preview.jpg",
+      "width": 672,
+      "height": 638
+    },
+    {
+      "file": "docs/evidence/submission-final-access/signed-out-production.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "file": "docs/evidence/submission-final-access/level-1-core-menu.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/payments/preview-04-payment-confirmed.jpg",
+      "width": 672,
+      "height": 638
+    },
+    {
+      "file": "docs/evidence/submission-final-access/stretch-park-guide.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-390-en-quantity.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-320-ar-quantity.png",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-390-en-sheet.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-390-en-map-closed.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-390-en-reopened-ticket.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-390-en-payment-verifying.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/19-390-en-payment-fixture-paid.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/20-390-en-photo-before-generate.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/20-390-en-replacement-unconfirmed.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/20-320-ar-replacement-unconfirmed.png",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/20-390-en-failed-save-retry.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/20-320-ar-failed-save-retry.png",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/21-320-ar-comparison.png",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/21-390-en-prediction.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/21-390-en-rewind.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "docs/evidence/preview-approval-19-21/21-390-en-desktop-matrix.png",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/320-en-explanation.jpg",
+      "width": 305,
+      "height": 804
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/320-en-comparison.jpg",
+      "width": 305,
+      "height": 804
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/320-ar-explanation.jpg",
+      "width": 305,
+      "height": 804
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/320-ar-comparison.jpg",
+      "width": 305,
+      "height": 804
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/390-en-explanation.jpg",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/390-en-comparison.jpg",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/390-ar-explanation.jpg",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "file": "docs/evidence/rush-forecast/production/390-ar-comparison.jpg",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "file": "docs/screenshots/park-3d/billboard/billboard-orbit-390-en.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 25.68,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/easyui-customer/customer-390.webm",
+      "width": 390,
+      "height": 844,
+      "duration": 7.2,
+      "played": true
+    },
+    {
+      "file": "docs/evidence/easyui-vendor/vendor-review-390-en.png",
+      "width": 390,
+      "height": 2124
+    },
+    {
+      "file": "docs/evidence/easyui-vendor/vendor-review-320-ar.png",
+      "width": 320,
+      "height": 2231
+    },
+    {
+      "file": "docs/evidence/easyui-vendor/vendor-saved-390-en.png",
+      "width": 390,
+      "height": 1958
+    },
+    {
+      "file": "docs/evidence/easyui-forecast/1440-en-dashboard.png",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "docs/evidence/easyui-forecast/320-ar-pace.png",
+      "width": 320,
+      "height": 900
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+@keyframes vendor-morph { from { transform: translateY(3px); } to { transform: translateY(0); } }
+@keyframes vendor-photo { from { transform: scale(.97); } to { transform: scale(1); } }
+@keyframes vendor-check { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+.vendor-check path { stroke-dasharray: 30; stroke-dashoffset: 30; }
+.vendor-check input:checked + svg path { stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .vendor-morph-label { animation: vendor-morph 120ms ease-out; }
+  .vendor-photo { animation: vendor-photo 180ms ease-out; }
+  .vendor-check input:checked + svg path { animation: vendor-check 180ms ease-out; }
+}

@@ -1,0 +1,114 @@
+{
+  "commit": "03da13311ecdde3cd5f1dde57bd28c16291870d7",
+  "method": "Unique production route entry JS plus route-local dynamic imports; per-file gzip level 9. Includes shared Next/React code. Build artifact sizes, not latency or HTTP transfer measurements.",
+  "routes": {
+    "menu": {
+      "bytes": 392330,
+      "gzipBytes": 108396,
+      "files": [
+        {
+          "file": "static/chunks/0d-0xpuqfpe6n.js",
+          "bytes": 38063,
+          "gzipBytes": 11632
+        },
+        {
+          "file": "static/chunks/2edq0crlcbp_p.js",
+          "bytes": 67621,
+          "gzipBytes": 19974
+        },
+        {
+          "file": "static/chunks/2jg5v26dh7ank.js",
+          "bytes": 245047,
+          "gzipBytes": 63361
+        },
+        {
+          "file": "static/chunks/2n7hazgya0fs4.js",
+          "bytes": 11570,
+          "gzipBytes": 3946
+        },
+        {
+          "file": "static/chunks/3uw8anbl5hcm_.js",
+          "bytes": 30029,
+          "gzipBytes": 9483
+        }
+      ],
+      "dynamicImports": []
+    },
+    "ticket": {
+      "bytes": 404016,
+      "gzipBytes": 111868,
+      "files": [
+        {
+          "file": "static/chunks/0d-0xpuqfpe6n.js",
+          "bytes": 38063,
+          "gzipBytes": 11632
+        },
+        {
+          "file": "static/chunks/2e0morx1wbxtk.js",
+          "bytes": 23256,
+          "gzipBytes": 7418
+        },
+        {
+          "file": "static/chunks/2edq0crlcbp_p.js",
+          "bytes": 67621,
+          "gzipBytes": 19974
+        },
+        {
+          "file": "static/chunks/2jg5v26dh7ank.js",
+          "bytes": 245047,
+          "gzipBytes": 63361
+        },
+        {
+          "file": "static/chunks/3uw8anbl5hcm_.js",
+          "bytes": 30029,
+          "gzipBytes": 9483
+        }
+      ],
+      "dynamicImports": []
+    },
+    "forecast": {
+      "bytes": 441394,
+      "gzipBytes": 124044,
+      "files": [
+        {
+          "file": "static/chunks/0d-0xpuqfpe6n.js",
+          "bytes": 38063,
+          "gzipBytes": 11632
+        },
+        {
+          "file": "static/chunks/18ue3szssykhh.js",
+          "bytes": 37715,
+          "gzipBytes": 10819
+        },
+        {
+          "file": "static/chunks/1tb55y4pw97zo.js",
+          "bytes": 249,
+          "gzipBytes": 214
+        },
+        {
+          "file": "static/chunks/28lr72tcdb5mo.js",
+          "bytes": 22670,
+          "gzipBytes": 8561
+        },
+        {
+          "file": "static/chunks/2edq0crlcbp_p.js",
+          "bytes": 67621,
+          "gzipBytes": 19974
+        },
+        {
+          "file": "static/chunks/2jg5v26dh7ank.js",
+          "bytes": 245047,
+          "gzipBytes": 63361
+        },
+        {
+          "file": "static/chunks/3uw8anbl5hcm_.js",
+          "bytes": 30029,
+          "gzipBytes": 9483
+        }
+      ],
+      "dynamicImports": [
+        "90776"
+      ]
+    }
+  }
+}

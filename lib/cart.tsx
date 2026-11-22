@@ -67,7 +67,7 @@ type CartApi = {
   ready: boolean;
   count: number;
   /** Sets a dish's quantity in the cart for this truck. 0 removes it. */
-  setQuantity: (truck: { id: string; name: string }, itemId: string, quantity: number) => void;
+  setQuantity: (truck: { id: string; name: string }, itemId: string, quantity: number | ((current: number) => number)) => void;
   /** Throws away the current cart and starts one for another truck. */
   replaceWith: (truck: { id: string; name: string }, itemId: string) => void;
   setSlot: (slot: string | null) => void;
@@ -111,7 +111,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           ? current
           : { truckId: truck.id, truckName: truck.name, items: {}, slot: null };
       const items = { ...base.items };
-      const next = Math.max(0, Math.min(MAX_QUANTITY, quantity));
+      const requested = typeof quantity === "function" ? quantity(items[itemId] ?? 0) : quantity;
+      const next = Math.max(0, Math.min(MAX_QUANTITY, requested));
       if (next === 0) delete items[itemId];
       else items[itemId] = next;
       write(userId, { ...base, items, requestId: null, requestBy: null });

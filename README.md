@@ -365,3 +365,12 @@ where id = (select id from auth.users where email = 'dana@example.com');
 update public.trucks set vendor_id = (select id from auth.users where email = 'vendor@example.com')
 where id = 'T02';
 ```
+
+
+## Rush Forecast
+
+Park overview → **Forecast** reads the same database orders as live occupancy. **Live today** uses the database clock; **Replay the evening** identifies the latest completed service date and shows its 7:00 / 7:15 / 7:46 PM snapshots. The manager-only forecast_history RPC returns booking/cancellation times and capacities without customer identities. **Generate AI forecast** adds an AI-powered explanation through the existing server-only OpenRouter configuration; provider failure leaves a booking-based explanation.
+
+Apply migration 20261122170000_forecast_history.sql. For this demo deployment only, the owner-authorized fixture importer is scripts/seed-rush-demo.mjs: load SUPABASE_DB_URL privately, run without arguments to inspect its plan, then --apply to import. It creates identifiable synthetic history and sparse upcoming pay-at-pickup bookings without making payments. Never run it on a real customer deployment.
+
+See [model decisions](decisions.md), [original PR #17 evidence](docs/evidence/rush-forecast/README.md), and [shared-data verification](docs/evidence/rush-shared-data/README.md). Fixture backtests are not evidence of real demand accuracy.

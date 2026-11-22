@@ -1,0 +1,42 @@
+{
+  "environment": "Local server handler; real OpenRouter; real read-only Production manager authentication. No order/database mutations.",
+  "at": "2026-11-22T11:39:51.516Z",
+  "results": [
+    {
+      "locale": "en",
+      "status": 200,
+      "explanation": "Based on 12 simulated historical evenings, the projected count of 5 against a capacity of 5 is the strongest signal, suggesting the booking is likely to reach full capacity with one additional booking, though this is advisory only.",
+      "source": "openrouter",
+      "figures": {
+        "current": 4,
+        "capacity": 5,
+        "additional": 1,
+        "projected": 5,
+        "low": 4,
+        "high": 5,
+        "historySize": 12,
+        "similarEveningAdditional": 1,
+        "state": "likely",
+        "minutesUntilClose": 30
+      }
+    },
+    {
+      "locale": "ar",
+      "status": 200,
+      "explanation": "يُظهر التوقع المحاكى بناءً على 12 حالة تاريخية مماثلة أن الحجوزات الحالية 4 من أصل سعة 5، والمتوقع الوصول إلى 5 بإضافة حجز واحد تقريبًا، وهو ما يعني أن الإشارة الأقوى هي اقتراب الطاقة الاستيعابية من الامتلاء.",
+      "source": "openrouter",
+      "figures": {
+        "current": 4,
+        "capacity": 5,
+        "additional": 1,
+        "projected": 5,
+        "low": 4,
+        "high": 5,
+        "historySize": 12,
+        "similarEveningAdditional": 1,
+        "state": "likely",
+        "minutesUntilClose": 30
+      }
+    }
+  ]
+}
