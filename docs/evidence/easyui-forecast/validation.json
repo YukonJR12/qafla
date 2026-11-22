@@ -1,0 +1,7 @@
+{
+  "modelMAE": 0.8922987921887341,
+  "baselineMAE": 2.0551981036234337,
+  "samples": 5906,
+  "evenings": 14,
+  "trainingEvenings": 43
+}
