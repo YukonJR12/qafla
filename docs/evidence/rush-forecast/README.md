@@ -1,5 +1,7 @@
 # Rush Forecast — review evidence
 
+[Deployed Preview verification](deployed/README.md): actual manager sign-in and OpenRouter response on build `92398ad`, English at 519 × 1253 CSS px. Dune Burgers at 7:45 PM: the 7:00 PM forecast of 5.3/6 (range 4–6) compared with 6 final simulated bookings after cutoff; rewind restored the identical prediction. The evidence below describes the separate local checks.
+
 [Normal-speed mobile replay](mobile-replay.webm) · [Desktop dashboard and detail](1440-en.png) · [Arabic desktop](1440-ar.png)
 
 ## What to demonstrate

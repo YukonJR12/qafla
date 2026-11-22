@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-11-22T13:15:12.350Z",
+  "commit": "92398add9c77a023282389e14c6efda7b61071f7",
+  "deployment": "dpl_HLVp7ssd9nxDiJmUynCigDjqenfA",
+  "url": "https://qafla-rjqd-17kdeehn1-ffalrefae-6713s-projects.vercel.app/manager?view=forecast",
+  "browser": "ChatGPT in-app browser, Chromium",
+  "viewport": {
+    "height": 1253,
+    "width": 519
+  },
+  "language": "English",
+  "access": "Existing authenticated browser access to protected Preview; actual manager UI sign-in",
+  "truck": "T02 Dune Burgers",
+  "pickup": "19:45",
+  "replay": "19:00",
+  "cutoff": "19:30",
+  "current": 3,
+  "capacity": 6,
+  "expectedAdditional": 2.3,
+  "projected": 5.3,
+  "range": [
+    4,
+    6
+  ],
+  "explanationSource": "OpenRouter",
+  "originalText": "Dune Burgers · 7:45 PM\n\nAt risk · As of 7:00 PM\n\n0.7 places likely left\n\n3 of 6 booked. About 2.3 more orders expected before booking closes.\n\nProjected occupancy: 5.3 / 6 · Likely range: 4–6\n\nCheck the kitchen now; booking closes at 7:30 PM (30 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nExplain this forecast\nRule-based explanation\n\nDemo forecast: 3 of 6 booked now. About 2.3 more bookings gives 5.3 projected, with a range of 4–6. Based on 12 similar evenings. Check with the kitchen before booking closes; the decision stays with you.",
+  "explainedText": "Dune Burgers · 7:45 PM\n\nAt risk · As of 7:00 PM\n\n0.7 places likely left\n\n3 of 6 booked. About 2.3 more orders expected before booking closes.\n\nProjected occupancy: 5.3 / 6 · Likely range: 4–6\n\nCheck the kitchen now; booking closes at 7:30 PM (30 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nExplain this forecast\nOpenRouter explanation\n\nBased on 12 simulated past evenings, the strongest signal is that the projected count of 5.3 against a capacity of 6 (range 4 to 6) puts the booking at risk of nearly filling, with about 30 minutes until close.",
+  "advancedReplay": "19:31",
+  "finalCount": 6,
+  "originalPredictionAtClose": 5.3,
+  "absoluteError": 0.7,
+  "finalText": "Dune Burgers · 7:45 PM\n\nBooking closed · As of 7:31 PM\n\n0 places likely left\n\n6 of 6 booked. About 0 more orders expected before booking closes.\n\nProjected occupancy: 6 / 6 · Likely range: 6–6\n\nNo new bookings expected: this booking window is closed.\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:50 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nDune Burgers · 7:45 PM. At 7:00 PM: predicted 5.3. Actual at close: 6. Absolute error: 0.7 orders.\n\nInspect the model and comparable evenings\nExplain this forecast\nRule-based explanation\n\nDemo forecast: 6 of 6 booked now. About 0 more bookings gives 6 projected, with a range of 6–6. Based on 12 similar evenings. Booking is closed; no new bookings expected.",
+  "rewindText": "Dune Burgers · 7:45 PM\n\nAt risk · As of 7:00 PM\n\n0.7 places likely left\n\n3 of 6 booked. About 2.3 more orders expected before booking closes.\n\nProjected occupancy: 5.3 / 6 · Likely range: 4–6\n\nCheck the kitchen now; booking closes at 7:30 PM (30 minutes).\n\nBooking pace · orders\nCapacity 6\n0\n3\nNow\n5:20 PM\n7:30 PM · Cutoff\n\nSolid: observed · dashed: projection · shaded: range\n\nInspect the model and comparable evenings\nExplain this forecast\nOpenRouter explanation\n\nBased on 12 simulated past evenings, the strongest signal is that the projected count of 5.3 against a capacity of 6 (range 4 to 6) puts the booking at risk of nearly filling, with about 30 minutes until close.",
+  "rewindIdentical": true,
+  "labelInViewport": true,
+  "productionMutations": 0
+}
