@@ -34,6 +34,9 @@ const alexandria = Alexandria({
 export const metadata: Metadata = {
   title: "Qafla Pickup · قافلة",
   description: "Order ahead from Qafla's food trucks and collect your food hot.",
+  icons: {
+    icon: "/brand/qafla-logo.png",
+  },
 };
 
 // `cover` lets a screen paint under a phone's notch and home indicator, and
