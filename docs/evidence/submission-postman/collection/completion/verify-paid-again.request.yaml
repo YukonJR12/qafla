@@ -1,0 +1,17 @@
+$kind: http-request
+order: 26000
+method: POST
+url: '{{baseUrl}}/api/payments/verify'
+headers:
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: json
+  content: |-
+    {"orderId":"{{onlineOrderId}}","paymentId":"{{gatewayPaymentId}}"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Gateway-confirmed payment is paid", () => pm.expect(pm.response.json().outcome).to.eql("paid"));

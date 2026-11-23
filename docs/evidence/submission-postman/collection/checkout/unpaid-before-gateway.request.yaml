@@ -1,0 +1,17 @@
+$kind: http-request
+order: 15000
+method: POST
+url: '{{baseUrl}}/api/payments/verify'
+headers:
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: json
+  content: |-
+    {"orderId":"{{onlineOrderId}}"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Creating an invoice does not mark an order paid", () => pm.expect(pm.response.json().outcome).to.eql("awaiting"));

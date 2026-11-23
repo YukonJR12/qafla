@@ -1,0 +1,115 @@
+{
+  "productionCommit": "a1881ec21f17ce718d72c715327cf4421a12d153",
+  "base": "https://qafla-rjqd.vercel.app",
+  "browser": "159.0.8154.6",
+  "results": [
+    {
+      "id": "vendor-t01",
+      "label": "Karak Corner",
+      "email": "qafla.panel.t01.20261122@example.com",
+      "role": "vendor",
+      "assignment": {
+        "id": "T01",
+        "name": "Karak Corner"
+      },
+      "landing": "https://qafla-rjqd.vercel.app/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t03",
+      "label": "Taco Saha",
+      "email": "qafla.panel.t03.20261122@example.com",
+      "role": "vendor",
+      "assignment": {
+        "id": "T03",
+        "name": "Taco Saha"
+      },
+      "landing": "https://qafla-rjqd.vercel.app/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t04",
+      "label": "Noodle Wagon",
+      "email": "qafla.panel.t04.20261122@example.com",
+      "role": "vendor",
+      "assignment": {
+        "id": "T04",
+        "name": "Noodle Wagon"
+      },
+      "landing": "https://qafla-rjqd.vercel.app/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t05",
+      "label": "Saj Station",
+      "email": "qafla.panel.t05.20261122@example.com",
+      "role": "vendor",
+      "assignment": {
+        "id": "T05",
+        "name": "Saj Station"
+      },
+      "landing": "https://qafla-rjqd.vercel.app/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t06",
+      "label": "Lugaimat & Co",
+      "email": "qafla.panel.t06.20261122@example.com",
+      "role": "vendor",
+      "assignment": {
+        "id": "T06",
+        "name": "Lugaimat & Co"
+      },
+      "landing": "https://qafla-rjqd.vercel.app/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "customer-a",
+      "label": "Customer A",
+      "email": "qafla.customer.mwng8ynl@example.com",
+      "role": "customer",
+      "assignment": null,
+      "landing": "https://qafla-rjqd.vercel.app/explore",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "customer-b",
+      "label": "Customer B",
+      "email": "qafla.ui.mwngu7ha@example.com",
+      "role": "customer",
+      "assignment": null,
+      "landing": "https://qafla-rjqd.vercel.app/explore",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "vendor-t02",
+      "label": "Dune Burgers",
+      "email": "qafla.vendor.mwng8ynl@example.com",
+      "role": "vendor",
+      "assignment": {
+        "id": "T02",
+        "name": "Dune Burgers"
+      },
+      "landing": "https://qafla-rjqd.vercel.app/vendor",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    },
+    {
+      "id": "park-manager",
+      "label": "Park manager",
+      "email": "qafla.manager.mwnh12fm@example.com",
+      "role": "manager",
+      "assignment": null,
+      "landing": "https://qafla-rjqd.vercel.app/manager",
+      "actualUiLogin": true,
+      "blockedMutations": []
+    }
+  ]
+}

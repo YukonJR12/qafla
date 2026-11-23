@@ -1,0 +1,23 @@
+$kind: http-request
+order: 20000
+method: POST
+url: '{{baseUrl}}/api/menu/suggest'
+headers:
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: formdata
+  content:
+    - key: itemId
+      type: text
+      value: '{{itemId}}'
+    - key: photo
+      type: file
+      src: '{{photoPath}}'
+      contentType: image/webp
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 401", () => pm.response.to.have.status(401));
+      pm.test("Customer cannot request vendor AI generation", () => pm.expect(pm.response.json().problem).to.eql("not_a_vendor"));

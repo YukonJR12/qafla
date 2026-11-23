@@ -1,0 +1,132 @@
+{
+  "base": "https://qafla-rjqd.vercel.app",
+  "commit": "a1881ec21f17ce718d72c715327cf4421a12d153",
+  "browser": "159.0.8154.6",
+  "device": "Chromium mobile/touch emulation on Windows; DPR 1; 844px height; normal network; functional checks, not performance benchmarks",
+  "results": [
+    {
+      "id": "320-en",
+      "fresh": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": true
+      },
+      "returning": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": false
+      },
+      "artwork": "supplied PNG, contained without overlap",
+      "actualCustomerSignIn": true,
+      "menuUsable": true,
+      "firstTapQuantity": 1,
+      "cartText": "View order (1)\n0.200 KWD",
+      "layout": {
+        "direction": "ltr",
+        "width": 320,
+        "scrollWidth": 320
+      },
+      "cartBox": {
+        "x": 16,
+        "y": 704,
+        "width": 288,
+        "height": 64
+      },
+      "forbiddenMutations": [],
+      "pageErrors": []
+    },
+    {
+      "id": "320-ar",
+      "fresh": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": true
+      },
+      "returning": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": false
+      },
+      "artwork": "supplied PNG, contained without overlap",
+      "actualCustomerSignIn": true,
+      "menuUsable": true,
+      "firstTapQuantity": 1,
+      "cartText": "عرض الطلب (1)\n0.200 د.ك.",
+      "layout": {
+        "direction": "rtl",
+        "width": 320,
+        "scrollWidth": 320
+      },
+      "cartBox": {
+        "x": 16,
+        "y": 704,
+        "width": 288,
+        "height": 64
+      },
+      "forbiddenMutations": [],
+      "pageErrors": []
+    },
+    {
+      "id": "390-en",
+      "fresh": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": true
+      },
+      "returning": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": false
+      },
+      "artwork": "supplied PNG, contained without overlap",
+      "actualCustomerSignIn": true,
+      "menuUsable": true,
+      "firstTapQuantity": 1,
+      "cartText": "View order (1)\n0.200 KWD",
+      "layout": {
+        "direction": "ltr",
+        "width": 390,
+        "scrollWidth": 390
+      },
+      "cartBox": {
+        "x": 16,
+        "y": 720,
+        "width": 358,
+        "height": 48
+      },
+      "forbiddenMutations": [],
+      "pageErrors": []
+    },
+    {
+      "id": "390-ar",
+      "fresh": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": true
+      },
+      "returning": {
+        "rolls": 1,
+        "inline": true,
+        "signInSeen": false
+      },
+      "artwork": "supplied PNG, contained without overlap",
+      "actualCustomerSignIn": true,
+      "menuUsable": true,
+      "firstTapQuantity": 1,
+      "cartText": "عرض الطلب (1)\n0.200 د.ك.",
+      "layout": {
+        "direction": "rtl",
+        "width": 390,
+        "scrollWidth": 390
+      },
+      "cartBox": {
+        "x": 16,
+        "y": 720,
+        "width": 358,
+        "height": 48
+      },
+      "forbiddenMutations": [],
+      "pageErrors": []
+    }
+  ]
+}

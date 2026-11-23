@@ -1,0 +1,15 @@
+$kind: http-request
+order: 9000
+method: GET
+url: '{{supabaseUrl}}/rest/v1/order_items?select=item_id,quantity,unit_price_kwd&order_id=eq.{{pickupOrderId}}'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("One correctly priced line persisted", () => { const rows=pm.response.json(); pm.expect(rows).to.have.length(1); pm.expect(rows[0].quantity).to.eql(1); pm.expect(Number(rows[0].unit_price_kwd)).to.eql(pm.variables.get("expectedTotal")); });

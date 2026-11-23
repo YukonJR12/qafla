@@ -1,0 +1,19 @@
+$kind: http-request
+order: 6000
+method: POST
+url: '{{supabaseUrl}}/rest/v1/rpc/slot_usage'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: json
+  content: |-
+    {"p_truck_id":"{{truckId}}"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Choose an available pickup at least 30 minutes ahead", () => { const now=new Date(Date.now()+3*3600000); const seconds=now.getUTCHours()*3600+now.getUTCMinutes()*60+now.getUTCSeconds(); const slot=pm.response.json().find(s=>{const [h,m,t]=s.slot_start.split(":").map(Number);return h*3600+m*60+t>=seconds+1800 && s.booked<s.capacity;}); pm.expect(slot,"No valid test slot remaining tonight").to.exist; pm.variables.set("pickupSlot",slot.slot_start); });

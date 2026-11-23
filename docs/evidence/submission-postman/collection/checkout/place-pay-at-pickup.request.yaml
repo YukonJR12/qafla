@@ -1,0 +1,19 @@
+$kind: http-request
+order: 7000
+method: POST
+url: '{{supabaseUrl}}/rest/v1/rpc/place_order_paying'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+body:
+  type: json
+  content: |-
+    {"p_truck_id":"{{truckId}}","p_slot_start":"{{pickupSlot}}","p_items":[{"item_id":"{{itemId}}","quantity":1}],"p_request_id":"{{checkoutRequestId}}","p_payment_method":"pay_at_pickup"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Order is saved with server price and correct owner", () => { const o=pm.response.json(); pm.expect(o.customer_id).to.eql(pm.variables.get("customerId")); pm.expect(o.payment_method).to.eql("pay_at_pickup"); pm.expect(o.payment_status).to.eql("unpaid"); pm.expect(o.status).to.eql("placed"); pm.expect(Number(o.total_kwd)).to.eql(pm.variables.get("expectedTotal")); pm.variables.set("pickupOrderId",o.id); });

@@ -1,0 +1,18 @@
+$kind: http-request
+order: 1000
+method: POST
+url: '{{supabaseUrl}}/auth/v1/token?grant_type=password'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+body:
+  type: json
+  content: |-
+    {"email":"{{customerEmail}}","password":"{{customerPassword}}"}
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      if (pm.response.code !== 200) { let error = {}; try { error = pm.response.json(); } catch {} console.log("Sign-in diagnostic", JSON.stringify({ status: pm.response.code, code: error.code || error.error_code, message: error.message || error.msg || error.error_description, bytes: pm.response.text().length })); }
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("customer session issued", () => { const r=pm.response.json(); pm.expect(r.access_token).to.be.a("string").and.not.empty; pm.variables.set("customerToken",r.access_token); pm.variables.set("customerId",r.user.id); });

@@ -1,0 +1,96 @@
+{
+  "environment": "local production Next.js build; real embedded PostgreSQL 17; test auth shim and HTTP adapter; no hosted database",
+  "date": "2026-11-22",
+  "rounds": [
+    {
+      "round": 1,
+      "slot": "17:00:00",
+      "before": 5,
+      "after": 6,
+      "delta": 1,
+      "results": [
+        {
+          "customer": "race-b@example.test",
+          "outcome": "saved",
+          "ticket": "T02-000006"
+        },
+        {
+          "customer": "race-a@example.test",
+          "outcome": "slot_full"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "slot": "17:15:00",
+      "before": 5,
+      "after": 6,
+      "delta": 1,
+      "results": [
+        {
+          "customer": "race-a@example.test",
+          "outcome": "saved",
+          "ticket": "T02-000012"
+        },
+        {
+          "customer": "race-b@example.test",
+          "outcome": "slot_full"
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "slot": "17:30:00",
+      "before": 5,
+      "after": 6,
+      "delta": 1,
+      "results": [
+        {
+          "customer": "race-b@example.test",
+          "outcome": "saved",
+          "ticket": "T02-000018"
+        },
+        {
+          "customer": "race-a@example.test",
+          "outcome": "slot_full"
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "slot": "17:45:00",
+      "before": 5,
+      "after": 6,
+      "delta": 1,
+      "results": [
+        {
+          "customer": "race-b@example.test",
+          "outcome": "saved",
+          "ticket": "T02-000024"
+        },
+        {
+          "customer": "race-a@example.test",
+          "outcome": "slot_full"
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "slot": "18:00:00",
+      "before": 5,
+      "after": 6,
+      "delta": 1,
+      "results": [
+        {
+          "customer": "race-b@example.test",
+          "outcome": "saved",
+          "ticket": "T02-000030"
+        },
+        {
+          "customer": "race-a@example.test",
+          "outcome": "slot_full"
+        }
+      ]
+    }
+  ]
+}

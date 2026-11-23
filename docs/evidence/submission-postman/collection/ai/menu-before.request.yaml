@@ -1,0 +1,15 @@
+$kind: http-request
+order: 19000
+method: GET
+url: '{{supabaseUrl}}/rest/v1/menu_items?select=id,truck_id,price_kwd,description,allergens,sold_out&id=eq.{{itemId}}'
+headers:
+  - key: apikey
+    value: '{{publishableKey}}'
+  - key: Authorization
+    value: 'Bearer {{vendorToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Remember saved menu copy and price", () => { const dish=pm.response.json()[0]; pm.expect(dish).to.exist; pm.variables.set("menuBefore",JSON.stringify(dish)); });

@@ -1,0 +1,126 @@
+{
+  "date": "2026-11-22",
+  "offlineFiles": 119,
+  "localFileLinksChecked": 159,
+  "missingFiles": [],
+  "unresolvedMarkdownAnchors": [],
+  "remoteReferences": [
+    {
+      "url": "https://qafla-rjqd.vercel.app",
+      "status": 200,
+      "redirectedTo": "https://qafla-rjqd.vercel.app/",
+      "purpose": "Production"
+    },
+    {
+      "url": "https://github.com/Surajmaurya1/easyui/tree/15065930b3ee3991b4aece5713a6bfbca7a782f7/src/components/ui",
+      "status": 200,
+      "redirectedTo": "https://github.com/Surajmaurya1/easyui/tree/15065930b3ee3991b4aece5713a6bfbca7a782f7/src/components/ui",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/press-button",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/press-button",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/animated-tabs",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/animated-tabs",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/sheet",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/sheet",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/payment-receipt-printer",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/payment-receipt-printer",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/payment-status",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/payment-status",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://qafla-rjqd-rh2dkurub-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "redirectedTo": "https://vercel.com/login",
+      "purpose": "historical protected Preview; use local evidence"
+    },
+    {
+      "url": "https://easyui.site/components/stepper",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/stepper",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://qafla-rjqd-hlyviohew-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "redirectedTo": "https://vercel.com/login",
+      "purpose": "historical protected Preview; use local evidence"
+    },
+    {
+      "url": "https://easyui.site/components/animated-file-upload",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/animated-file-upload",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://qafla-rjqd-qgkjh4c56-ffalrefae-6713s-projects.vercel.app",
+      "status": 200,
+      "redirectedTo": "https://vercel.com/login",
+      "purpose": "historical protected Preview; use local evidence"
+    },
+    {
+      "url": "https://easyui.site/components/stat-card",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/stat-card",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/morphing-button",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/morphing-button",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/draw-checkbox",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/draw-checkbox",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/animated-number",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/animated-number",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/interactive-area-chart",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/interactive-area-chart",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/activity-heatmap",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/activity-heatmap",
+      "purpose": "source attribution"
+    },
+    {
+      "url": "https://easyui.site/components/expandable-data-row",
+      "status": 200,
+      "redirectedTo": "https://easyui.site/components/expandable-data-row",
+      "purpose": "source attribution"
+    }
+  ],
+  "privateGithubAccess": "Anonymous 404; local file copies supplied. Repository and PR discussion pages need invitation.",
+  "knownDemoPasswordScan": "0 matches in evidence; credentials separate",
+  "media": "65 images/videos opened; 7 videos played; see package-media-check.json"
+}

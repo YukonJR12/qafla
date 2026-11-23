@@ -1,0 +1,13 @@
+$kind: http-request
+order: 26500
+method: POST
+url: '{{baseUrl}}/api/payments/notify'
+body:
+  type: json
+  content: '{"PaymentId":"{{gatewayPaymentId}}"}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP 200", () => pm.response.to.have.status(200));
+      pm.test("Gateway notification acknowledged", () => pm.expect(pm.response.json()).to.deep.eql({ received: true }));
